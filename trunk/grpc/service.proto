@@ -1,16 +1,17 @@
 syntax = "proto3";
-
-option csharp_namespace = "GrpcGreeter";
-
+ 
+option csharp_namespace = "GreeterServiceApp";
+ 
+package greet;
+ 
 service Greeter {
-  rpc SayHello (HelloRequest) returns (HelloResponse);
+  rpc SayHello (HelloRequest) returns (HelloReply);
 }
-
+ 
 message HelloRequest {
-  string Name = 1;
+  string name = 1;
 }
-
-message HelloResponse {
-  string Message = 1;
+ 
+message HelloReply {
+  string message = 1;
 }
-
