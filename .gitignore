@@ -1,6 +1,11 @@
+# =============== #
+#  Basic ignored  #
+# =============== #
 **/venv/
 **/__pycache__/
 **/*.exe
+**/bin/ 
+**/*.meta
 
 # =============== #
 # Unity generated #

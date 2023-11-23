@@ -7,7 +7,7 @@ def run():
     with grpc.insecure_channel('localhost:5281') as channel:
         client = pb2_grpc.GreeterStub(channel)
         response = client.SayHello(pb2.HelloRequest(name='World'))
-    print("Greeter client received: " + response.message)
+    print(response.message)
 
 if __name__ == '__main__':
     run()
