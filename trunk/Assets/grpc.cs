@@ -3,34 +3,40 @@ using System.Collections.Generic;
 using UnityEngine;
 
 using Cysharp.Net.Http;
-using System.Net.Http;
 using Grpc.Net.Client;
 using Grpc.Core;
 
-using GreeterServiceApp;
+using GreeterClientApp;
+
 
 public class grpc : MonoBehaviour
 {
-    // Start is called before the first frame update
+    private GrpcChannel channel;
+    private Greeter.GreeterClient client;
+
     async void Start()
     {
-        // http test
-        //using var handler = new YetAnotherHttpHandler();
-        //var client = new HttpClient(handler);
-        //var response = await client.GetStringAsync("https://http2.pro/");
-        //Debug.Log(response);
+        channel = GrpcChannel.ForAddress("http://localhost:5281", new GrpcChannelOptions
+        {
+            HttpHandler = new YetAnotherHttpHandler { Http2Only = true },
+            DisposeHttpClient = true
+        });
 
-        // grpc test
-        using var handler = new YetAnotherHttpHandler();
-        using var channel = GrpcChannel.ForAddress("http://localhost:50051/Greeter/SayHello", new GrpcChannelOptions() { HttpHandler = handler });
-        Debug.Log(channel);
-        var greeter = new Greeter.GreeterClient(channel);
-        var result = await greeter.SayHelloAsync(new HelloRequest { Name = "Alice" });
-        Debug.Log(result);
+        client = new Greeter.GreeterClient(channel);
+
+        var reply = await client.SayHelloAsync(new HelloRequest { Name = "World" });
+        Debug.Log(reply.Message);
     }
 
-    void Update()
+    async void Update()
     {
-        
+        await client.SayHelloAsync(new HelloRequest { Name = "Update" });
+    }
+
+    // Don't forget to clean up the channel when the MonoBehaviour is destroyed
+    void OnDestroy()
+    {
+        channel?.ShutdownAsync().Wait();
     }
 }
+

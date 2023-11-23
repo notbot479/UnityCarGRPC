@@ -6,6 +6,8 @@
 **/*.exe
 **/bin/ 
 **/*.meta
+**/.vs/
+**/.vscode/
 
 # =============== #
 # Unity generated #
