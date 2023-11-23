@@ -2,7 +2,7 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-import service_pb2 as service__pb2
+from . import greet_pb2 as greet__pb2
 
 
 class GreeterStub(object):
@@ -15,9 +15,9 @@ class GreeterStub(object):
             channel: A grpc.Channel.
         """
         self.SayHello = channel.unary_unary(
-                '/helloworld.Greeter/SayHello',
-                request_serializer=service__pb2.HelloRequest.SerializeToString,
-                response_deserializer=service__pb2.HelloReply.FromString,
+                '/greet.Greeter/SayHello',
+                request_serializer=greet__pb2.HelloRequest.SerializeToString,
+                response_deserializer=greet__pb2.HelloReply.FromString,
                 )
 
 
@@ -35,12 +35,12 @@ def add_GreeterServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'SayHello': grpc.unary_unary_rpc_method_handler(
                     servicer.SayHello,
-                    request_deserializer=service__pb2.HelloRequest.FromString,
-                    response_serializer=service__pb2.HelloReply.SerializeToString,
+                    request_deserializer=greet__pb2.HelloRequest.FromString,
+                    response_serializer=greet__pb2.HelloReply.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'helloworld.Greeter', rpc_method_handlers)
+            'greet.Greeter', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
 
 
@@ -59,8 +59,8 @@ class Greeter(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/helloworld.Greeter/SayHello',
-            service__pb2.HelloRequest.SerializeToString,
-            service__pb2.HelloReply.FromString,
+        return grpc.experimental.unary_unary(request, target, '/greet.Greeter/SayHello',
+            greet__pb2.HelloRequest.SerializeToString,
+            greet__pb2.HelloReply.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

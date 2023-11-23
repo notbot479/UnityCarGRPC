@@ -1,6 +1,7 @@
 from concurrent import futures
-import service_pb2_grpc as pb2_grpc
-import service_pb2 as pb2
+from Protos import greet_pb2 as pb2
+from Protos import greet_pb2_grpc as pb2_grpc
+
 import grpc
 
 class GreeterServicer(pb2_grpc.GreeterServicer):
