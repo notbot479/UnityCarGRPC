@@ -9,7 +9,7 @@ using Grpc.Core;
 using GreeterClientApp;
 
 
-public class grpc : MonoBehaviour
+public class CarGrpc : MonoBehaviour
 {
     private GrpcChannel channel;
     private Greeter.GreeterClient client;
