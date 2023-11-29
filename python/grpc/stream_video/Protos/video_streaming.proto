@@ -1,0 +1,15 @@
+// video_streaming.proto
+syntax = "proto3";
+
+service VideoStreamingService {
+  rpc UploadVideo(stream VideoStreamRequest) returns (VideoStreamResponse);
+}
+
+message VideoStreamRequest {
+  bytes video_chunk = 1;
+}
+
+message VideoStreamResponse {
+  string message = 1;
+}
+

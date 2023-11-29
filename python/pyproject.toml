@@ -9,6 +9,7 @@ readme = "README.md"
 python = "^3.11"
 grpcio = "^1.59.2"
 grpcio-tools = "^1.59.2"
+opencv-python = "^4.8.1.78"
 
 
 [build-system]
