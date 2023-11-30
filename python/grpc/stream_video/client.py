@@ -1,15 +1,17 @@
 import grpc
 import cv2
+import os
 
 from Protos import video_streaming_pb2
 from Protos import video_streaming_pb2_grpc
 
-
-VIDEO_PATH = '1.mp4'
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+VIDEO_PATH = os.path.join(BASE_DIR,'1.mp4')
 
 
 def display_video(stub):
     video_path = VIDEO_PATH
+    print(video_path)
     cap = cv2.VideoCapture(video_path)
 
     while cap.isOpened():
@@ -28,4 +30,3 @@ def run():
 
 if __name__ == '__main__':
     run()
-
