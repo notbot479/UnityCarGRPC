@@ -5,7 +5,6 @@
 **/__pycache__/
 **/*.exe
 **/bin/ 
-**/*.meta
 **/.vs/
 **/.vscode/
 
