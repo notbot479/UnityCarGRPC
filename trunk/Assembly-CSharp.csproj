@@ -56,16 +56,15 @@
     <Analyzer Include="C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\Extensions\Microsoft\Visual Studio Tools for Unity\Analyzers\Microsoft.Unity.Analyzers.dll" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Assets\CarControllerSimple.cs" />
-    <Compile Include="Assets\Scripts\WheelSet.cs" />
-    <Compile Include="Assets\Protos\GreetGrpc.cs" />
     <Compile Include="Assets\CarGrpc.cs" />
-    <Compile Include="Assets\CarControllerAdvanced.cs" />
     <Compile Include="Assets\Protos\Greet.cs" />
+    <Compile Include="Assets\Scripts\WheelSet.cs" />
+    <Compile Include="Assets\CarControllerAdvanced.cs" />
+    <Compile Include="Assets\Protos\GreetGrpc.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Assets\Google.Protobuf\lib\net45\Google.Protobuf.xml" />
     <None Include="Assets\Google.Protobuf\lib\net45\Google.Protobuf.dll" />
+    <None Include="Assets\Google.Protobuf\lib\net45\Google.Protobuf.xml" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="UnityEngine">
@@ -311,32 +310,32 @@
     <Reference Include="UnityEditor.UnityConnectModule">
       <HintPath>C:\Program Files\Unity\Hub\Editor\2021.3.6f1\Editor\Data\Managed\UnityEngine\UnityEditor.UnityConnectModule.dll</HintPath>
     </Reference>
-    <Reference Include="System.IO.Pipelines">
-      <HintPath>Assets\Plugins\System.IO.Pipelines\7.0.0\lib\netstandard2.0\System.IO.Pipelines.dll</HintPath>
-    </Reference>
-    <Reference Include="Grpc.Net.Common">
-      <HintPath>Assets\Plugins\Grpc.Net.Common\2.55.0\lib\netstandard2.1\Grpc.Net.Common.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Runtime.CompilerServices.Unsafe">
-      <HintPath>Assets\Plugins\System.Runtime.CompilerServices.Unsafe\4.5.3\lib\netstandard2.0\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
+    <Reference Include="Google.Protobuf">
+      <HintPath>Assets\Google.Protobuf\lib\net45\Google.Protobuf.dll</HintPath>
     </Reference>
     <Reference Include="Grpc.Core.Api">
       <HintPath>Assets\Plugins\Grpc.Core.Api\2.55.0\lib\netstandard2.1\Grpc.Core.Api.dll</HintPath>
     </Reference>
-    <Reference Include="Unity.VisualScripting.Antlr3.Runtime">
-      <HintPath>Library\PackageCache\com.unity.visualscripting@1.7.8\Runtime\VisualScripting.Flow\Dependencies\NCalc\Unity.VisualScripting.Antlr3.Runtime.dll</HintPath>
-    </Reference>
-    <Reference Include="Grpc.Net.Client">
-      <HintPath>Assets\Plugins\Grpc.Net.Client\2.55.0\lib\netstandard2.1\Grpc.Net.Client.dll</HintPath>
+    <Reference Include="Grpc.Net.Common">
+      <HintPath>Assets\Plugins\Grpc.Net.Common\2.55.0\lib\netstandard2.1\Grpc.Net.Common.dll</HintPath>
     </Reference>
     <Reference Include="System.Diagnostics.DiagnosticSource">
       <HintPath>Assets\Plugins\System.Diagnostics.DiagnosticSource\4.5.1\lib\netstandard1.3\System.Diagnostics.DiagnosticSource.dll</HintPath>
     </Reference>
+    <Reference Include="System.IO.Pipelines">
+      <HintPath>Assets\Plugins\System.IO.Pipelines\7.0.0\lib\netstandard2.0\System.IO.Pipelines.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Runtime.CompilerServices.Unsafe">
+      <HintPath>Assets\Plugins\System.Runtime.CompilerServices.Unsafe\4.5.3\lib\netstandard2.0\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
+    </Reference>
+    <Reference Include="Unity.VisualScripting.Antlr3.Runtime">
+      <HintPath>Library\PackageCache\com.unity.visualscripting@1.7.8\Runtime\VisualScripting.Flow\Dependencies\NCalc\Unity.VisualScripting.Antlr3.Runtime.dll</HintPath>
+    </Reference>
     <Reference Include="Newtonsoft.Json">
       <HintPath>Library\PackageCache\com.unity.nuget.newtonsoft-json@3.0.2\Runtime\Newtonsoft.Json.dll</HintPath>
     </Reference>
-    <Reference Include="Google.Protobuf">
-      <HintPath>Assets\Google.Protobuf\lib\net45\Google.Protobuf.dll</HintPath>
+    <Reference Include="Grpc.Net.Client">
+      <HintPath>Assets\Plugins\Grpc.Net.Client\2.55.0\lib\netstandard2.1\Grpc.Net.Client.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Extensions.Logging.Abstractions">
       <HintPath>Assets\Plugins\Microsoft.Extensions.Logging.Abstractions\3.0.3\lib\netstandard2.0\Microsoft.Extensions.Logging.Abstractions.dll</HintPath>
@@ -758,8 +757,14 @@
     <Reference Include="Unity.VisualScripting.Core">
       <HintPath>Library\ScriptAssemblies\Unity.VisualScripting.Core.dll</HintPath>
     </Reference>
+    <Reference Include="Cinemachine">
+      <HintPath>Library\ScriptAssemblies\Cinemachine.dll</HintPath>
+    </Reference>
     <Reference Include="Unity.Services.Core.Analytics">
       <HintPath>Library\ScriptAssemblies\Unity.Services.Core.Analytics.dll</HintPath>
+    </Reference>
+    <Reference Include="com.unity.cinemachine.editor">
+      <HintPath>Library\ScriptAssemblies\com.unity.cinemachine.editor.dll</HintPath>
     </Reference>
     <Reference Include="Unity.VisualScripting.Shared.Editor">
       <HintPath>Library\ScriptAssemblies\Unity.VisualScripting.Shared.Editor.dll</HintPath>
@@ -772,12 +777,6 @@
     </Reference>
     <Reference Include="Unity.VisualScripting.State">
       <HintPath>Library\ScriptAssemblies\Unity.VisualScripting.State.dll</HintPath>
-    </Reference>
-    <Reference Include="com.unity.cinemachine.editor">
-      <HintPath>Library\ScriptAssemblies\com.unity.cinemachine.editor.dll</HintPath>
-    </Reference>
-    <Reference Include="Cinemachine">
-      <HintPath>Library\ScriptAssemblies\Cinemachine.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>

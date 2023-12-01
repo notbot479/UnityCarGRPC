@@ -39,7 +39,7 @@ public class CarControllerAdvanced : MonoBehaviour {
         if (debugDisplay) {
             GUI.Label(new Rect(10.0f, 10.0f, 100.0f, 20.0f), "Speed: " + speed.ToString());
             GUI.Label(new Rect(10.0f, 30.0f, 100.0f, 20.0f), "Steer: " + steer.ToString());
-            GUI.Label(new Rect(10.0f, 50.0f, 100.0f, 20.0f), "Motor: " + motor.ToString());
+            GUI.Label(new Rect(10.0f, 50.0f, 100.0f, 20.0f), "Motor: " + (-1 * motor).ToString());
             GUI.Label(new Rect(10.0f, 70.0f, 100.0f, 20.0f), "Brake: " + brake.ToString());
             GUI.Label(new Rect(10.0f, 90.0f, 500.0f, 20.0f), "Left Motor Torque: " + backSet.GetTorque(Side.left));
             GUI.Label(new Rect(10.0f, 110.0f, 500.0f, 20.0f), "Right Motor Torque: " + backSet.GetTorque(Side.right));
@@ -49,8 +49,8 @@ public class CarControllerAdvanced : MonoBehaviour {
     void Update() {
         // Retrieve Input
         steer = Mathf.Clamp(Input.GetAxis("Horizontal"), -1, 1);
-        forward = Mathf.Clamp(Input.GetAxis("Vertical"), 0, 1);
-        back = -1 * Mathf.Clamp(Input.GetAxis("Vertical"), -1, 0);
+        forward = Mathf.Clamp(Input.GetAxis("Vertical"), 1, 0);
+        back = -1 * Mathf.Clamp(Input.GetAxis("Vertical"), 0, -1);
 
         frontSet.UpdateWheels();
         backSet.UpdateWheels();
