@@ -1191,6 +1191,7 @@ GameObject:
   - component: {fileID: 959333142}
   - component: {fileID: 959333141}
   - component: {fileID: 959333140}
+  - component: {fileID: 959333144}
   m_Layer: 0
   m_Name: Camera
   m_TagString: Untagged
@@ -1273,7 +1274,7 @@ Camera:
     serializedVersion: 2
     m_Bits: 4294967295
   m_RenderingPath: -1
-  m_TargetTexture: {fileID: 0}
+  m_TargetTexture: {fileID: 8600000, guid: 3be8f8dc902662a46b2d5f57dfcb6363, type: 2}
   m_TargetDisplay: 0
   m_TargetEye: 3
   m_HDR: 1
@@ -1298,6 +1299,18 @@ Transform:
   m_Father: {fileID: 120700825}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &959333144
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 959333139}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e9ccd7ed39828e34b87b4336417501f9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1075406119
 GameObject:
   m_ObjectHideFlags: 0

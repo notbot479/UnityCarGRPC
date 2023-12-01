@@ -56,8 +56,11 @@
     <Analyzer Include="C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\Extensions\Microsoft\Visual Studio Tools for Unity\Analyzers\Microsoft.Unity.Analyzers.dll" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assets\GrpcVideoCapture.cs" />
+    <Compile Include="Assets\Protos\VideoStreaming.cs" />
     <Compile Include="Assets\CarGrpc.cs" />
     <Compile Include="Assets\Protos\Greet.cs" />
+    <Compile Include="Assets\Protos\VideoStreamingGrpc.cs" />
     <Compile Include="Assets\Scripts\WheelSet.cs" />
     <Compile Include="Assets\CarControllerAdvanced.cs" />
     <Compile Include="Assets\Protos\GreetGrpc.cs" />

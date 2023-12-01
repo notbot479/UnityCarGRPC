@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+option csharp_namespace = "StreamVideoServiceApp";
+
+service VideoStreamingService {
+  rpc UploadVideo(stream VideoStreamRequest) returns (VideoStreamResponse);
+}
+
+message VideoStreamRequest {
+  bytes VideoChunk = 1;
+}
+
+message VideoStreamResponse {
+  string message = 1;
+}
+
