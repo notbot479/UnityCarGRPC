@@ -27,33 +27,29 @@ public class GrpcVideoCapture : MonoBehaviour
     }
     async void Update()
     {
-        //RenderTexture renderTexture = new RenderTexture(Screen.width, Screen.height, 24);
-        //targetCamera.targetTexture = renderTexture;
+        RenderTexture renderTexture = new RenderTexture(Screen.width, Screen.height, 24);
+        targetCamera.targetTexture = renderTexture;
         
         // Create a new Texture2D and read the RenderTexture into it
-        //Texture2D texture = new Texture2D(Screen.width, Screen.height, TextureFormat.RGB24, false);
-        //targetCamera.Render();
-        //RenderTexture.active = renderTexture;
-        //texture.ReadPixels(new Rect(0, 0, Screen.width, Screen.height), 0, 0);
-        //texture.Apply();
+        Texture2D texture = new Texture2D(Screen.width, Screen.height, TextureFormat.RGB24, false);
+        targetCamera.Render();
+        RenderTexture.active = renderTexture;
+        texture.ReadPixels(new Rect(0, 0, Screen.width, Screen.height), 0, 0);
+        texture.Apply();
         
         // Convert the Texture2D to byteString
-        //byte[] imageBytes = texture.EncodeToJPG();
-        var random = new System.Random();
-        byte[] imageBytes = new byte[10];
-        random.NextBytes(imageBytes);
-        
+        byte[] imageBytes = texture.EncodeToJPG();
         var byteString = ByteString.CopyFrom(imageBytes);
-        
+
         // Send video frame to gRPC server
         var request = new VideoFrameRequest { Chunk = byteString };
         var responce = await client.UploadVideoFrameAsync(request);
         Debug.Log(responce);
 
         // Reset camera settings
-        //targetCamera.targetTexture = null;
-        //RenderTexture.active = null;
-        //Destroy(renderTexture);
+        targetCamera.targetTexture = null;
+        RenderTexture.active = null;
+        Destroy(renderTexture);
     }
 
     void OnDestroy()
