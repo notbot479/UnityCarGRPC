@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option csharp_namespace = "StreamVideoService";
+package StreamVideoService;
 
 service Video {
   rpc UploadVideoFrame (VideoFrameRequest) returns (VideoFrameResponse);
@@ -13,3 +13,4 @@ message VideoFrameRequest {
 message VideoFrameResponse {
   bool success = 1;
 }
+

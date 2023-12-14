@@ -24,11 +24,12 @@ namespace StreamVideoService {
     static VideoReflection() {
       byte[] descriptorData = global::System.Convert.FromBase64String(
           string.Concat(
-            "ChJQcm90b3MvdmlkZW8ucHJvdG8iIgoRVmlkZW9GcmFtZVJlcXVlc3QSDQoF",
-            "Y2h1bmsYASABKAwiJQoSVmlkZW9GcmFtZVJlc3BvbnNlEg8KB3N1Y2Nlc3MY",
-            "ASABKAgyRAoFVmlkZW8SOwoQVXBsb2FkVmlkZW9GcmFtZRISLlZpZGVvRnJh",
-            "bWVSZXF1ZXN0GhMuVmlkZW9GcmFtZVJlc3BvbnNlQhWqAhJTdHJlYW1WaWRl",
-            "b1NlcnZpY2ViBnByb3RvMw=="));
+            "ChJQcm90b3MvdmlkZW8ucHJvdG8SElN0cmVhbVZpZGVvU2VydmljZSIiChFW",
+            "aWRlb0ZyYW1lUmVxdWVzdBINCgVjaHVuaxgBIAEoDCIlChJWaWRlb0ZyYW1l",
+            "UmVzcG9uc2USDwoHc3VjY2VzcxgBIAEoCDJqCgVWaWRlbxJhChBVcGxvYWRW",
+            "aWRlb0ZyYW1lEiUuU3RyZWFtVmlkZW9TZXJ2aWNlLlZpZGVvRnJhbWVSZXF1",
+            "ZXN0GiYuU3RyZWFtVmlkZW9TZXJ2aWNlLlZpZGVvRnJhbWVSZXNwb25zZWIG",
+            "cHJvdG8z"));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { },
           new pbr::GeneratedClrTypeInfo(null, null, new pbr::GeneratedClrTypeInfo[] {
@@ -40,6 +41,7 @@ namespace StreamVideoService {
 
   }
   #region Messages
+  [global::System.Diagnostics.DebuggerDisplayAttribute("{ToString(),nq}")]
   public sealed partial class VideoFrameRequest : pb::IMessage<VideoFrameRequest>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
@@ -229,6 +231,7 @@ namespace StreamVideoService {
 
   }
 
+  [global::System.Diagnostics.DebuggerDisplayAttribute("{ToString(),nq}")]
   public sealed partial class VideoFrameResponse : pb::IMessage<VideoFrameResponse>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage

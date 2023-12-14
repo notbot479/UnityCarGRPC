@@ -10,7 +10,7 @@ using grpc = global::Grpc.Core;
 namespace StreamVideoService {
   public static partial class Video
   {
-    static readonly string __ServiceName = "Video";
+    static readonly string __ServiceName = "StreamVideoService.Video";
 
     [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
     static void __Helper_SerializeMessage(global::Google.Protobuf.IMessage message, grpc::SerializationContext context)
@@ -46,17 +46,17 @@ namespace StreamVideoService {
     }
 
     [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
-    static readonly grpc::Marshaller<global::StreamVideoService.VideoFrameRequest> __Marshaller_VideoFrameRequest = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::StreamVideoService.VideoFrameRequest.Parser));
+    static readonly grpc::Marshaller<global::StreamVideoService.VideoFrameRequest> __Marshaller_StreamVideoService_VideoFrameRequest = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::StreamVideoService.VideoFrameRequest.Parser));
     [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
-    static readonly grpc::Marshaller<global::StreamVideoService.VideoFrameResponse> __Marshaller_VideoFrameResponse = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::StreamVideoService.VideoFrameResponse.Parser));
+    static readonly grpc::Marshaller<global::StreamVideoService.VideoFrameResponse> __Marshaller_StreamVideoService_VideoFrameResponse = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::StreamVideoService.VideoFrameResponse.Parser));
 
     [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
     static readonly grpc::Method<global::StreamVideoService.VideoFrameRequest, global::StreamVideoService.VideoFrameResponse> __Method_UploadVideoFrame = new grpc::Method<global::StreamVideoService.VideoFrameRequest, global::StreamVideoService.VideoFrameResponse>(
         grpc::MethodType.Unary,
         __ServiceName,
         "UploadVideoFrame",
-        __Marshaller_VideoFrameRequest,
-        __Marshaller_VideoFrameResponse);
+        __Marshaller_StreamVideoService_VideoFrameRequest,
+        __Marshaller_StreamVideoService_VideoFrameResponse);
 
     /// <summary>Service descriptor</summary>
     public static global::Google.Protobuf.Reflection.ServiceDescriptor Descriptor
