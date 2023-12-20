@@ -31,7 +31,7 @@ public class GrpcVideoCapture : MonoBehaviour
         texture = new Texture2D(Screen.width, Screen.height, TextureFormat.RGB24, false);
     }
 
-    private void Update()
+    private async void Update()
     {
         // Set target texture once
         targetCamera.targetTexture = renderTexture;
@@ -45,7 +45,7 @@ public class GrpcVideoCapture : MonoBehaviour
         var byteString = ByteString.CopyFrom(imageBytes);
         // Send video frame to gRPC server
         var request = new VideoFrameRequest { Chunk = byteString };
-        var response = client.UploadVideoFrame(request);
+        var response = await client.UploadVideoFrameAsync(request);
         // Reset camera settings
         targetCamera.targetTexture = null;
         RenderTexture.active = null;
