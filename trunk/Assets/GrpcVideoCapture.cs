@@ -12,8 +12,7 @@ public class GrpcVideoCapture : MonoBehaviour
     private Camera targetCamera;
     private GrpcChannel channel;
     private Video.VideoClient client;
-
-    private RenderTexture renderTexture;
+    private RenderTexture targetTexture;
     private Texture2D texture;
 
     private void Start()
@@ -27,17 +26,18 @@ public class GrpcVideoCapture : MonoBehaviour
         client = new Video.VideoClient(channel);
         // create camera and texture object
         targetCamera = GetComponent<Camera>();
-        renderTexture = new RenderTexture(Screen.width, Screen.height, 24);
+        targetTexture = new RenderTexture(Screen.width, Screen.height, 24);
         texture = new Texture2D(Screen.width, Screen.height, TextureFormat.RGB24, false);
     }
 
     private async void Update()
     {
         // Set target texture once
-        targetCamera.targetTexture = renderTexture;
+        targetCamera.targetTexture = targetTexture;
         targetCamera.Render();
         // Read pixels directly into the existing texture
-        RenderTexture.active = renderTexture;
+        var currentRT = RenderTexture.active;
+        RenderTexture.active = targetTexture;
         texture.ReadPixels(new Rect(0, 0, Screen.width, Screen.height), 0, 0);
         texture.Apply();
         // Convert the Texture2D to ByteString
@@ -47,12 +47,12 @@ public class GrpcVideoCapture : MonoBehaviour
         var request = new VideoFrameRequest { Chunk = byteString };
         var response = await client.UploadVideoFrameAsync(request);
         // Reset camera settings
+        RenderTexture.active = currentRT;
         targetCamera.targetTexture = null;
-        RenderTexture.active = null;
     }
     private void OnDestroy()
     {
         channel?.ShutdownAsync().Wait();
-        Destroy(renderTexture);
+        Destroy(targetTexture);
     }
 }
