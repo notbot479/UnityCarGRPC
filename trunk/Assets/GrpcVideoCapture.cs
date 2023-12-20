@@ -13,7 +13,10 @@ public class GrpcVideoCapture : MonoBehaviour
     private GrpcChannel channel;
     private Video.VideoClient client;
 
-    void Start()
+    private RenderTexture renderTexture;
+    private Texture2D texture;
+
+    private void Start()
     {
         // create grpc channel and client
         channel = GrpcChannel.ForAddress("http://localhost:50051", new GrpcChannelOptions
@@ -22,38 +25,34 @@ public class GrpcVideoCapture : MonoBehaviour
             DisposeHttpClient = true
         });
         client = new Video.VideoClient(channel);
-        // grab game object
-        targetCamera = gameObject.GetComponent<Camera>();
+        // create camera and texture object
+        targetCamera = GetComponent<Camera>();
+        renderTexture = new RenderTexture(Screen.width, Screen.height, 24);
+        texture = new Texture2D(Screen.width, Screen.height, TextureFormat.RGB24, false);
     }
-    async void Update()
+
+    private void Update()
     {
-        RenderTexture renderTexture = new RenderTexture(Screen.width, Screen.height, 24);
+        // Set target texture once
         targetCamera.targetTexture = renderTexture;
-        
-        // Create a new Texture2D and read the RenderTexture into it
-        Texture2D texture = new Texture2D(Screen.width, Screen.height, TextureFormat.RGB24, false);
         targetCamera.Render();
+        // Read pixels directly into the existing texture
         RenderTexture.active = renderTexture;
         texture.ReadPixels(new Rect(0, 0, Screen.width, Screen.height), 0, 0);
         texture.Apply();
-        
-        // Convert the Texture2D to byteString
-        byte[] imageBytes = texture.EncodeToJPG();
+        // Convert the Texture2D to ByteString
+        byte[] imageBytes = texture.EncodeToPNG();
         var byteString = ByteString.CopyFrom(imageBytes);
-
         // Send video frame to gRPC server
         var request = new VideoFrameRequest { Chunk = byteString };
-        var responce = await client.UploadVideoFrameAsync(request);
-        Debug.Log(responce);
-
+        var response = client.UploadVideoFrame(request);
         // Reset camera settings
         targetCamera.targetTexture = null;
         RenderTexture.active = null;
-        Destroy(renderTexture);
     }
-
-    void OnDestroy()
+    private void OnDestroy()
     {
         channel?.ShutdownAsync().Wait();
+        Destroy(renderTexture);
     }
 }
