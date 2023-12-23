@@ -1529,6 +1529,11 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 2784508645171136991}
     m_Modifications:
+    - target: {fileID: 144536842755802621, guid: 2dc3bc6408879c643a8fbbd10c610c0a,
+        type: 3}
+      propertyPath: m_Name
+      value: SensorFrontRight
+      objectReference: {fileID: 0}
     - target: {fileID: 5204572817926195928, guid: 2dc3bc6408879c643a8fbbd10c610c0a,
         type: 3}
       propertyPath: m_Name
@@ -1609,6 +1614,11 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 2784508645171136991}
     m_Modifications:
+    - target: {fileID: 144536842755802621, guid: 2dc3bc6408879c643a8fbbd10c610c0a,
+        type: 3}
+      propertyPath: m_Name
+      value: SensorFrontLeft
+      objectReference: {fileID: 0}
     - target: {fileID: 5204572817926195928, guid: 2dc3bc6408879c643a8fbbd10c610c0a,
         type: 3}
       propertyPath: m_Name
@@ -1689,6 +1699,11 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 6192397976345339798}
     m_Modifications:
+    - target: {fileID: 144536842755802621, guid: 2dc3bc6408879c643a8fbbd10c610c0a,
+        type: 3}
+      propertyPath: m_Name
+      value: SensorBackLeft
+      objectReference: {fileID: 0}
     - target: {fileID: 5204572817926195928, guid: 2dc3bc6408879c643a8fbbd10c610c0a,
         type: 3}
       propertyPath: m_Name
@@ -1769,6 +1784,11 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 2784508645171136991}
     m_Modifications:
+    - target: {fileID: 144536842755802621, guid: 2dc3bc6408879c643a8fbbd10c610c0a,
+        type: 3}
+      propertyPath: m_Name
+      value: SensorFront
+      objectReference: {fileID: 0}
     - target: {fileID: 5204572817926195928, guid: 2dc3bc6408879c643a8fbbd10c610c0a,
         type: 3}
       propertyPath: m_Name
@@ -1849,6 +1869,11 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 6192397976345339798}
     m_Modifications:
+    - target: {fileID: 144536842755802621, guid: 2dc3bc6408879c643a8fbbd10c610c0a,
+        type: 3}
+      propertyPath: m_Name
+      value: SensorBack
+      objectReference: {fileID: 0}
     - target: {fileID: 5204572817926195928, guid: 2dc3bc6408879c643a8fbbd10c610c0a,
         type: 3}
       propertyPath: m_Name
@@ -1929,6 +1954,11 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 6192397976345339798}
     m_Modifications:
+    - target: {fileID: 144536842755802621, guid: 2dc3bc6408879c643a8fbbd10c610c0a,
+        type: 3}
+      propertyPath: m_Name
+      value: SensorBackRight
+      objectReference: {fileID: 0}
     - target: {fileID: 5204572817926195928, guid: 2dc3bc6408879c643a8fbbd10c610c0a,
         type: 3}
       propertyPath: m_Name

@@ -6,8 +6,7 @@ public class RaySensor : MonoBehaviour
     public string sensorName = "Sensor";
     public Color rayColor = Color.blue;
     public bool sensorShow = true;
-
-    void Update()
+    public float GetDistanceToTarget()
     {
         // init ray
         var origin = transform.position;
@@ -22,6 +21,7 @@ public class RaySensor : MonoBehaviour
             distanceToTarget = hit.distance; 
         }
         //Debug.Log("["+sensorName+"] Distance: " + distanceToTarget.ToString());
+        return distanceToTarget;
     }
 
 }
