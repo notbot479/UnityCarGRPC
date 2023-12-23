@@ -60,10 +60,10 @@
     <Compile Include="Assets\Scripts\WheelSet.cs" />
     <Compile Include="Assets\Protos\Greet.cs" />
     <Compile Include="Assets\Protos\Video.cs" />
-    <Compile Include="Assets\RaySensor.cs" />
+    <Compile Include="Assets\Scripts\RaySensor.cs" />
     <Compile Include="Assets\Protos\GreetGrpc.cs" />
-    <Compile Include="Assets\CarControllerAdvanced.cs" />
-    <Compile Include="Assets\GrpcVideoCapture.cs" />
+    <Compile Include="Assets\Scripts\CarControllerAdvanced.cs" />
+    <Compile Include="Assets\Scripts\GrpcVideoCapture.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\Google.Protobuf\lib\net45\Google.Protobuf.dll" />
