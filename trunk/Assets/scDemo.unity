@@ -302,6 +302,16 @@ PrefabInstance:
       propertyPath: m_Name
       value: Car
       objectReference: {fileID: 0}
+    - target: {fileID: 3517380462455228018, guid: 8b77988e159aa3dbdaf6d179e3e11039,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4512268574806864641, guid: 8b77988e159aa3dbdaf6d179e3e11039,
+        type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -1.834
+      objectReference: {fileID: 0}
     - target: {fileID: 4603575287042464009, guid: 8b77988e159aa3dbdaf6d179e3e11039,
         type: 3}
       propertyPath: m_RootOrder
@@ -359,21 +369,6 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 8b77988e159aa3dbdaf6d179e3e11039, type: 3}
---- !u!114 &508332980
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1075277722}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8c503ab53f9df2e6dbec6e10e95eeee3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  sensorLength: 10
-  sensorSpread: 30
-  rayColor: {r: 1, g: 0, b: 0, a: 1}
 --- !u!1 &520914341
 GameObject:
   m_ObjectHideFlags: 0
@@ -1316,12 +1311,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b736777c62db687a2a2182a0a9dd2bd5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!1 &1075277722 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 7171489204455497880, guid: 8b77988e159aa3dbdaf6d179e3e11039,
-    type: 3}
-  m_PrefabInstance: {fileID: 508332978}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1075406119
 GameObject:
   m_ObjectHideFlags: 0

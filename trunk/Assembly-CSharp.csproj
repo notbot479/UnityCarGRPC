@@ -60,6 +60,7 @@
     <Compile Include="Assets\Scripts\WheelSet.cs" />
     <Compile Include="Assets\Protos\Greet.cs" />
     <Compile Include="Assets\Protos\Video.cs" />
+    <Compile Include="Assets\RaySensor.cs" />
     <Compile Include="Assets\Protos\GreetGrpc.cs" />
     <Compile Include="Assets\CarControllerAdvanced.cs" />
     <Compile Include="Assets\GrpcVideoCapture.cs" />
