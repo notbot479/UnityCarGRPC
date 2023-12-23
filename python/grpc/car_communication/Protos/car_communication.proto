@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package CarCommunicationApp;
+
+message SensorsData {
+  float front_left_distance = 1;
+  float front_distance = 2;
+  float front_right_distance = 3;
+  float back_left_distance = 4;
+  float back_distance = 5;
+  float back_right_distance = 6;
+}
+
+message Command {
+  enum Direction {
+    STOP = 0;    
+    LEFT = 1;
+    RIGHT = 2;
+    UP = 3;
+    DOWN = 4;
+  }
+
+  Direction direction = 1;
+}
+
+message ClientRequest {
+  bytes video_frame = 1;
+  SensorsData sensors_data = 2;
+}
+
+message ServerResponse {
+  Command command = 1;
+}
+
+service Communication {
+  rpc SendRequest(ClientRequest) returns (ServerResponse);
+}
