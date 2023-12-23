@@ -21,7 +21,7 @@ public class RaySensor : MonoBehaviour
         if (Physics.Raycast(ray,out hit, maxDistanceRaycast)) { 
             distanceToTarget = hit.distance; 
         }
-        Debug.Log("["+sensorName+"] Distance: " + distanceToTarget.ToString());
+        //Debug.Log("["+sensorName+"] Distance: " + distanceToTarget.ToString());
     }
 
 }
