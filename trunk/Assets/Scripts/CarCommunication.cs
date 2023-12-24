@@ -11,51 +11,60 @@ using CarCommunicationApp;
 
 public class CarCommunication : MonoBehaviour
 {
+    public bool sendRequestToServer = true;
+    
+    // grpc client and server
     private GrpcChannel channel;
     private Communication.CommunicationClient client;
-   
-    public GameObject RaySensors;
-    public Dictionary<string,float> distanceSensorsData;
+    // sensors & sensors data
+    private GameObject RaySensors;
+    private Dictionary<string,float> raySensorsData;
+    // camera & camera data
+    private GameObject CarCamera;
+    private byte[] videoFrame;
+    private ByteString videoFrameByteString;
 
-    public GameObject CarCamera;
-    public byte[] videoFrame;
-
-    void Start()
+    public void Start()
     {
         // create grpc channel and client
-        channel = GrpcChannel.ForAddress("http://localhost:50051", new GrpcChannelOptions
-        {
-            HttpHandler = new YetAnotherHttpHandler { Http2Only = true },
-            DisposeHttpClient = true
-        });
-        client = new Communication.CommunicationClient(channel);
+        if (sendRequestToServer){
+            channel = GrpcChannel.ForAddress("http://localhost:50051", new GrpcChannelOptions
+            {
+                HttpHandler = new YetAnotherHttpHandler { Http2Only = true },
+                DisposeHttpClient = true
+            });
+            client = new Communication.CommunicationClient(channel);
+        }
+        // init camera and distance sensors
+        RaySensors = GameObject.Find("RaySensors");
+        CarCamera = GameObject.Find("Camera");
     }
 
-    async void Update()
+    public async void LateUpdate()
     {
-        // get data from sensors
-        GameObject RaySensors = GameObject.Find("RaySensors");
-        distanceSensorsData = RaySensors.GetComponent<DistanceSensorsData>().GetSensorsData();
-        // get picture from camera
-        GameObject CarCamera = GameObject.Find("Camera");
+        // get data from sensors and camera
+        raySensorsData = RaySensors.GetComponent<RaySensorsData>().GetSensorsData();
         videoFrame = CarCamera.GetComponent<CameraData>().getFrameInBytes();
-        var videoFrameByteString = ByteString.CopyFrom(videoFrame);
-        // send data using grpc
+        videoFrameByteString = ByteString.CopyFrom(videoFrame);
+        // create grpc request
+        if (!sendRequestToServer) { return; }
         var request = new ClientRequest
         {
             VideoFrame = videoFrameByteString,
             SensorsData = new SensorsData
             {
-                FrontLeftDistance = 1.0f,
-                FrontDistance = 2.0f,
-                FrontRightDistance = 3.0f,
-                BackLeftDistance = 4.0f,
-                BackDistance = 5.0f,
-                BackRightDistance = 6.0f
+                FrontLeftDistance = raySensorsData["FrontLeftDistance"],
+                FrontDistance = raySensorsData["FrontDistance"],
+                FrontRightDistance = raySensorsData["FrontRightDistance"],
+                BackLeftDistance = raySensorsData["BackLeftDistance"],
+                BackDistance = raySensorsData["BackDistance"],
+                BackRightDistance = raySensorsData["BackRightDistance"],
             },
         };
+        // send data using grpc and receive command for car
         var response = await client.SendRequestAsync(request);
-        Debug.Log(response);
+        string command = response.Command.Direction.ToString();
+        // move car to some direction based on command from server
+        Debug.Log(command);
     }
-
 }

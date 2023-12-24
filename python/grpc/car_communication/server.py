@@ -6,6 +6,7 @@ import cv2
 
 from Protos import car_communication_pb2
 from Protos import car_communication_pb2_grpc
+from config import *
 
 FRAMES = []
 CAR_COMMAND_DIRECTIONS = {
@@ -46,30 +47,31 @@ class CommunicationServicer(car_communication_pb2_grpc.CommunicationServicer):
         FRAMES.append(frame)
 
     def SendRequest(self, request, context): #pyright: ignore
+        # receive data from client
         chunk: bytes = request.video_frame
         sensors_data = request.sensors_data
-        print(f"Processing video chunk of size: {len(chunk)} bytes")
-        print(sensors_data)
         frame = convert_bytes_to_frame(chunk)
-        self.add_frame_to_display(frame)
+        # show video from client
+        if SHOW_VIDEO: self.add_frame_to_display(frame)
+        # dqn / show received data
+        print(f"Processing video chunk: {len(chunk)} bytes")
+        print(sensors_data)
+        # return data from server
         direction = self.get_random_direction()
         return self.send_response(direction)
 
 def serve():
-    port = 50051
-    max_workers = 24
-    with futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+    with futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
         # processing video
-        executor.submit(display_stream_video) 
-
-        # grpc server
+        if SHOW_VIDEO: executor.submit(display_stream_video) 
+        # init grpc server
         server = grpc.server(executor)
         car_communication_pb2_grpc.add_CommunicationServicer_to_server(
                 CommunicationServicer(), 
                 server,
                 )
-        server.add_insecure_port(f'[::]:{port}')
-        print(f'Start server on port: {port}')
+        server.add_insecure_port(f'[::]:{PORT}')
+        print(f'Start server on port: {PORT}')
         server.start()
         server.wait_for_termination()
 

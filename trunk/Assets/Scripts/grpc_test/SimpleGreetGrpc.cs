@@ -28,9 +28,9 @@ public class CarGrpc : MonoBehaviour
         Debug.Log(reply.Message);
     }
 
-    async void Update()
+    void Update()
     {
-        //await client.SayHelloAsync(new HelloRequest { Name = "Update" });
+        //await client.SayHello(new HelloRequest { Name = "Update" });
     }
 
     // Don't forget to clean up the channel when the MonoBehaviour is destroyed

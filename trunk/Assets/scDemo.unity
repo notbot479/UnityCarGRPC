@@ -1464,9 +1464,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0f2bb842f6e1ebb4b9efd4ffe6b6897e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  RaySensors: {fileID: 0}
-  CarCamera: {fileID: 0}
-  videoFrame: 
+  sendRequestToServer: 0
 --- !u!1 &1202454022
 GameObject:
   m_ObjectHideFlags: 0
@@ -2924,7 +2922,7 @@ GameObject:
     type: 3}
   m_PrefabInstance: {fileID: 508332978}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &2003266428
+--- !u!114 &2003266430
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -2933,6 +2931,6 @@ MonoBehaviour:
   m_GameObject: {fileID: 2003266426}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 42be4361aa53c8448894892b0b5a9127, type: 3}
+  m_Script: {fileID: 11500000, guid: e71cab90f0f75425a8f1f178f790d0c0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 

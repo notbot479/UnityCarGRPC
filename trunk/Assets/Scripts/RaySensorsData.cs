@@ -1,8 +1,8 @@
-using System.Collections;
 using System.Collections.Generic;
+using System.Collections;
 using UnityEngine;
 
-public class DistanceSensorsData : MonoBehaviour
+public class RaySensorsData : MonoBehaviour
 {
     private GameObject SensorFrontLeft;
     private GameObject SensorFront;
@@ -32,12 +32,12 @@ public class DistanceSensorsData : MonoBehaviour
         float back_right_distance = SensorBackRight.GetComponent<RaySensor>().GetDistanceToTarget();
         // convert to dict
         Dictionary<string, float> SensorsDataDict = new Dictionary<string, float>();
-        SensorsDataDict.Add("front_left_distance", front_left_distance);
-        SensorsDataDict.Add("front_distance", front_distance);
-        SensorsDataDict.Add("front_right_distance", front_right_distance);
-        SensorsDataDict.Add("back_left_distance", back_left_distance);
-        SensorsDataDict.Add("back_distance", front_distance);
-        SensorsDataDict.Add("back_right_distance", front_right_distance);
+        SensorsDataDict.Add("FrontLeftDistance", front_left_distance);
+        SensorsDataDict.Add("FrontDistance", front_distance);
+        SensorsDataDict.Add("FrontRightDistance", front_right_distance);
+        SensorsDataDict.Add("BackLeftDistance", back_left_distance);
+        SensorsDataDict.Add("BackDistance", front_distance);
+        SensorsDataDict.Add("BackRightDistance", front_right_distance);
         return SensorsDataDict;
     }
 }
