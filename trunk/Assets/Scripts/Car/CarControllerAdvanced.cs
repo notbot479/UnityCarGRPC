@@ -3,6 +3,9 @@ using System.Collections;
 using System.Collections.Generic;
 
 public class CarControllerAdvanced : MonoBehaviour {
+    private string UserMoveCommand = "_UserInput";
+
+    public bool moveCarByUser = true;
 
     public WheelSet frontSet;
     public WheelSet backSet;
@@ -28,7 +31,6 @@ public class CarControllerAdvanced : MonoBehaviour {
 	void Start() {
         // Set centre of mass to what is defined in the inspector
         GetComponent<Rigidbody>().centerOfMass += objectCentreOfMass;
-
         // Setup the wheel sets
         frontSet.Init();
         backSet.Init();
@@ -46,11 +48,39 @@ public class CarControllerAdvanced : MonoBehaviour {
         }
     }
 
-    void Update() {
+    void Update(){
+        if (!moveCarByUser) { return; }
+        string command = UserMoveCommand;
+        CarMove(command);
+    }
+
+    public void CarMove(string command) {
         // Retrieve Input
-        steer = Mathf.Clamp(Input.GetAxis("Horizontal"), -1, 1);
-        forward = Mathf.Clamp(Input.GetAxis("Vertical"), 1, 0);
-        back = -1 * Mathf.Clamp(Input.GetAxis("Vertical"), 0, -1);
+        if (command == UserMoveCommand) { 
+            steer = Mathf.Clamp(Input.GetAxis("Horizontal"), -1, 1);
+            forward = Mathf.Clamp(Input.GetAxis("Vertical"), 1, 0);
+            back = -1 * Mathf.Clamp(Input.GetAxis("Vertical"), 0, -1);
+        } else if (command == "Up") {
+            steer = 0.0f;
+            forward = -1.0f;
+            back = 0.0f;
+        } else if (command == "Down") {
+            steer = 0.0f;
+            forward = 1.0f;
+            back = 0.0f;
+        } else if (command == "Left") {
+            steer = -1.0f;
+            forward = -1.0f;
+            back = 0.0f;
+        } else if (command == "Right") {
+            steer = 1.0f;
+            forward = -1.0f;
+            back = 0.0f;
+        } else if (command == "Stop") {
+            steer = 0.0f;
+            forward = 0.0f;
+            back = -1.0f;
+        }
 
         frontSet.UpdateWheels();
         backSet.UpdateWheels();

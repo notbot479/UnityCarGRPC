@@ -302,6 +302,16 @@ PrefabInstance:
       propertyPath: m_Name
       value: Car
       objectReference: {fileID: 0}
+    - target: {fileID: 1997731620574122776, guid: 8b77988e159aa3dbdaf6d179e3e11039,
+        type: 3}
+      propertyPath: debugDisplay
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1997731620574122776, guid: 8b77988e159aa3dbdaf6d179e3e11039,
+        type: 3}
+      propertyPath: moveCarByUser
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 3517380462455228018, guid: 8b77988e159aa3dbdaf6d179e3e11039,
         type: 3}
       propertyPath: m_Enabled
@@ -1464,7 +1474,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0f2bb842f6e1ebb4b9efd4ffe6b6897e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  sendRequestToServer: 0
+  sendRequestToServer: 1
+  moveCarByAI: 1
 --- !u!1 &1202454022
 GameObject:
   m_ObjectHideFlags: 0
