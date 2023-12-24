@@ -652,7 +652,7 @@ MonoBehaviour:
   motorMax: 200
   brakeMax: 800
   objectCentreOfMass: {x: 0, y: 0, z: 0}
-  debugDisplay: 1
+  debugDisplay: 0
 --- !u!1 &2111315632906058467
 GameObject:
   m_ObjectHideFlags: 0

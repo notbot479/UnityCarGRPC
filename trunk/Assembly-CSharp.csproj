@@ -36,20 +36,20 @@
     <ImplicitlyExpandDesignTimeFacades>false</ImplicitlyExpandDesignTimeFacades>
   </PropertyGroup>
   <ItemGroup>
-     <Compile Include="Assets/Scripts/CameraData.cs" />
+     <Compile Include="Assets/Scripts/CarSensors/CameraData.cs" />
      <Compile Include="Assets/Protos/VideoGrpc.cs" />
      <Compile Include="Assets/Scripts/Car/WheelSet.cs" />
      <Compile Include="Assets/Protos/CarCommunicationGrpc.cs" />
      <Compile Include="Assets/Protos/Greet.cs" />
      <Compile Include="Assets/Protos/Video.cs" />
-     <Compile Include="Assets/Scripts/RaySensor.cs" />
+     <Compile Include="Assets/Scripts/CarSensors/RaySensor.cs" />
      <Compile Include="Assets/Scripts/CarCommunication.cs" />
-     <Compile Include="Assets/Scripts/grpc_test/SimpleGreetGrpc.cs" />
+     <Compile Include="Assets/Scripts/GrpcTest/SimpleGreetGrpc.cs" />
      <Compile Include="Assets/Protos/GreetGrpc.cs" />
+     <Compile Include="Assets/Scripts/CarSensors/RaySensorsData.cs" />
      <Compile Include="Assets/Scripts/Car/CarControllerAdvanced.cs" />
-     <Compile Include="Assets/Scripts/grpc_test/GrpcVideoCapture.cs" />
+     <Compile Include="Assets/Scripts/GrpcTest/GrpcVideoCapture.cs" />
      <Compile Include="Assets/Protos/CarCommunication.cs" />
-     <Compile Include="Assets/Scripts/RaySensorsData.cs" />
      <None Include="Assets/Google.Protobuf/lib/net45/Google.Protobuf.xml" />
     <Reference Include="UnityEngine">
         <HintPath>/home/max/Unity/Hub/Editor/2021.3.6f1/Editor/Data/Managed/UnityEngine/UnityEngine.dll</HintPath>

@@ -12,10 +12,13 @@ using CarCommunicationApp;
 public class CarCommunication : MonoBehaviour
 {
     public bool sendRequestToServer = true;
+    public bool moveCarByAI = true;
     
     // grpc client and server
     private GrpcChannel channel;
     private Communication.CommunicationClient client;
+    // car object
+    private GameObject car;
     // sensors & sensors data
     private GameObject RaySensors;
     private Dictionary<string,float> raySensorsData;
@@ -35,12 +38,14 @@ public class CarCommunication : MonoBehaviour
             });
             client = new Communication.CommunicationClient(channel);
         }
+        // init car
+        car =  GameObject.Find("Car");
         // init camera and distance sensors
         RaySensors = GameObject.Find("RaySensors");
         CarCamera = GameObject.Find("Camera");
     }
 
-    public async void LateUpdate()
+    public async void Update()
     {
         // get data from sensors and camera
         raySensorsData = RaySensors.GetComponent<RaySensorsData>().GetSensorsData();
@@ -65,6 +70,12 @@ public class CarCommunication : MonoBehaviour
         var response = await client.SendRequestAsync(request);
         string command = response.Command.Direction.ToString();
         // move car to some direction based on command from server
-        Debug.Log(command);
+        if (!moveCarByAI) { return; }
+        try{
+            car.GetComponent<CarControllerAdvanced>().CarMove(command);
+        } 
+        catch{
+            Debug.Log("Simulation is stopped. Ignore command from server");
+        }
     }
 }
