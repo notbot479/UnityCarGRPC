@@ -49,7 +49,7 @@ public class CarCommunication : MonoBehaviour
         CarCamera = GameObject.Find("Camera");
     }
 
-    public async void Update()
+    public void FixedUpdate()
     {
         // get data from sensors and camera
         raySensorsData = RaySensors.GetComponent<RaySensorsData>().GetSensorsData();
@@ -75,7 +75,7 @@ public class CarCommunication : MonoBehaviour
         // send data using grpc and receive command for car
         try
         {
-            var response = await client.SendRequestAsync(request);
+            var response = client.SendRequest(request);
             command = response.Command.Direction.ToString();
             serverConnectionError = false;
         }
@@ -96,5 +96,9 @@ public class CarCommunication : MonoBehaviour
         catch{
             Debug.Log("Simulation is stopped. Ignore command from server");
         }
+    }
+    private void OnDestroy()
+    {
+        channel?.ShutdownAsync().Wait();
     }
 }

@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 
 public class CarControllerAdvanced : MonoBehaviour {
     private string UserMoveCommand = "_UserInput";
@@ -107,7 +108,6 @@ public class CarControllerAdvanced : MonoBehaviour {
 
 	// Update is called once per frame
 	void FixedUpdate() {
-
         // Throttle
         frontSet.Throttle(Side.left, motor, motorMax);
         frontSet.Throttle(Side.right, motor, motorMax);
