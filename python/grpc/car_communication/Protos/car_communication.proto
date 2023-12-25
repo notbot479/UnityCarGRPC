@@ -26,6 +26,7 @@ message Command {
 message ClientRequest {
   bytes video_frame = 1;
   SensorsData sensors_data = 2;
+  bool car_collide_obstacle = 3;
 }
 
 message ServerResponse {

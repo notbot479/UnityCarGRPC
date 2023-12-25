@@ -32,19 +32,19 @@ namespace CarCommunicationApp {
             "ZRgGIAEoAiKCAQoHQ29tbWFuZBI5CglkaXJlY3Rpb24YASABKA4yJi5DYXJD",
             "b21tdW5pY2F0aW9uQXBwLkNvbW1hbmQuRGlyZWN0aW9uIjwKCURpcmVjdGlv",
             "bhIICgRTVE9QEAASCAoETEVGVBABEgkKBVJJR0hUEAISBgoCVVAQAxIICgRE",
-            "T1dOEAQiXAoNQ2xpZW50UmVxdWVzdBITCgt2aWRlb19mcmFtZRgBIAEoDBI2",
+            "T1dOEAQiegoNQ2xpZW50UmVxdWVzdBITCgt2aWRlb19mcmFtZRgBIAEoDBI2",
             "CgxzZW5zb3JzX2RhdGEYAiABKAsyIC5DYXJDb21tdW5pY2F0aW9uQXBwLlNl",
-            "bnNvcnNEYXRhIj8KDlNlcnZlclJlc3BvbnNlEi0KB2NvbW1hbmQYASABKAsy",
-            "HC5DYXJDb21tdW5pY2F0aW9uQXBwLkNvbW1hbmQyZwoNQ29tbXVuaWNhdGlv",
-            "bhJWCgtTZW5kUmVxdWVzdBIiLkNhckNvbW11bmljYXRpb25BcHAuQ2xpZW50",
-            "UmVxdWVzdBojLkNhckNvbW11bmljYXRpb25BcHAuU2VydmVyUmVzcG9uc2Vi",
-            "BnByb3RvMw=="));
+            "bnNvcnNEYXRhEhwKFGNhcl9jb2xsaWRlX29ic3RhY2xlGAMgASgIIj8KDlNl",
+            "cnZlclJlc3BvbnNlEi0KB2NvbW1hbmQYASABKAsyHC5DYXJDb21tdW5pY2F0",
+            "aW9uQXBwLkNvbW1hbmQyZwoNQ29tbXVuaWNhdGlvbhJWCgtTZW5kUmVxdWVz",
+            "dBIiLkNhckNvbW11bmljYXRpb25BcHAuQ2xpZW50UmVxdWVzdBojLkNhckNv",
+            "bW11bmljYXRpb25BcHAuU2VydmVyUmVzcG9uc2ViBnByb3RvMw=="));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { },
           new pbr::GeneratedClrTypeInfo(null, null, new pbr::GeneratedClrTypeInfo[] {
             new pbr::GeneratedClrTypeInfo(typeof(global::CarCommunicationApp.SensorsData), global::CarCommunicationApp.SensorsData.Parser, new[]{ "FrontLeftDistance", "FrontDistance", "FrontRightDistance", "BackLeftDistance", "BackDistance", "BackRightDistance" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::CarCommunicationApp.Command), global::CarCommunicationApp.Command.Parser, new[]{ "Direction" }, null, new[]{ typeof(global::CarCommunicationApp.Command.Types.Direction) }, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::CarCommunicationApp.ClientRequest), global::CarCommunicationApp.ClientRequest.Parser, new[]{ "VideoFrame", "SensorsData" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::CarCommunicationApp.ClientRequest), global::CarCommunicationApp.ClientRequest.Parser, new[]{ "VideoFrame", "SensorsData", "CarCollideObstacle" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::CarCommunicationApp.ServerResponse), global::CarCommunicationApp.ServerResponse.Parser, new[]{ "Command" }, null, null, null, null)
           }));
     }
@@ -670,6 +670,7 @@ namespace CarCommunicationApp {
     public ClientRequest(ClientRequest other) : this() {
       videoFrame_ = other.videoFrame_;
       sensorsData_ = other.sensorsData_ != null ? other.sensorsData_.Clone() : null;
+      carCollideObstacle_ = other.carCollideObstacle_;
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
 
@@ -703,6 +704,18 @@ namespace CarCommunicationApp {
       }
     }
 
+    /// <summary>Field number for the "car_collide_obstacle" field.</summary>
+    public const int CarCollideObstacleFieldNumber = 3;
+    private bool carCollideObstacle_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public bool CarCollideObstacle {
+      get { return carCollideObstacle_; }
+      set {
+        carCollideObstacle_ = value;
+      }
+    }
+
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public override bool Equals(object other) {
@@ -720,6 +733,7 @@ namespace CarCommunicationApp {
       }
       if (VideoFrame != other.VideoFrame) return false;
       if (!object.Equals(SensorsData, other.SensorsData)) return false;
+      if (CarCollideObstacle != other.CarCollideObstacle) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
 
@@ -729,6 +743,7 @@ namespace CarCommunicationApp {
       int hash = 1;
       if (VideoFrame.Length != 0) hash ^= VideoFrame.GetHashCode();
       if (sensorsData_ != null) hash ^= SensorsData.GetHashCode();
+      if (CarCollideObstacle != false) hash ^= CarCollideObstacle.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
       }
@@ -755,6 +770,10 @@ namespace CarCommunicationApp {
         output.WriteRawTag(18);
         output.WriteMessage(SensorsData);
       }
+      if (CarCollideObstacle != false) {
+        output.WriteRawTag(24);
+        output.WriteBool(CarCollideObstacle);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
       }
@@ -773,6 +792,10 @@ namespace CarCommunicationApp {
         output.WriteRawTag(18);
         output.WriteMessage(SensorsData);
       }
+      if (CarCollideObstacle != false) {
+        output.WriteRawTag(24);
+        output.WriteBool(CarCollideObstacle);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(ref output);
       }
@@ -788,6 +811,9 @@ namespace CarCommunicationApp {
       }
       if (sensorsData_ != null) {
         size += 1 + pb::CodedOutputStream.ComputeMessageSize(SensorsData);
+      }
+      if (CarCollideObstacle != false) {
+        size += 1 + 1;
       }
       if (_unknownFields != null) {
         size += _unknownFields.CalculateSize();
@@ -809,6 +835,9 @@ namespace CarCommunicationApp {
           SensorsData = new global::CarCommunicationApp.SensorsData();
         }
         SensorsData.MergeFrom(other.SensorsData);
+      }
+      if (other.CarCollideObstacle != false) {
+        CarCollideObstacle = other.CarCollideObstacle;
       }
       _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
     }
@@ -836,6 +865,10 @@ namespace CarCommunicationApp {
             input.ReadMessage(SensorsData);
             break;
           }
+          case 24: {
+            CarCollideObstacle = input.ReadBool();
+            break;
+          }
         }
       }
     #endif
@@ -860,6 +893,10 @@ namespace CarCommunicationApp {
               SensorsData = new global::CarCommunicationApp.SensorsData();
             }
             input.ReadMessage(SensorsData);
+            break;
+          }
+          case 24: {
+            CarCollideObstacle = input.ReadBool();
             break;
           }
         }

@@ -70,6 +70,7 @@
     <Compile Include="Assets\Scripts\Car\CarControllerAdvanced.cs" />
     <Compile Include="Assets\Scripts\GrpcTest\GrpcVideoCapture.cs" />
     <Compile Include="Assets\Protos\CarCommunication.cs" />
+    <Compile Include="Assets\Scripts\CarSensors\CarCollisionData.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\Google.Protobuf\lib\net45\Google.Protobuf.dll" />

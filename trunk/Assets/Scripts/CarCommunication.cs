@@ -17,8 +17,9 @@ public class CarCommunication : MonoBehaviour
     // grpc client and server
     private GrpcChannel channel;
     private Communication.CommunicationClient client;
-    // car object
+    // car & car data
     private GameObject car;
+    private bool carCollideObstacle;
     // sensors & sensors data
     private GameObject RaySensors;
     private Dictionary<string,float> raySensorsData;
@@ -51,6 +52,7 @@ public class CarCommunication : MonoBehaviour
         raySensorsData = RaySensors.GetComponent<RaySensorsData>().GetSensorsData();
         videoFrame = CarCamera.GetComponent<CameraData>().getFrameInBytes();
         videoFrameByteString = ByteString.CopyFrom(videoFrame);
+        carCollideObstacle = car.GetComponent<CarCollisionData>().isCollide;
         // create grpc request
         if (!sendRequestToServer) { return; }
         var request = new ClientRequest
@@ -65,6 +67,7 @@ public class CarCommunication : MonoBehaviour
                 BackDistance = raySensorsData["BackDistance"],
                 BackRightDistance = raySensorsData["BackRightDistance"],
             },
+            CarCollideObstacle = carCollideObstacle,
         };
         // send data using grpc and receive command for car
         var response = await client.SendRequestAsync(request);

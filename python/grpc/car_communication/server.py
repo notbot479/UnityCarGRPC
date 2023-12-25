@@ -50,11 +50,13 @@ class CommunicationServicer(car_communication_pb2_grpc.CommunicationServicer):
         # receive data from client
         chunk: bytes = request.video_frame
         sensors_data = request.sensors_data
+        car_collide_obstacle = int(request.car_collide_obstacle)
         frame = convert_bytes_to_frame(chunk)
         # show video from client
         if SHOW_VIDEO: self.add_frame_to_display(frame)
         # dqn / show received data
         print(f"Processing video chunk: {len(chunk)} bytes")
+        print(f"Car collision with obstacle: {car_collide_obstacle}")
         print(sensors_data)
         # return data from server
         direction = self.get_random_direction()

@@ -578,6 +578,7 @@ GameObject:
   - component: {fileID: 4603575287042464009}
   - component: {fileID: 4868613192897190602}
   - component: {fileID: 1997731620574122776}
+  - component: {fileID: 8902268117528618847}
   m_Layer: 0
   m_Name: Car
   m_TagString: Untagged
@@ -632,6 +633,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: aceb40efae6ce5475b3454f163dce3ef, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  moveCarByUser: 1
   frontSet:
     wheelLeftGo: {fileID: 213184775798002501}
     wheelLeftT: {fileID: 1461569638757572120}
@@ -653,6 +655,18 @@ MonoBehaviour:
   brakeMax: 800
   objectCentreOfMass: {x: 0, y: 0, z: 0}
   debugDisplay: 0
+--- !u!114 &8902268117528618847
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1436171544816285191}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 97f571d755151b245987109d99e295c7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &2111315632906058467
 GameObject:
   m_ObjectHideFlags: 0

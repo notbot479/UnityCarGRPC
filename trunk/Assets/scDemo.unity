@@ -1326,7 +1326,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 37e12e7f5be17ee4aa177bb0ace463ef, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  cameraFixedSize: 1200
+  cameraFixedSize: 64
 --- !u!1 &1075406119
 GameObject:
   m_ObjectHideFlags: 0
