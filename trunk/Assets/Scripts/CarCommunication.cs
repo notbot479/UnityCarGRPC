@@ -13,13 +13,16 @@ public class CarCommunication : MonoBehaviour
 {
     public bool sendRequestToServer = true;
     public bool moveCarByAI = true;
-    
+    public string serverApiUrl = "http://localhost:50051";
+    private bool serverConnectionError = false;
+
     // grpc client and server
     private GrpcChannel channel;
     private Communication.CommunicationClient client;
     // car & car data
     private GameObject car;
     private bool carCollideObstacle;
+    private string command;
     // sensors & sensors data
     private GameObject RaySensors;
     private Dictionary<string,float> raySensorsData;
@@ -32,7 +35,7 @@ public class CarCommunication : MonoBehaviour
     {
         // create grpc channel and client
         if (sendRequestToServer){
-            channel = GrpcChannel.ForAddress("http://localhost:50051", new GrpcChannelOptions
+            channel = GrpcChannel.ForAddress(serverApiUrl, new GrpcChannelOptions
             {
                 HttpHandler = new YetAnotherHttpHandler { Http2Only = true },
                 DisposeHttpClient = true
@@ -70,8 +73,21 @@ public class CarCommunication : MonoBehaviour
             CarCollideObstacle = carCollideObstacle,
         };
         // send data using grpc and receive command for car
-        var response = await client.SendRequestAsync(request);
-        string command = response.Command.Direction.ToString();
+        try
+        {
+            var response = await client.SendRequestAsync(request);
+            command = response.Command.Direction.ToString();
+            serverConnectionError = false;
+        }
+        catch
+        {
+            if (!serverConnectionError)
+            {
+                Debug.Log("Failed connect to server by url: " + serverApiUrl);
+                serverConnectionError = true;
+            }
+            return;
+        }
         // move car to some direction based on command from server
         if (!moveCarByAI) { return; }
         try{
