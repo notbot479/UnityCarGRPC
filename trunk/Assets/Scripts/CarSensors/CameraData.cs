@@ -2,6 +2,7 @@ using UnityEngine;
 
 public class CameraData : MonoBehaviour
 {
+    public int cameraFixedSize = 64;
     private Camera targetCamera;
     private RenderTexture targetTexture;
     private Texture2D texture;
@@ -9,8 +10,9 @@ public class CameraData : MonoBehaviour
     {
         // create camera and texture object
         targetCamera = GetComponent<Camera>();
-        targetTexture = new RenderTexture(Screen.width, Screen.height, 24);
-        texture = new Texture2D(Screen.width, Screen.height, TextureFormat.RGB24, false);
+        targetTexture = new RenderTexture(cameraFixedSize, cameraFixedSize, 24);
+        targetTexture.filterMode = FilterMode.Point; // not compress image
+        texture = new Texture2D(cameraFixedSize, cameraFixedSize, TextureFormat.RGB24, false);
     }
     public byte[] getFrameInBytes()
     {

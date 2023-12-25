@@ -2,7 +2,7 @@
 
 # TODO
 [dqn\_prepare]
-1. send small video from unity NxN (64x64)
+1. send small video from unity NxN (64x64) +
 2. send car collision data (bool)
 
 [dqn]
