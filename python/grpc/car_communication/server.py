@@ -1,4 +1,5 @@
 from concurrent import futures
+from collections import deque
 import numpy as np
 import random
 import grpc
@@ -43,6 +44,11 @@ def convert_bytes_to_frame(frame_bytes:bytes) -> np.ndarray:
     return frame
 
 class CommunicationServicer(car_communication_pb2_grpc.CommunicationServicer):
+    def __init__(self,*args,**kwargs) -> None:
+        self._car_collision_pool = deque(maxlen=5)
+        self._new_round_started = False
+        super().__init__(*args,**kwargs)
+
     def send_response(self,direction:str='stop') -> None:
         ud = CAR_COMMAND_DIRECTIONS.get(direction)
         direction = ud if ud else CAR_COMMAND_DIRECTIONS['stop']
@@ -51,7 +57,7 @@ class CommunicationServicer(car_communication_pb2_grpc.CommunicationServicer):
     
     def get_normalized_sensors_data(
             self, 
-            request_sensors_data:car_communication_pb2.SensorsData,
+            request_sensors_data:car_communication_pb2.SensorsData, #pyright:ignore
         ) -> tuple[float]:
         data = [
             request_sensors_data.front_left_distance,
@@ -65,11 +71,24 @@ class CommunicationServicer(car_communication_pb2_grpc.CommunicationServicer):
         data = [-1 if float(i) == float('inf') else float(i) for i in data]
         return tuple(data)
 
+    def start_new_round(self, car_collide_obstacle:int) -> bool:
+        self._car_collision_pool.append(car_collide_obstacle)
+        if car_collide_obstacle:
+            if not(self._new_round_started):
+                self._new_round_started = True
+                return True
+            return False
+        if self._new_round_started and not(all(self._car_collision_pool)):
+            self._new_round_started = False
+        return False
+
     def SendRequest(self, request, context): #pyright: ignore
         # receive data from client / normalize it
         frame = convert_bytes_to_frame(request.video_frame)
         sensors_data = self.get_normalized_sensors_data(request.sensors_data)
         car_collide_obstacle = int(request.car_collide_obstacle)
+        if self.start_new_round(car_collide_obstacle):
+            logger.warning('TODO dqn start new round')
         # show video from client
         if SHOW_VIDEO: add_frame_to_display(frame)
         # get command from dqn 

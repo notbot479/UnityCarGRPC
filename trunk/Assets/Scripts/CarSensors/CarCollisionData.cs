@@ -6,7 +6,7 @@ public class CarCollisionData : MonoBehaviour
 {
     public bool respawnCarOnHit = true;
     public bool isCollide = false;
-    // init car
+    // init car and spawn
     public GameObject car;
     public Transform spawnPoint;
 
