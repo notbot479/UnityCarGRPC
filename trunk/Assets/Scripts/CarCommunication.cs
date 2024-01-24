@@ -21,6 +21,7 @@ public class CarCommunication : MonoBehaviour
     private Communication.CommunicationClient client;
     // car & car data
     private GameObject car;
+    private GameObject carRouter;
     private bool carCollideObstacle;
     private string command;
     // sensors & sensors data
@@ -30,6 +31,10 @@ public class CarCommunication : MonoBehaviour
     private GameObject CarCamera;
     private byte[] videoFrame;
     private ByteString videoFrameByteString;
+    // router & router data
+    private GameObject Router;
+    private int routerID;
+    private double routerRSSI;
 
     public void Start()
     {
@@ -44,18 +49,23 @@ public class CarCommunication : MonoBehaviour
         }
         // init car
         car =  GameObject.Find("Car");
+        carRouter = GameObject.Find("CarRouter");
         // init camera and distance sensors
         RaySensors = GameObject.Find("RaySensors");
         CarCamera = GameObject.Find("Camera");
+        Router = GameObject.Find("Router (9)"); //TODO grab all routers
     }
 
-    public void FixedUpdate()
+    public void Update()
     {
         // get data from sensors and camera
         raySensorsData = RaySensors.GetComponent<RaySensorsData>().GetSensorsData();
         videoFrame = CarCamera.GetComponent<CameraData>().getFrameInBytes();
         videoFrameByteString = ByteString.CopyFrom(videoFrame);
         carCollideObstacle = car.GetComponent<CarCollisionData>().isCollide;
+        // TODO get data from routers
+        routerRSSI = Router.GetComponent<Router>().GetRSSI(carRouter.transform);
+
         // create grpc request
         if (!sendRequestToServer) { return; }
         var request = new ClientRequest
