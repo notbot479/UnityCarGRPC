@@ -1,18 +1,33 @@
-using System.Collections;
 using System.Collections.Generic;
+using System.Collections;
 using UnityEngine;
+using System;
 
 public class Router : MonoBehaviour
 {
-    // Start is called before the first frame update
-    void Start()
+    public int routerID = -1; // Unique router id, -1 -> not set
+    public float maxDistance = 20f; // Maximum receive distance in meters
+    public float maxRSSI = -100f; // Maximum receive router strength
+
+    public double GetRSSI(Transform targetTransform)
     {
-        
+        float distance = Vector3.Distance(transform.position, targetTransform.position);
+        if (distance <= maxDistance)
+        {
+            // Simulate RSSI based on distance
+            double rssi = CalculateRSSI(distance);
+            Debug.Log($"Router ID: {routerID}, Distance: {distance}, RSSI: {rssi}");
+            return rssi;
+        }
+        else
+        {
+            return float.NegativeInfinity;
+        }
     }
 
-    // Update is called once per frame
-    void Update()
+    double CalculateRSSI(float distance)
     {
-        
+        double rssi = maxRSSI - 10 * Math.Log10(distance / maxDistance);
+        return rssi;
     }
 }
