@@ -7,7 +7,9 @@ using Grpc.Core;
 
 using Google.Protobuf;
 using CarCommunicationApp;
-
+using System.Linq;
+using System;
+using Unity.VisualScripting;
 
 public class CarCommunication : MonoBehaviour
 {
@@ -32,7 +34,7 @@ public class CarCommunication : MonoBehaviour
     private byte[] videoFrame;
     private ByteString videoFrameByteString;
     // router & router data
-    private GameObject Router;
+    private GameObject[] routers;
     private int routerID;
     private double routerRSSI;
 
@@ -53,7 +55,7 @@ public class CarCommunication : MonoBehaviour
         // init camera and distance sensors
         RaySensors = GameObject.Find("RaySensors");
         CarCamera = GameObject.Find("Camera");
-        Router = GameObject.Find("Router (9)"); //TODO grab all routers
+        routers = GameObject.FindObjectsOfType<Router>().Select(x => x.gameObject).ToArray();
     }
 
     public void Update()
@@ -63,9 +65,16 @@ public class CarCommunication : MonoBehaviour
         videoFrame = CarCamera.GetComponent<CameraData>().getFrameInBytes();
         videoFrameByteString = ByteString.CopyFrom(videoFrame);
         carCollideObstacle = car.GetComponent<CarCollisionData>().isCollide;
-        // TODO get data from routers
-        routerRSSI = Router.GetComponent<Router>().GetRSSI(carRouter.transform);
-
+        //get data from routers
+        foreach (GameObject router in routers)
+        {
+            var r = router.GetComponent<Router>();
+            routerRSSI =  r.GetRSSI(carRouter.transform);
+            routerID = r.routerID;
+            if (routerRSSI != float.NegativeInfinity) {
+                Debug.Log($"Router ID: {routerID}, RSSI: {routerRSSI}");
+            }   
+        }
         // create grpc request
         if (!sendRequestToServer) { return; }
         var request = new ClientRequest

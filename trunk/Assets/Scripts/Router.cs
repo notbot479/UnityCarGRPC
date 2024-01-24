@@ -22,7 +22,6 @@ public class Router : MonoBehaviour
             if (sensorConnection) { Debug.DrawRay(origin, targetTransform.position - origin, rayColor); }
             // Simulate RSSI based on distance
             double rssi = CalculateRSSI(distance);
-            Debug.Log($"Router ID: {routerID}, Distance: {distance}, RSSI: {rssi}");
             return rssi;
         }
         else
