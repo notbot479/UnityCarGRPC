@@ -8,6 +8,7 @@ public class Router : MonoBehaviour
     public int routerID = -1; // Unique router id, -1 -> not set
     public float maxDistance = 20f; // Maximum receive distance in meters
     public float maxRSSI = -100f; // Maximum receive router strength
+    public float minRSSI = -0f; // Minimum receive router strength
 
     public bool sensorConnection = true;
     public readonly Color rayColor = Color.red;
@@ -32,7 +33,8 @@ public class Router : MonoBehaviour
 
     double CalculateRSSI(float distance)
     {
-        double rssi = maxRSSI - 10 * Math.Log10(distance / maxDistance);
+        double rssi = ((distance / maxDistance) * (maxRSSI - minRSSI)) + minRSSI;
+        //double rssi = maxRSSI - 10 * Math.Log10(distance/maxDistance);
         return rssi;
     }
 }
