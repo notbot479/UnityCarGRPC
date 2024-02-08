@@ -195,6 +195,11 @@ PrefabInstance:
       propertyPath: routerID
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 5649130420918798629, guid: 6e6ea6cbc3204aa43b6ec0fb48845e2e,
+        type: 3}
+      propertyPath: maxDistance
+      value: 30
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 6e6ea6cbc3204aa43b6ec0fb48845e2e, type: 3}
 --- !u!4 &26622470 stripped
@@ -307,6 +312,11 @@ PrefabInstance:
         type: 3}
       propertyPath: routerID
       value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 5649130420918798629, guid: 6e6ea6cbc3204aa43b6ec0fb48845e2e,
+        type: 3}
+      propertyPath: maxDistance
+      value: 30
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 6e6ea6cbc3204aa43b6ec0fb48845e2e, type: 3}
@@ -453,6 +463,11 @@ PrefabInstance:
         type: 3}
       propertyPath: routerID
       value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 5649130420918798629, guid: 6e6ea6cbc3204aa43b6ec0fb48845e2e,
+        type: 3}
+      propertyPath: maxDistance
+      value: 30
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 6e6ea6cbc3204aa43b6ec0fb48845e2e, type: 3}
@@ -609,6 +624,11 @@ PrefabInstance:
       propertyPath: routerID
       value: 6
       objectReference: {fileID: 0}
+    - target: {fileID: 5649130420918798629, guid: 6e6ea6cbc3204aa43b6ec0fb48845e2e,
+        type: 3}
+      propertyPath: maxDistance
+      value: 30
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 6e6ea6cbc3204aa43b6ec0fb48845e2e, type: 3}
 --- !u!4 &691695132 stripped
@@ -721,6 +741,11 @@ PrefabInstance:
         type: 3}
       propertyPath: routerID
       value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 5649130420918798629, guid: 6e6ea6cbc3204aa43b6ec0fb48845e2e,
+        type: 3}
+      propertyPath: maxDistance
+      value: 30
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 6e6ea6cbc3204aa43b6ec0fb48845e2e, type: 3}
@@ -1093,6 +1118,11 @@ PrefabInstance:
       propertyPath: routerID
       value: 9
       objectReference: {fileID: 0}
+    - target: {fileID: 5649130420918798629, guid: 6e6ea6cbc3204aa43b6ec0fb48845e2e,
+        type: 3}
+      propertyPath: maxDistance
+      value: 30
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 6e6ea6cbc3204aa43b6ec0fb48845e2e, type: 3}
 --- !u!4 &1177478699 stripped
@@ -1101,6 +1131,24 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 1177478698}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1186670329 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4616326374804906015, guid: 3084982c011f1ceec8e87e99c48de62a,
+    type: 3}
+  m_PrefabInstance: {fileID: 1186990699}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1186670331
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1186670329}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1bc19d36401519c4fb0d82b92dcf588c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &1186990699
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1168,6 +1216,11 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4616326374804906015, guid: 3084982c011f1ceec8e87e99c48de62a,
+        type: 3}
+      propertyPath: m_Name
+      value: CarRouterReceiver
+      objectReference: {fileID: 0}
     - target: {fileID: 8902268117528618847, guid: 3084982c011f1ceec8e87e99c48de62a,
         type: 3}
       propertyPath: spawnPoint
@@ -1178,7 +1231,8 @@ PrefabInstance:
       propertyPath: respawnCarOnHit
       value: 0
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 387594629333846701, guid: 3084982c011f1ceec8e87e99c48de62a, type: 3}
   m_SourcePrefab: {fileID: 100100000, guid: 3084982c011f1ceec8e87e99c48de62a, type: 3}
 --- !u!4 &1186990700 stripped
 Transform:
@@ -1269,6 +1323,11 @@ PrefabInstance:
         type: 3}
       propertyPath: routerID
       value: 7
+      objectReference: {fileID: 0}
+    - target: {fileID: 5649130420918798629, guid: 6e6ea6cbc3204aa43b6ec0fb48845e2e,
+        type: 3}
+      propertyPath: maxDistance
+      value: 30
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 6e6ea6cbc3204aa43b6ec0fb48845e2e, type: 3}
@@ -1412,6 +1471,11 @@ PrefabInstance:
       propertyPath: routerID
       value: 8
       objectReference: {fileID: 0}
+    - target: {fileID: 5649130420918798629, guid: 6e6ea6cbc3204aa43b6ec0fb48845e2e,
+        type: 3}
+      propertyPath: maxDistance
+      value: 30
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 6e6ea6cbc3204aa43b6ec0fb48845e2e, type: 3}
 --- !u!4 &1568619283 stripped
@@ -1542,6 +1606,11 @@ PrefabInstance:
         type: 3}
       propertyPath: routerID
       value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 5649130420918798629, guid: 6e6ea6cbc3204aa43b6ec0fb48845e2e,
+        type: 3}
+      propertyPath: maxDistance
+      value: 30
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 6e6ea6cbc3204aa43b6ec0fb48845e2e, type: 3}

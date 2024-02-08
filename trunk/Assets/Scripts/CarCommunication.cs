@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System;
+
 using UnityEngine;
 
 using Cysharp.Net.Http;
@@ -7,9 +9,7 @@ using Grpc.Core;
 
 using Google.Protobuf;
 using CarCommunicationApp;
-using System.Linq;
-using System;
-using Unity.VisualScripting;
+
 
 public class CarCommunication : MonoBehaviour
 {
@@ -23,9 +23,11 @@ public class CarCommunication : MonoBehaviour
     private Communication.CommunicationClient client;
     // car & car data
     private GameObject car;
-    private GameObject carRouter;
     private bool carCollideObstacle;
     private string command;
+    // router & router data
+    private GameObject carRouterReceiver;
+    private List<Tuple<string, double>> routersData;
     // sensors & sensors data
     private GameObject RaySensors;
     private Dictionary<string,float> raySensorsData;
@@ -33,10 +35,6 @@ public class CarCommunication : MonoBehaviour
     private GameObject CarCamera;
     private byte[] videoFrame;
     private ByteString videoFrameByteString;
-    // router & router data
-    private GameObject[] routers;
-    private int routerID;
-    private double routerRSSI;
 
     public void Start()
     {
@@ -51,31 +49,20 @@ public class CarCommunication : MonoBehaviour
         }
         // init car
         car =  GameObject.Find("Car");
-        carRouter = GameObject.Find("CarRouter");
         // init camera and distance sensors
         RaySensors = GameObject.Find("RaySensors");
         CarCamera = GameObject.Find("Camera");
-        routers = GameObject.FindObjectsOfType<Router>().Select(x => x.gameObject).ToArray();
+        carRouterReceiver = GameObject.Find("CarRouterReceiver");
     }
 
     public void Update()
     {
-        // get data from sensors and camera
+        // get data from sensors,routers,camera
         raySensorsData = RaySensors.GetComponent<RaySensorsData>().GetSensorsData();
         videoFrame = CarCamera.GetComponent<CameraData>().getFrameInBytes();
         videoFrameByteString = ByteString.CopyFrom(videoFrame);
         carCollideObstacle = car.GetComponent<CarCollisionData>().isCollide;
-        
-        //get data from routers
-        foreach (GameObject router in routers)
-        {
-            var r = router.GetComponent<Router>();
-            routerRSSI =  r.GetRSSI(carRouter.transform);
-            routerID = r.routerID;
-            if (routerRSSI != float.NegativeInfinity) { 
-                //Debug.Log($"Router ID: {routerID}, RSSI: {routerRSSI}");
-            }   
-        }
+        routersData = carRouterReceiver.GetComponent<CarRouterReceiver>().GetRoutersData();
 
         // create grpc request
         if (!sendRequestToServer) { return; }
