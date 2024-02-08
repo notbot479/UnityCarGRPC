@@ -24,8 +24,11 @@ public class CarCollisionData : MonoBehaviour
 
     void OnCollisionEnter(Collision collision)
     {
-        isCollide = true;
-        if (respawnCarOnHit) { TeleportToSpawn(); }
+        if (collision.gameObject.layer != LayerMask.NameToLayer("Ground"))
+        {
+            isCollide = true;
+            if (respawnCarOnHit) { TeleportToSpawn(); }
+        }
     }
     void OnCollisionExit(Collision collision)
     {

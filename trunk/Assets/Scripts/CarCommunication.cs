@@ -65,16 +65,18 @@ public class CarCommunication : MonoBehaviour
         videoFrame = CarCamera.GetComponent<CameraData>().getFrameInBytes();
         videoFrameByteString = ByteString.CopyFrom(videoFrame);
         carCollideObstacle = car.GetComponent<CarCollisionData>().isCollide;
+        
         //get data from routers
         foreach (GameObject router in routers)
         {
             var r = router.GetComponent<Router>();
             routerRSSI =  r.GetRSSI(carRouter.transform);
             routerID = r.routerID;
-            if (routerRSSI != float.NegativeInfinity) {
-                Debug.Log($"Router ID: {routerID}, RSSI: {routerRSSI}");
+            if (routerRSSI != float.NegativeInfinity) { 
+                //Debug.Log($"Router ID: {routerID}, RSSI: {routerRSSI}");
             }   
         }
+
         // create grpc request
         if (!sendRequestToServer) { return; }
         var request = new ClientRequest
