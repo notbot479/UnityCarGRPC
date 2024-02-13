@@ -15,5 +15,5 @@ VIDEO_PATH = os.path.join(BASE_DIR,'1.mp4')
 
 # grpc server settings
 PORT = 50051
-MAX_WORKERS = 4
+MAX_WORKERS = 24
 SERVER_URL = f'localhost:{PORT}'
