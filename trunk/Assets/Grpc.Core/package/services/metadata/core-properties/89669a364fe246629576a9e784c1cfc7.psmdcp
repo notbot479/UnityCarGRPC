@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<coreProperties xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://schemas.openxmlformats.org/package/2006/metadata/core-properties">
+  <dc:creator>The gRPC Authors</dc:creator>
+  <dc:description>C# implementation of gRPC based on native gRPC C-core library.
+
+Note that the Grpc.Core implementation of gRPC for C# is in maintenance mode and will be replaced by grpc-dotnet in the future.
+See https://grpc.io/blog/grpc-csharp-future/ for details.</dc:description>
+  <dc:identifier>Grpc.Core</dc:identifier>
+  <version>2.46.6</version>
+  <keywords>gRPC RPC HTTP/2</keywords>
+  <lastModifiedBy>NuGet.Build.Tasks.Pack, Version=6.0.0.278, Culture=neutral, PublicKeyToken=31bf3856ad364e35;</lastModifiedBy>
+</coreProperties>
