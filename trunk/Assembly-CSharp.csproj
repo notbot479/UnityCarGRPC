@@ -37,11 +37,12 @@
   </PropertyGroup>
   <ItemGroup>
      <Compile Include="Assets/Scripts/CarSensors/CarCollisionData.cs" />
-     <Compile Include="Assets/Scripts/Router.cs" />
+     <Compile Include="Assets/Scripts/Room/Router.cs" />
      <Compile Include="Assets/Scripts/CarSensors/CameraData.cs" />
      <Compile Include="Assets/Protos/VideoGrpc.cs" />
      <Compile Include="Assets/Scripts/Car/WheelSet.cs" />
      <Compile Include="Assets/Scripts/Car/CarRouter.cs" />
+     <Compile Include="Assets/Scripts/CarSensors/CarRouterReceiver.cs" />
      <Compile Include="Assets/Protos/CarCommunicationGrpc.cs" />
      <Compile Include="Assets/Protos/Greet.cs" />
      <Compile Include="Assets/Protos/Video.cs" />
@@ -51,8 +52,11 @@
      <Compile Include="Assets/Protos/GreetGrpc.cs" />
      <Compile Include="Assets/Scripts/CarSensors/RaySensorsData.cs" />
      <Compile Include="Assets/Scripts/Car/CarControllerAdvanced.cs" />
-     <Compile Include="Assets/Scripts/GrpcTest/GrpcVideoCapture.cs" />
+     <Compile Include="Assets/Scripts/UnityMainThreadDispatcher.cs" />
      <Compile Include="Assets/Protos/CarCommunication.cs" />
+     <Compile Include="Assets/Scripts/GrpcTest/GrpcVideoCapture.cs" />
+     <None Include="Assets/Grpc.Core/lib/netstandard1.5/Grpc.Core.xml" />
+     <None Include="Assets/Grpc.Core/[Content_Types].xml" />
      <None Include="Assets/Google.Protobuf/lib/net45/Google.Protobuf.xml" />
     <Reference Include="UnityEngine">
         <HintPath>/home/max/Unity/Hub/Editor/2021.3.6f1/Editor/Data/Managed/UnityEngine/UnityEngine.dll</HintPath>
@@ -297,11 +301,14 @@
     <Reference Include="Grpc.Net.Common">
         <HintPath>/home/max/Documents/Projects/UnityCarGRPC/trunk/Assets/Plugins/Grpc.Net.Common/2.55.0/lib/netstandard2.1/Grpc.Net.Common.dll</HintPath>
     </Reference>
-    <Reference Include="System.IO.Pipelines">
-        <HintPath>/home/max/Documents/Projects/UnityCarGRPC/trunk/Assets/Plugins/System.IO.Pipelines/7.0.0/lib/netstandard2.0/System.IO.Pipelines.dll</HintPath>
+    <Reference Include="Grpc.Core">
+        <HintPath>/home/max/Documents/Projects/UnityCarGRPC/trunk/Assets/Grpc.Core/lib/netstandard1.5/Grpc.Core.dll</HintPath>
     </Reference>
     <Reference Include="System.Diagnostics.DiagnosticSource">
         <HintPath>/home/max/Documents/Projects/UnityCarGRPC/trunk/Assets/Plugins/System.Diagnostics.DiagnosticSource/4.5.1/lib/netstandard1.3/System.Diagnostics.DiagnosticSource.dll</HintPath>
+    </Reference>
+    <Reference Include="System.IO.Pipelines">
+        <HintPath>/home/max/Documents/Projects/UnityCarGRPC/trunk/Assets/Plugins/System.IO.Pipelines/7.0.0/lib/netstandard2.0/System.IO.Pipelines.dll</HintPath>
     </Reference>
     <Reference Include="Google.Protobuf">
         <HintPath>/home/max/Documents/Projects/UnityCarGRPC/trunk/Assets/Google.Protobuf/lib/net45/Google.Protobuf.dll</HintPath>

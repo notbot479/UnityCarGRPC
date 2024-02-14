@@ -6,6 +6,10 @@ from Protos.car_communication_pb2 import (
     ServerResponse, #pyright: ignore
     ClientRequest, #pyright: ignore
 )
+
+from grpc._channel import (
+    _InactiveRpcError as GrpcInactiveRpcError,
+)
 import grpc
 
 from dataclasses import dataclass
@@ -15,19 +19,6 @@ import random
 import cv2
 
 from config import *
-
-
-FRAMES = []
-FORCE_STOP_DISPLAY = False
-def display_stream_video():
-    global FRAMES
-    while True:
-        if not(FRAMES): continue
-        frame = FRAMES.pop(0)
-        cv2.imshow('Frame', frame)
-        user_break = cv2.waitKey(1) & 0xFF == ord('q')
-        if user_break or FORCE_STOP_DISPLAY: break
-    cv2.destroyAllWindows()
 
 
 @dataclass
@@ -49,6 +40,19 @@ class GrpcServerResponce:
     boxes_in_camera_view: bool
     car_collision_data: bool 
     qr_code_metadata: str
+
+
+FRAMES = []
+FORCE_STOP_DISPLAY = False
+def display_stream_video():
+    global FRAMES
+    while True:
+        if not(FRAMES): continue
+        frame = FRAMES.pop(0)
+        cv2.imshow('Frame', frame)
+        user_break = cv2.waitKey(1) & 0xFF == ord('q')
+        if user_break or FORCE_STOP_DISPLAY: break
+    cv2.destroyAllWindows()
 
 
 class GrpcClient:
@@ -178,9 +182,14 @@ class GrpcClient:
             routers.append(router_data)
         return routers
 
+# ====================================================================================
 
-def run_client():
-    client = GrpcClient(server_url=SERVER_URL)
+def run_client(
+    client: GrpcClient,
+    *,
+    show_video:bool = False,
+    show_data:bool = False,
+) -> None:
     done = False
 
     #respawn car at first
@@ -188,16 +197,44 @@ def run_client():
     while not done:
         command = client.get_random_movement_command() # simulate dqn
         next_state = client.get_server_response(command=command)
-        if not(next_state): continue #TODO BUG?
-        if SHOW_VIDEO: client.display_frame(next_state.camera_image)
-        if SHOW_DATA: client.display_response(next_state)
-        # get reward, done and etc. train dqn
+        if not(next_state): continue 
+        # show log info
+        if show_video: client.display_frame(next_state.camera_image)
+        #if show_data: client.display_response(next_state)
+        
+        # test
+        print(f'Send command: {command}, received: {next_state.qr_code_metadata}')
+        if next_state.car_collision_data:
+            client.get_server_response('respawn')
+            return
+        
+        # collect data for training dqn
+        # TODO get reward, done and etc. 
+
+# ====================================================================================
+
+def _run_client() -> None:
+    server_url = SERVER_URL
+    show_video = SHOW_VIDEO
+    show_data = SHOW_DATA
+    # start grpc client
+    client = GrpcClient(server_url)
+    try:
+        run_client(
+            client=client,
+            show_video=show_video,
+            show_data=show_data,
+        )
+    except GrpcInactiveRpcError:
+        print(f'Server connection error: InactiveRpcError')
+    except KeyboardInterrupt:
+        client.get_server_response(command='poweroff')
+        print(f'Stop client and server')
 
 def main():
     global FORCE_STOP_DISPLAY
-
     if SHOW_VIDEO: threading.Thread(target=display_stream_video).start()
-    run_client()
+    _run_client()
     if SHOW_VIDEO: FORCE_STOP_DISPLAY = True
 
 if __name__ == '__main__':
