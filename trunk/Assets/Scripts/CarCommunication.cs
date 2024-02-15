@@ -22,6 +22,8 @@ public class CarCommunication : MonoBehaviour
     private GrpcChannel channel;
     private Communication.CommunicationClient client;
     private bool serverConnectionError = false;
+    private bool processingUpdate = true;
+    private bool processingRespawn = false;
     // car & car data
     private GameObject car;
     private bool carCollideObstacle;
@@ -57,14 +59,19 @@ public class CarCommunication : MonoBehaviour
 
     public void Update()
     {
+        if (!processingUpdate) { return; }
         // get data from sensors, routers, camera
         videoFrame = carCamera.GetComponent<CameraData>().getFrameInBytes();
         videoFrameByteString = ByteString.CopyFrom(videoFrame);
         raySensorsData = raySensors.GetComponent<RaySensorsData>().GetSensorsData();
         routersData = carRouterReceiver.GetComponent<CarRouterReceiver>().GetRoutersData();
         carCollideObstacle = car.GetComponent<CarCollisionData>().isCollide;
-        // create grpc request
+        // skip send request to server
         if (!sendRequestToServer) { return; }
+        // processing respawn
+        if (carCollideObstacle && processingRespawn) { return; }
+        else if (processingRespawn) { processingRespawn = false; }
+        // create grpc request
         var request = new ClientRequest
         {
             CarId = carID,
@@ -107,9 +114,22 @@ public class CarCommunication : MonoBehaviour
         // processing command from server
         if (!moveCarByAI) { return; }
         try{
-            // TODO respawn command
-            // TODO poweroff command
-            car.GetComponent<CarControllerAdvanced>().CarMove(command);
+            if (command == "Respawn" && !processingRespawn)
+            {
+                Debug.Log("Respawn");
+                processingRespawn = true;
+                car.GetComponent<CarCollisionData>().TeleportToSpawn();
+            }
+            else if (command == "Poweroff")
+            {
+                Debug.Log("Poweroff");
+                processingUpdate = false;
+                // TODO end simulation
+            }
+            else
+            {
+                car.GetComponent<CarControllerAdvanced>().CarMove(command);
+            }
         }
         catch{
             Debug.Log("Simulation is stopped. Ignore command from server");

@@ -58,7 +58,6 @@ class Servicer(_Servicer):
     _extra_commands = generate_grpc_commands(CAR_EXTRA_SIGNALS)
     _commands = _movement_commands | _extra_commands
 
-
     def __init__(
         self, 
         *args,
@@ -69,15 +68,9 @@ class Servicer(_Servicer):
         self.show_stream_video = show_stream_video
         self.show_client_data = show_client_data
         super().__init__(*args,**kwargs)
-
-    def SendRequest(self, request: _Pb2_client_request, _): 
-        data = self.get_grpc_client_data(request) 
-        if self.show_client_data: self._display_client_data(data)
-        if self.show_stream_video and data.camera_image is not None: 
-            VideoPlayer.add_frame(data.camera_image)
-        # processing client data
-        
-        # send command to client
+    
+    def processing_client_request(self, data: GrpcClientData):
+        if data.car_collision_data: return self._send_respawn_command()
         command = self._get_random_movement()
         return self.send_response_to_client(command)
 
@@ -111,7 +104,24 @@ class Servicer(_Servicer):
         grpc_command = self._commands.get(command)
         if grpc_command is None: return
         return _Pb2_server_response(command=grpc_command)
+    
 
+    def SendRequest(self, request: _Pb2_client_request, _): 
+        data = self.get_grpc_client_data(request) 
+        if self.show_client_data: self._display_client_data(data)
+        if self.show_stream_video and data.camera_image is not None: 
+            VideoPlayer.add_frame(data.camera_image)
+        command = self.processing_client_request(data=data)
+        if not(command): return
+        return command
+    
+    def _send_respawn_command(self):
+        print('respawn')
+        return self.send_response_to_client('respawn')
+    
+    def _send_poweroff_command(self):
+        print('poweroff')
+        return self.send_response_to_client('poweroff')
 
     @staticmethod
     def _normalize_sensors_data(
