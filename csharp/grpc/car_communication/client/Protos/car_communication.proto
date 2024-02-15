@@ -1,8 +1,28 @@
 syntax = "proto3";
-
 package CarCommunicationApp;
 
-message SensorsData {
+// ======== SERVER ===============
+
+message ServerResponse {
+    enum Command {
+        // dqn predict movement   
+        LEFT = 0;
+        RIGHT = 1;
+        FORWARD = 2;
+        BACKWARD = 3;
+        STOP = 4;
+        // service decision
+        POWEROFF = 5;
+        // virtual model only
+        RESPAWN = 6;
+    }
+    
+    Command command = 1;
+}
+
+// ======== CLIENT ===============
+
+message DistanceSensorsData {
   float front_left_distance = 1;
   float front_distance = 2;
   float front_right_distance = 3;
@@ -11,26 +31,21 @@ message SensorsData {
   float back_right_distance = 6;
 }
 
-message Command {
-  enum Direction {
-    STOP = 0;    
-    LEFT = 1;
-    RIGHT = 2;
-    UP = 3;
-    DOWN = 4;
-  }
-
-  Direction direction = 1;
+message RouterData {
+    string id = 1;
+    float rssi = 2;
 }
 
 message ClientRequest {
-  bytes video_frame = 1;
-  SensorsData sensors_data = 2;
-  bool car_collide_obstacle = 3;
-}
-
-message ServerResponse {
-  Command command = 1;
+    // real model data
+    string car_id = 1;
+    bytes camera_image = 2;
+    DistanceSensorsData distance_sensors_data = 3;
+    repeated RouterData routers_data = 4; 
+    // virtual model data
+    bool boxes_in_camera_view = 5; // yolo - real model
+    bool car_collision_data = 6;
+    string qr_code_metadata = 7;
 }
 
 service Communication {
