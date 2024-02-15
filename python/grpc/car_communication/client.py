@@ -1,53 +1,43 @@
-import random
+from Protos import car_communication_pb2_grpc as CarCommunicationApp_pb2_grpc 
+from Protos import car_communication_pb2 as CarCommunicationApp_pb2 
 import grpc
 import cv2
-import os
 
-from Protos import car_communication_pb2
-from Protos import car_communication_pb2_grpc
+from config import *
+
+server_address = 'localhost'
+server_port = 50051
+
+channel = grpc.insecure_channel(f"{server_address}:{server_port}")
+stub = CarCommunicationApp_pb2_grpc.CommunicationStub(channel)
 
 
-SENSORS_COUNT = 6
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-PICTURE_PATH = os.path.join(BASE_DIR,'1.jpg')
-VIDEO_PATH = os.path.join(BASE_DIR,'1.mp4')
-TARGET_ENCODE_TO = '.jpg'
-
-def get_direction_name_by_index(direction_index:int) -> str:
-    direction = car_communication_pb2.Command.Direction.Name(direction_index) #pyright: ignore
-    return str(direction)
-
-def grpc_send_data(stub, chunk:bytes, sensors_data:list[float,]) -> None:
-    fl,f,fr,bl,b,br = sensors_data
-    sensors_data_message = car_communication_pb2.SensorsData( #pyright: ignore
-            front_left_distance=fl,
-                front_distance=f,
-                front_right_distance=fr,
-                back_left_distance=bl,
-                back_distance=b,
-                back_right_distance=br,
-            )
-    request = car_communication_pb2.ClientRequest( #pyright: ignore
-        video_frame=chunk,
-        sensors_data=sensors_data_message,
+def create_mock_client_request(image_bytes):
+    distance_sensors_data = CarCommunicationApp_pb2.DistanceSensorsData( #pyright: ignore
+        front_left_distance=1.5,
+        front_distance=2.5,
+        front_right_distance=1.7,
+        back_left_distance=1.8,
+        back_distance=2.0,
+        back_right_distance=1.6
     )
-    response = stub.SendRequest(request)
-    direction_index = response.command.direction
-    direction = get_direction_name_by_index(direction_index)
-    print(direction)
 
-def get_mock_sensors_data() -> list[float,]:
-    return [random.random()*random.randint(1,5) for _ in range(SENSORS_COUNT)]
+    routers_data = [
+        CarCommunicationApp_pb2.RouterData(id='router1', rssi=-10.0), #pyright: ignore
+        CarCommunicationApp_pb2.RouterData(id='router2', rssi=-30.0), #pyright: ignore
+        CarCommunicationApp_pb2.RouterData(id='router3', rssi=-99.0), #pyright: ignore
+    ]
 
-def send_video_from_path_and_distance(stub,path:str) -> None:
-    cap = cv2.VideoCapture(path)
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if not ret: break
-        chunk = convert_frame_to_bytes(frame)
-        sensors_data = get_mock_sensors_data()
-        grpc_send_data(stub, chunk, sensors_data)
-    cap.release()
+    client_request = CarCommunicationApp_pb2.ClientRequest( #pyright: ignore
+        car_id='car001',
+        camera_image=image_bytes,
+        distance_sensors_data=distance_sensors_data,
+        routers_data=routers_data,
+        boxes_in_camera_view=True,
+        car_collision_data=False,
+        qr_code_metadata='sample_metadata'
+    )
+    return client_request
 
 def convert_frame_to_bytes(frame) -> bytes:
     encoded_frame = _get_encoded_frame(frame)
@@ -57,13 +47,26 @@ def _get_encoded_frame(frame):
     _, encoded_frame = cv2.imencode(TARGET_ENCODE_TO, frame)
     return encoded_frame
 
+def send_video_from_path(path:str) -> None:
+    cap = cv2.VideoCapture(path)
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if not ret: break
+        image_bytes = convert_frame_to_bytes(frame)
+        send_request(image_bytes)
+    cap.release()
+
+def send_request(image_bytes) -> None:
+    request = create_mock_client_request(image_bytes)
+    response = stub.SendRequest(request)
+    command = response.command
+    print(f'Received command: {command}')
+
 
 def main():
-    port = 50051
-    channel = grpc.insecure_channel(f'localhost:{port}')
-    stub = car_communication_pb2_grpc.CommunicationStub(channel)
-    send_video_from_path_and_distance(stub, VIDEO_PATH)
-
+    path = VIDEO_PATH
+    send_video_from_path(path)
 
 if __name__ == '__main__':
     main()
+
