@@ -8,7 +8,7 @@ public class CarRouterReceiver : MonoBehaviour
 {
     private GameObject carRouterReceiver;
     private GameObject[] routers;
-    private double routerRSSI;
+    private float routerRSSI;
     private int routerID;
 
     void Start()
@@ -16,14 +16,14 @@ public class CarRouterReceiver : MonoBehaviour
         routers = GameObject.FindObjectsOfType<Router>().Select(x => x.gameObject).ToArray();
     }
 
-    public List<Tuple<string, double>> GetRoutersData()
+    public List<Tuple<string, float>> GetRoutersData()
     {
-        List<Tuple<string, double>> routersDataList = new List<Tuple<string, double>>();
+        List<Tuple<string, float>> routersDataList = new List<Tuple<string, float>>();
         foreach (GameObject router in routers)
         {
             var r = router.GetComponent<Router>();
             routerID = r.routerID;
-            routerRSSI = r.GetRSSI(transform);
+            routerRSSI = (float)r.GetRSSI(transform);
             if (routerRSSI != float.NegativeInfinity)
             {
                 //Debug.Log($"Router ID: {routerID}, RSSI: {routerRSSI}");

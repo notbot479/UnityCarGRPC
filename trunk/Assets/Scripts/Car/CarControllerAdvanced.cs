@@ -61,11 +61,11 @@ public class CarControllerAdvanced : MonoBehaviour {
             steer = Mathf.Clamp(Input.GetAxis("Horizontal"), -1, 1);
             forward = Mathf.Clamp(Input.GetAxis("Vertical"), 1, 0);
             back = -1 * Mathf.Clamp(Input.GetAxis("Vertical"), 0, -1);
-        } else if (command == "Up") {
+        } else if (command == "Forward") {
             steer = 0.0f;
             forward = -1.0f;
             back = 0.0f;
-        } else if (command == "Down") {
+        } else if (command == "Backward") {
             steer = 0.0f;
             forward = 1.0f;
             back = 0.0f;

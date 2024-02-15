@@ -138,6 +138,7 @@ class Servicer(_Servicer):
     def _display_client_data(data: GrpcClientData) -> None:
         print('-'*20)
         print(f'CarId: {data.car_id}')
+        print(f'CameraImage: {len(data.camera_image.tobytes())} bytes')
         print('DistanceSensors:')
         for i in data.distance_sensors_data: print(f'- {i}')
         print('Routers:')

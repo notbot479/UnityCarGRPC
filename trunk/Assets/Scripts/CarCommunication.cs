@@ -13,26 +13,27 @@ using CarCommunicationApp;
 
 public class CarCommunication : MonoBehaviour
 {
+    public string carID = "1";
+    public string serverApiUrl = "http://localhost:50051";
     public bool sendRequestToServer = true;
     public bool moveCarByAI = true;
-    public string serverApiUrl = "http://localhost:50051";
-    private bool serverConnectionError = false;
-
+   
     // grpc client and server
     private GrpcChannel channel;
     private Communication.CommunicationClient client;
+    private bool serverConnectionError = false;
     // car & car data
     private GameObject car;
     private bool carCollideObstacle;
     private string command;
     // router & router data
     private GameObject carRouterReceiver;
-    private List<Tuple<string, double>> routersData;
+    private List<Tuple<string, float>> routersData;
     // sensors & sensors data
-    private GameObject RaySensors;
+    private GameObject raySensors;
     private Dictionary<string,float> raySensorsData;
     // camera & camera data
-    private GameObject CarCamera;
+    private GameObject carCamera;
     private byte[] videoFrame;
     private ByteString videoFrameByteString;
 
@@ -47,29 +48,28 @@ public class CarCommunication : MonoBehaviour
             });
             client = new Communication.CommunicationClient(channel);
         }
-        // init car
+        // init game objects
         car =  GameObject.Find("Car");
-        // init camera and distance sensors
-        RaySensors = GameObject.Find("RaySensors");
-        CarCamera = GameObject.Find("Camera");
+        raySensors = GameObject.Find("RaySensors");
+        carCamera = GameObject.Find("Camera");
         carRouterReceiver = GameObject.Find("CarRouterReceiver");
     }
 
     public void Update()
     {
-        // get data from sensors,routers,camera
-        raySensorsData = RaySensors.GetComponent<RaySensorsData>().GetSensorsData();
-        videoFrame = CarCamera.GetComponent<CameraData>().getFrameInBytes();
+        // get data from sensors, routers, camera
+        videoFrame = carCamera.GetComponent<CameraData>().getFrameInBytes();
         videoFrameByteString = ByteString.CopyFrom(videoFrame);
-        carCollideObstacle = car.GetComponent<CarCollisionData>().isCollide;
+        raySensorsData = raySensors.GetComponent<RaySensorsData>().GetSensorsData();
         routersData = carRouterReceiver.GetComponent<CarRouterReceiver>().GetRoutersData();
-
+        carCollideObstacle = car.GetComponent<CarCollisionData>().isCollide;
         // create grpc request
         if (!sendRequestToServer) { return; }
         var request = new ClientRequest
         {
-            VideoFrame = videoFrameByteString,
-            SensorsData = new SensorsData
+            CarId = carID,
+            CameraImage = videoFrameByteString,
+            DistanceSensorsData = new DistanceSensorsData
             {
                 FrontLeftDistance = raySensorsData["FrontLeftDistance"],
                 FrontDistance = raySensorsData["FrontDistance"],
@@ -78,13 +78,21 @@ public class CarCommunication : MonoBehaviour
                 BackDistance = raySensorsData["BackDistance"],
                 BackRightDistance = raySensorsData["BackRightDistance"],
             },
-            CarCollideObstacle = carCollideObstacle,
+            CarCollisionData = carCollideObstacle,
+            // TODO not implemented, send mock data
+            BoxesInCameraView = false,
+            QrCodeMetadata = "metadata",
         };
-        // send data using grpc and receive command for car
+        // add repeated routers data to request
+        foreach (var t in routersData)
+        {
+            request.RoutersData.Add(new RouterData { Id = t.Item1, Rssi = t.Item2 });
+        }
+        // send data using grpc and receive command from server
         try
         {
             var response = client.SendRequest(request);
-            command = response.Command.Direction.ToString();
+            command = response.Command.ToString();
             serverConnectionError = false;
         }
         catch
@@ -96,15 +104,18 @@ public class CarCommunication : MonoBehaviour
             }
             return;
         }
-        // move car to some direction based on command from server
+        // processing command from server
         if (!moveCarByAI) { return; }
         try{
+            // TODO respawn command
+            // TODO poweroff command
             car.GetComponent<CarControllerAdvanced>().CarMove(command);
-        } 
+        }
         catch{
             Debug.Log("Simulation is stopped. Ignore command from server");
         }
     }
+
     private void OnDestroy()
     {
         channel?.ShutdownAsync().Wait();
