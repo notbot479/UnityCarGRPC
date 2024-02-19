@@ -35,6 +35,40 @@ public class CameraData : MonoBehaviour
         };
         textureFullscreen = new Texture2D(Screen.width, Screen.height, TextureFormat.RGB24, false);
     }
+    public bool getBoxesInCameraViewStatus()
+    {
+        teleportCameraToBase();
+        OrderBox[] Boxes = FindObjectsOfType<OrderBox>();
+        foreach (OrderBox Box in Boxes)
+        {
+            if (IsBoxVisible(Box)) { return true; }
+        }
+        return false;
+    }
+    private bool IsBoxVisible(OrderBox Box)
+    {
+        var bounds = Box.GetComponent<Collider>().bounds;
+        var cameraFrustum = GeometryUtility.CalculateFrustumPlanes(targetCamera);
+        // simple check box visibility (in view + no walls)
+        bool boxInView = GeometryUtility.TestPlanesAABB(cameraFrustum, bounds);
+        if (!boxInView) { return false; }
+        bool boxInClearView = IsBoxClearView(Box);
+        if (!boxInClearView) { return false; }
+        return true;
+    }
+    private bool IsBoxClearView(OrderBox Box)
+    {
+        Transform cameraTransform = targetCamera.transform;
+        Transform  boxTransform = Box.transform;
+        Vector3 direction = boxTransform.position - cameraTransform.position;
+        //Debug.DrawRay(cameraTransform.position, direction * 1000f, Color.red);
+        RaycastHit hit;
+        if (Physics.Raycast(cameraTransform.position, direction, out hit))
+        {
+            if (hit.transform != boxTransform) { return false; }
+        }
+        return true;
+    }
     public byte[] getCameraImageInBytes()
     {
         // replace textures to custom target texture

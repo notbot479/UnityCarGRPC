@@ -33,6 +33,7 @@ public class CarCommunication : MonoBehaviour
     // camera & camera data
     private GameObject carCamera;
     private byte[] cameraImage;
+    private bool boxesInCameraView; 
     // sensors & sensors data
     private GameObject carDistanceSensors;
     private Dictionary<string,float> distanceSensorsData;
@@ -65,14 +66,13 @@ public class CarCommunication : MonoBehaviour
     public void Update()
     {
         if (!processingUpdate) { return; }
-        
         // get data: car state, camera image, sensors data, routers data
         carID = car.GetComponent<CarInfo>().ID;
         cameraImage = carCamera.GetComponent<CameraData>().getCameraImageInBytes();
+        boxesInCameraView =  carCamera.GetComponent<CameraData>().getBoxesInCameraViewStatus();
         distanceSensorsData = carDistanceSensors.GetComponent<RaySensorsData>().GetSensorsData();
         routersData = carRouterReceiver.GetComponent<CarRouterReceiver>().GetRoutersData();
         carCollisionData = car.GetComponent<CarCollisionData>().isCollide;
-        
         // skip send request to server
         if (!sendRequestToServer) { return; }
         // processing respawn car (skip send request)
@@ -94,7 +94,7 @@ public class CarCommunication : MonoBehaviour
                 BackRightDistance = distanceSensorsData["BackRightDistance"],
             },
             CarCollisionData = carCollisionData,
-            BoxesInCameraView = false, // TODO not implemented
+            BoxesInCameraView = boxesInCameraView,
             QrCodeMetadata = "metadata", // TODO not implemented
         };
         foreach (var t in routersData)

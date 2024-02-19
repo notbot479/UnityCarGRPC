@@ -3,9 +3,9 @@ from Protos.car_communication_pb2_grpc import (
     CommunicationServicer as _Servicer, #pyright: ignore
 )
 from Protos.car_communication_pb2 import (
+    DistanceSensorsData as _Pb2_distance_sensors_data, #pyright: ignore
     ServerResponse as _Pb2_server_response, #pyright: ignore
     ClientRequest as _Pb2_client_request, #pyright: ignore
-    DistanceSensorsData as _Pb2_distance_sensors_data, #pyright: ignore
 )
 import grpc
 

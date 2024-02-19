@@ -711,7 +711,7 @@ GameObject:
   - component: {fileID: 1536842734434683211}
   - component: {fileID: 5784235337577355556}
   - component: {fileID: 4279756825052173022}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: CameraPlaceholderLookedAt
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -748,7 +748,7 @@ MeshRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3692787231876016266}
-  m_Enabled: 0
+  m_Enabled: 1
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -805,7 +805,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4117099100341069093}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: CameraPlaceholder
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -925,7 +925,7 @@ GameObject:
   - component: {fileID: 5961968155611477845}
   - component: {fileID: 1727048865378095755}
   - component: {fileID: 5318487384932537706}
-  m_Layer: 0
+  m_Layer: 2
   m_Name: CameraPlaceholderBase
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -962,7 +962,7 @@ MeshRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5444128795256218749}
-  m_Enabled: 0
+  m_Enabled: 1
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
