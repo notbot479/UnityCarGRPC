@@ -9,26 +9,36 @@ public class Router : MonoBehaviour
     public float maxDistance = 30f; // Maximum receive distance in meters
     public float maxRSSI = -100f; // Maximum receive router strength
     public float minRSSI = -0f; // Minimum receive router strength
-
+    
     public bool sensorConnection = true;
-    public readonly Color rayColor = Color.red;
+    public readonly double mediumRSSIstart = -40f;
+    public readonly double mediumRSSIend = -80f;
+    public readonly Color rssiGoodColor = Color.green;
+    public readonly Color rssiMediumColor = Color.yellow;
+    public readonly Color rssiBadColor = Color.red;
 
     public double GetRSSI(Transform targetTransform)
     {
         var origin = transform.position;
         float distance = Vector3.Distance(origin, targetTransform.position);
-        if (distance < maxDistance)
+        if (distance > maxDistance) { return float.NegativeInfinity; }
+        // Simulate RSSI based on distance
+        double rssi = CalculateRSSI(distance);
+        // show rays in debug mode
+        if (sensorConnection) 
         {
-            // show rays in debug mode
-            if (sensorConnection) { Debug.DrawRay(origin, targetTransform.position - origin, rayColor); }
-            // Simulate RSSI based on distance
-            double rssi = CalculateRSSI(distance);
-            return rssi;
+            Color rayColor = rssiGoodColor;
+            if (rssi < mediumRSSIstart)
+            {
+                rayColor = rssiMediumColor;
+            }
+            if (rssi < mediumRSSIend)
+            {
+                rayColor = rssiBadColor;
+            }
+            Debug.DrawRay(origin, targetTransform.position - origin, rayColor); 
         }
-        else
-        {
-            return float.NegativeInfinity;
-        }
+        return rssi;
     }
 
     double CalculateRSSI(float distance)

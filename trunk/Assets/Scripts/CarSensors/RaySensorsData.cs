@@ -36,8 +36,8 @@ public class RaySensorsData : MonoBehaviour
         SensorsDataDict.Add("FrontDistance", front_distance);
         SensorsDataDict.Add("FrontRightDistance", front_right_distance);
         SensorsDataDict.Add("BackLeftDistance", back_left_distance);
-        SensorsDataDict.Add("BackDistance", front_distance);
-        SensorsDataDict.Add("BackRightDistance", front_right_distance);
+        SensorsDataDict.Add("BackDistance", back_distance);
+        SensorsDataDict.Add("BackRightDistance", back_right_distance);
         return SensorsDataDict;
     }
 }

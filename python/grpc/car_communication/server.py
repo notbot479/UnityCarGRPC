@@ -116,7 +116,6 @@ class Servicer(_Servicer):
         return command
     
     def _send_respawn_command(self):
-        print('respawn')
         return self.send_response_to_client('respawn')
     
     def _send_poweroff_command(self):
@@ -148,14 +147,15 @@ class Servicer(_Servicer):
     def _display_client_data(data: GrpcClientData) -> None:
         print('-'*20)
         print(f'CarId: {data.car_id}')
-        print(f'CameraImage: {len(data.camera_image.tobytes())} bytes')
+        if data.camera_image is not None:
+            print(f'CameraImage: {len(data.camera_image.tobytes())} bytes')
         print('DistanceSensors:')
         for i in data.distance_sensors_data: print(f'- {i}')
         print('Routers:')
         for i in data.routers_data: print(f'- {i}')
         print(f'BoxesInView: {data.boxes_in_camera_view}')
         print(f'CarCollision: {data.car_collision_data}')
-        print(f'QR: {data.qr_code_metadata}')
+        print(f'QrCodeMetadata: {data.qr_code_metadata}')
         print()
 
     @staticmethod

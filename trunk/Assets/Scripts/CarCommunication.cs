@@ -13,12 +13,13 @@ using CarCommunicationApp;
 
 public class CarCommunication : MonoBehaviour
 {
-    public string carID = "1";
-    public string serverApiUrl = "http://localhost:50051";
+    public string serverDomain = "localhost";
+    private string serverApiUrl;
+    public int serverPort = 50051;
     public bool sendRequestToServer = true;
     public bool moveCarByAI = true;
    
-    // grpc client and server
+    // grpc client & grpc channel
     private GrpcChannel channel;
     private Communication.CommunicationClient client;
     private bool serverConnectionError = false;
@@ -26,76 +27,82 @@ public class CarCommunication : MonoBehaviour
     private bool processingRespawn = false;
     // car & car data
     private GameObject car;
-    private bool carCollideObstacle;
+    private string carID;
+    private bool carCollisionData;
     private string command;
+    // camera & camera data
+    private GameObject carCamera;
+    private byte[] cameraImage;
+    // sensors & sensors data
+    private GameObject carDistanceSensors;
+    private Dictionary<string,float> distanceSensorsData;
     // router & router data
     private GameObject carRouterReceiver;
     private List<Tuple<string, float>> routersData;
-    // sensors & sensors data
-    private GameObject raySensors;
-    private Dictionary<string,float> raySensorsData;
-    // camera & camera data
-    private GameObject carCamera;
-    private byte[] videoFrame;
-    private ByteString videoFrameByteString;
+    
 
     public void Start()
     {
-        // create grpc channel and client
-        if (sendRequestToServer){
-            channel = GrpcChannel.ForAddress(serverApiUrl, new GrpcChannelOptions
-            {
-                HttpHandler = new YetAnotherHttpHandler { Http2Only = true },
-                DisposeHttpClient = true
-            });
+        // create grpc client and channel
+        serverApiUrl = $"http://{serverDomain}:{serverPort}";
+        var channelOptions = new GrpcChannelOptions
+        {
+            HttpHandler = new YetAnotherHttpHandler { Http2Only = true },
+            DisposeHttpClient = true
+        };
+        if (sendRequestToServer)
+        {
+            channel = GrpcChannel.ForAddress(serverApiUrl, channelOptions);
             client = new Communication.CommunicationClient(channel);
         }
         // init game objects
-        car =  GameObject.Find("Car");
-        raySensors = GameObject.Find("RaySensors");
+        car = GameObject.Find("Car");
         carCamera = GameObject.Find("Camera");
+        carDistanceSensors = GameObject.Find("RaySensors");
         carRouterReceiver = GameObject.Find("CarRouterReceiver");
     }
 
     public void Update()
     {
         if (!processingUpdate) { return; }
-        // get data from sensors, routers, camera
-        videoFrame = carCamera.GetComponent<CameraData>().getFrameInBytes();
-        videoFrameByteString = ByteString.CopyFrom(videoFrame);
-        raySensorsData = raySensors.GetComponent<RaySensorsData>().GetSensorsData();
+        
+        // get data: car state, camera image, sensors data, routers data
+        carID = car.GetComponent<CarInfo>().ID;
+        cameraImage = carCamera.GetComponent<CameraData>().getFrameInBytes();
+        distanceSensorsData = carDistanceSensors.GetComponent<RaySensorsData>().GetSensorsData();
         routersData = carRouterReceiver.GetComponent<CarRouterReceiver>().GetRoutersData();
-        carCollideObstacle = car.GetComponent<CarCollisionData>().isCollide;
+        carCollisionData = car.GetComponent<CarCollisionData>().isCollide;
+        
         // skip send request to server
         if (!sendRequestToServer) { return; }
-        // processing respawn
-        if (carCollideObstacle && processingRespawn) { return; }
+        // processing respawn car (skip send request)
+        if (carCollisionData && processingRespawn) { return; }
         else if (processingRespawn) { processingRespawn = false; }
+        
         // create grpc request
         var request = new ClientRequest
         {
             CarId = carID,
-            CameraImage = videoFrameByteString,
+            CameraImage = ByteString.CopyFrom(cameraImage),
             DistanceSensorsData = new DistanceSensorsData
             {
-                FrontLeftDistance = raySensorsData["FrontLeftDistance"],
-                FrontDistance = raySensorsData["FrontDistance"],
-                FrontRightDistance = raySensorsData["FrontRightDistance"],
-                BackLeftDistance = raySensorsData["BackLeftDistance"],
-                BackDistance = raySensorsData["BackDistance"],
-                BackRightDistance = raySensorsData["BackRightDistance"],
+                FrontLeftDistance = distanceSensorsData["FrontLeftDistance"],
+                FrontDistance = distanceSensorsData["FrontDistance"],
+                FrontRightDistance = distanceSensorsData["FrontRightDistance"],
+                BackLeftDistance = distanceSensorsData["BackLeftDistance"],
+                BackDistance = distanceSensorsData["BackDistance"],
+                BackRightDistance = distanceSensorsData["BackRightDistance"],
             },
-            CarCollisionData = carCollideObstacle,
-            // TODO not implemented, send mock data
-            BoxesInCameraView = false,
-            QrCodeMetadata = "metadata",
+            CarCollisionData = carCollisionData,
+            BoxesInCameraView = false, // TODO not implemented
+            QrCodeMetadata = "metadata", // TODO not implemented
         };
-        // add repeated routers data to request
         foreach (var t in routersData)
         {
             request.RoutersData.Add(new RouterData { Id = t.Item1, Rssi = t.Item2 });
         }
-        // send data using grpc and receive command from server
+        
+        // send request using grpc, receive command
         try
         {
             var response = client.SendRequest(request);
@@ -106,25 +113,24 @@ public class CarCommunication : MonoBehaviour
         {
             if (!serverConnectionError)
             {
-                Debug.Log("Failed connect to server by url: " + serverApiUrl);
+                Debug.Log("Failed connect to server: " + serverApiUrl);
                 serverConnectionError = true;
             }
             return;
         }
+        
         // processing command from server
         if (!moveCarByAI) { return; }
         try{
             if (command == "Respawn" && !processingRespawn)
             {
-                Debug.Log("Respawn");
                 processingRespawn = true;
                 car.GetComponent<CarCollisionData>().TeleportToSpawn();
             }
             else if (command == "Poweroff")
             {
-                Debug.Log("Poweroff");
+                Debug.Log("Poweroff"); // TODO end simulation
                 processingUpdate = false;
-                // TODO end simulation
             }
             else
             {

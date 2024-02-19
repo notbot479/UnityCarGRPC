@@ -37,23 +37,19 @@
   </PropertyGroup>
   <ItemGroup>
      <Compile Include="Assets/Scripts/CarSensors/CarCollisionData.cs" />
-     <Compile Include="Assets/Scripts/Router.cs" />
+     <Compile Include="Assets/Scripts/Room/Router.cs" />
      <Compile Include="Assets/Scripts/CarSensors/CameraData.cs" />
-     <Compile Include="Assets/Protos/VideoGrpc.cs" />
      <Compile Include="Assets/Scripts/Car/WheelSet.cs" />
-     <Compile Include="Assets/Scripts/Car/CarRouter.cs" />
-     <Compile Include="Assets/Protos/CarCommunicationGrpc.cs" />
-     <Compile Include="Assets/Protos/Greet.cs" />
-     <Compile Include="Assets/Protos/Video.cs" />
+     <Compile Include="Assets/Scripts/CarSensors/CarRouterReceiver.cs" />
+     <Compile Include="Assets/Scripts/Protos/CarCommunicationGrpc.cs" />
      <Compile Include="Assets/Scripts/CarSensors/RaySensor.cs" />
      <Compile Include="Assets/Scripts/CarCommunication.cs" />
-     <Compile Include="Assets/Scripts/GrpcTest/SimpleGreetGrpc.cs" />
-     <Compile Include="Assets/Protos/GreetGrpc.cs" />
      <Compile Include="Assets/Scripts/CarSensors/RaySensorsData.cs" />
      <Compile Include="Assets/Scripts/Car/CarControllerAdvanced.cs" />
-     <Compile Include="Assets/Scripts/GrpcTest/GrpcVideoCapture.cs" />
-     <Compile Include="Assets/Protos/CarCommunication.cs" />
-     <None Include="Assets/Google.Protobuf/lib/net45/Google.Protobuf.xml" />
+     <Compile Include="Assets/Scripts/Protos/CarCommunication.cs" />
+     <Compile Include="Assets/Scripts/Car/CarInfo.cs" />
+     <Compile Include="Assets/Scripts/Room/OrderBox.cs" />
+     <None Include="Assets/Dependencies/Google.Protobuf/lib/net45/Google.Protobuf.xml" />
     <Reference Include="UnityEngine">
         <HintPath>/home/max/Unity/Hub/Editor/2021.3.6f1/Editor/Data/Managed/UnityEngine/UnityEngine.dll</HintPath>
     </Reference>
@@ -304,7 +300,7 @@
         <HintPath>/home/max/Documents/Projects/UnityCarGRPC/trunk/Assets/Plugins/System.Diagnostics.DiagnosticSource/4.5.1/lib/netstandard1.3/System.Diagnostics.DiagnosticSource.dll</HintPath>
     </Reference>
     <Reference Include="Google.Protobuf">
-        <HintPath>/home/max/Documents/Projects/UnityCarGRPC/trunk/Assets/Google.Protobuf/lib/net45/Google.Protobuf.dll</HintPath>
+        <HintPath>/home/max/Documents/Projects/UnityCarGRPC/trunk/Assets/Dependencies/Google.Protobuf/lib/net45/Google.Protobuf.dll</HintPath>
     </Reference>
     <Reference Include="Unity.VisualScripting.Antlr3.Runtime">
         <HintPath>/home/max/Documents/Projects/UnityCarGRPC/trunk/Library/PackageCache/com.unity.visualscripting@1.7.8/Runtime/VisualScripting.Flow/Dependencies/NCalc/Unity.VisualScripting.Antlr3.Runtime.dll</HintPath>
