@@ -68,7 +68,7 @@ public class CarCommunication : MonoBehaviour
         
         // get data: car state, camera image, sensors data, routers data
         carID = car.GetComponent<CarInfo>().ID;
-        cameraImage = carCamera.GetComponent<CameraData>().getFrameInBytes();
+        cameraImage = carCamera.GetComponent<CameraData>().getCameraImageInBytes();
         distanceSensorsData = carDistanceSensors.GetComponent<RaySensorsData>().GetSensorsData();
         routersData = carRouterReceiver.GetComponent<CarRouterReceiver>().GetRoutersData();
         carCollisionData = car.GetComponent<CarCollisionData>().isCollide;
