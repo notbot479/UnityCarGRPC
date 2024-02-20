@@ -16,6 +16,7 @@ public class CarCommunication : MonoBehaviour
     public string serverDomain = "localhost";
     private string serverApiUrl;
     public int serverPort = 50051;
+    public bool processingUpdate = true;
     public bool sendRequestToServer = true;
     public bool moveCarByAI = true;
    
@@ -23,7 +24,6 @@ public class CarCommunication : MonoBehaviour
     private GrpcChannel channel;
     private Communication.CommunicationClient client;
     private bool serverConnectionError = false;
-    private bool processingUpdate = true;
     private bool processingRespawn = false;
     // car & car data
     private GameObject car;
@@ -74,9 +74,9 @@ public class CarCommunication : MonoBehaviour
         carCollisionData = car.GetComponent<CarCollisionData>().isCollide;
         // teleport camera to base and collect data (teleport required)
         carCamera.GetComponent<CameraData>().teleportCameraToBase();
-        cameraImage = carCamera.GetComponent<CameraData>().getCameraImageInBytes();
         boxesInCameraView =  carCamera.GetComponent<CameraData>().getBoxesInCameraViewStatus();
-        qrCodeMetadata = carCamera.GetComponent<CameraData>().getQRCodeMetadata();
+        cameraImage = carCamera.GetComponent<CameraData>().getCameraImageInBytes(); // slow
+        qrCodeMetadata = carCamera.GetComponent<CameraData>().getQRCodeMetadata(); // slower
         
         // skip send request to server
         if (!sendRequestToServer) { return; }

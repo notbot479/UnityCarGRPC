@@ -49,6 +49,7 @@
      <Compile Include="Assets/Scripts/Protos/CarCommunication.cs" />
      <Compile Include="Assets/Scripts/Car/CarInfo.cs" />
      <Compile Include="Assets/Scripts/Room/OrderBox.cs" />
+     <Compile Include="Assets/Scripts/FpsCounter.cs" />
      <None Include="Assets/Dependencies/ZXing.Net.0.16.9.0/unity/zxing.unity.xml" />
      <None Include="Assets/Dependencies/Google.Protobuf/lib/net45/Google.Protobuf.xml" />
     <Reference Include="UnityEngine">
@@ -294,11 +295,14 @@
     <Reference Include="Grpc.Net.Common">
         <HintPath>/home/max/Documents/Projects/UnityCarGRPC/trunk/Assets/Plugins/Grpc.Net.Common/2.55.0/lib/netstandard2.1/Grpc.Net.Common.dll</HintPath>
     </Reference>
-    <Reference Include="System.IO.Pipelines">
-        <HintPath>/home/max/Documents/Projects/UnityCarGRPC/trunk/Assets/Plugins/System.IO.Pipelines/7.0.0/lib/netstandard2.0/System.IO.Pipelines.dll</HintPath>
+    <Reference Include="zxing.unity">
+        <HintPath>/home/max/Documents/Projects/UnityCarGRPC/trunk/Assets/Dependencies/ZXing.Net.0.16.9.0/unity/zxing.unity.dll</HintPath>
     </Reference>
     <Reference Include="System.Diagnostics.DiagnosticSource">
         <HintPath>/home/max/Documents/Projects/UnityCarGRPC/trunk/Assets/Plugins/System.Diagnostics.DiagnosticSource/4.5.1/lib/netstandard1.3/System.Diagnostics.DiagnosticSource.dll</HintPath>
+    </Reference>
+    <Reference Include="System.IO.Pipelines">
+        <HintPath>/home/max/Documents/Projects/UnityCarGRPC/trunk/Assets/Plugins/System.IO.Pipelines/7.0.0/lib/netstandard2.0/System.IO.Pipelines.dll</HintPath>
     </Reference>
     <Reference Include="Google.Protobuf">
         <HintPath>/home/max/Documents/Projects/UnityCarGRPC/trunk/Assets/Dependencies/Google.Protobuf/lib/net45/Google.Protobuf.dll</HintPath>
@@ -320,9 +324,6 @@
     </Reference>
     <Reference Include="Grpc.Core.Api">
         <HintPath>/home/max/Documents/Projects/UnityCarGRPC/trunk/Assets/Plugins/Grpc.Core.Api/2.55.0/lib/netstandard2.1/Grpc.Core.Api.dll</HintPath>
-    </Reference>
-    <Reference Include="zxing.unity">
-        <HintPath>/home/max/Documents/Projects/UnityCarGRPC/trunk/Assets/Dependencies/ZXing.Net.0.16.9.0/unity/zxing.unity.dll</HintPath>
     </Reference>
     <Reference Include="netstandard">
         <HintPath>/home/max/Unity/Hub/Editor/2021.3.6f1/Editor/Data/NetStandard/ref/2.1.0/netstandard.dll</HintPath>
