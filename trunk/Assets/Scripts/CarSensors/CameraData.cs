@@ -1,4 +1,5 @@
 using UnityEngine;
+using ZXing;
 
 public class CameraData : MonoBehaviour
 {
@@ -13,7 +14,7 @@ public class CameraData : MonoBehaviour
     private RenderTexture targetTextureFullscreen;
     private Texture2D textureFullscreen;
 
-    private void teleportCameraToBase()
+    public void teleportCameraToBase()
     {
         targetCamera.transform.position = cameraBase.transform.position;
         targetCamera.transform.LookAt(cameraBaseLookedAt.transform);
@@ -37,7 +38,6 @@ public class CameraData : MonoBehaviour
     }
     public bool getBoxesInCameraViewStatus()
     {
-        teleportCameraToBase();
         OrderBox[] Boxes = FindObjectsOfType<OrderBox>();
         foreach (OrderBox Box in Boxes)
         {
@@ -74,8 +74,6 @@ public class CameraData : MonoBehaviour
         // replace textures to custom target texture
         targetCamera.targetTexture = targetTexture;
         RenderTexture.active = targetTexture;
-        // teleport camera to base and render texture
-        teleportCameraToBase();
         targetCamera.Render();
         // read pixels from custom render texture
         texture.ReadPixels(new Rect(0, 0, Screen.width, Screen.height), 0, 0);
@@ -84,20 +82,25 @@ public class CameraData : MonoBehaviour
         targetCamera.targetTexture = null;
         return imageBytes;
     }
-    public byte[] getCameraImageFullScreenInBytes()
+    public string getQRCodeMetadata()
     {
         // replace textures to custom target texture
         targetCamera.targetTexture = targetTextureFullscreen;
         RenderTexture.active = targetTextureFullscreen;
-        // teleport camera to base and render texture
-        teleportCameraToBase();
         targetCamera.Render();
         // read pixels from custom render texture
         textureFullscreen.ReadPixels(new Rect(0, 0, Screen.width, Screen.height), 0, 0);
-        byte[] imageBytes = textureFullscreen.EncodeToPNG();
-        // reset target texture and return bytes
+        // grab data from qr code
+        IBarcodeReader barcodeReader = new BarcodeReader();
+        var result = barcodeReader.Decode(
+            textureFullscreen.GetPixels32(), 
+            textureFullscreen.width,
+            textureFullscreen.height
+        );
+        // reset target texture and return qr metadata
         targetCamera.targetTexture = null;
-        return imageBytes;
+        if (result != null) { return result.Text; }
+        return "";
     }
     private void OnDestroy()
     {

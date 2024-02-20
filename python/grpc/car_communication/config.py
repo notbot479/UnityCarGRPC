@@ -3,7 +3,7 @@ import os
 
 # basic settings
 SHOW_STREAM_VIDEO = False
-SHOW_CLIENT_DATA = False
+SHOW_CLIENT_DATA = True
 TARGET_ENCODE_TO = '.jpg'
 
 # paths

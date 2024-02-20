@@ -355,7 +355,6 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 120700825}
-  - {fileID: 1173444309}
   - {fileID: 1186990700}
   m_Father: {fileID: 0}
   m_RootOrder: 3
@@ -960,17 +959,17 @@ PrefabInstance:
     - target: {fileID: 8382113860593400010, guid: 217a667c0619d3e99bee532f9c9ff983,
         type: 3}
       propertyPath: m_LocalPosition.x
-      value: 7.6
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 8382113860593400010, guid: 217a667c0619d3e99bee532f9c9ff983,
         type: 3}
       propertyPath: m_LocalPosition.y
-      value: -1.52
+      value: -1
       objectReference: {fileID: 0}
     - target: {fileID: 8382113860593400010, guid: 217a667c0619d3e99bee532f9c9ff983,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: 1.7
+      value: 0.05
       objectReference: {fileID: 0}
     - target: {fileID: 8382113860593400010, guid: 217a667c0619d3e99bee532f9c9ff983,
         type: 3}
@@ -1040,12 +1039,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1173444307}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -14.521919, y: 2.5608814, z: 13.737849}
+  m_LocalPosition: {x: 0.025278091, y: 0.9772861, z: 0.11415577}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 171277610}
-  m_RootOrder: 1
+  m_Father: {fileID: 0}
+  m_RootOrder: 5
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1173444310
 MonoBehaviour:
@@ -1062,7 +1061,7 @@ MonoBehaviour:
   serverDomain: localhost
   serverPort: 50051
   sendRequestToServer: 1
-  moveCarByAI: 1
+  moveCarByAI: 0
 --- !u!1001 &1177478698
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1860,17 +1859,17 @@ PrefabInstance:
     - target: {fileID: 8382113860593400010, guid: 34e1d88acfaf673ae895ce7311ffea74,
         type: 3}
       propertyPath: m_LocalPosition.x
-      value: 1.22
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8382113860593400010, guid: 34e1d88acfaf673ae895ce7311ffea74,
         type: 3}
       propertyPath: m_LocalPosition.y
-      value: -1.1199999
+      value: -1
       objectReference: {fileID: 0}
     - target: {fileID: 8382113860593400010, guid: 34e1d88acfaf673ae895ce7311ffea74,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0.06
+      value: 0.05
       objectReference: {fileID: 0}
     - target: {fileID: 8382113860593400010, guid: 34e1d88acfaf673ae895ce7311ffea74,
         type: 3}

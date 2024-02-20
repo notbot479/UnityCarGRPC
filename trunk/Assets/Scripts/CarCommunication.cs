@@ -34,6 +34,7 @@ public class CarCommunication : MonoBehaviour
     private GameObject carCamera;
     private byte[] cameraImage;
     private bool boxesInCameraView; 
+    private string qrCodeMetadata;
     // sensors & sensors data
     private GameObject carDistanceSensors;
     private Dictionary<string,float> distanceSensorsData;
@@ -68,17 +69,20 @@ public class CarCommunication : MonoBehaviour
         if (!processingUpdate) { return; }
         // get data: car state, camera image, sensors data, routers data
         carID = car.GetComponent<CarInfo>().ID;
-        cameraImage = carCamera.GetComponent<CameraData>().getCameraImageInBytes();
-        boxesInCameraView =  carCamera.GetComponent<CameraData>().getBoxesInCameraViewStatus();
         distanceSensorsData = carDistanceSensors.GetComponent<RaySensorsData>().GetSensorsData();
         routersData = carRouterReceiver.GetComponent<CarRouterReceiver>().GetRoutersData();
         carCollisionData = car.GetComponent<CarCollisionData>().isCollide;
+        // teleport camera to base and collect data (teleport required)
+        carCamera.GetComponent<CameraData>().teleportCameraToBase();
+        cameraImage = carCamera.GetComponent<CameraData>().getCameraImageInBytes();
+        boxesInCameraView =  carCamera.GetComponent<CameraData>().getBoxesInCameraViewStatus();
+        qrCodeMetadata = carCamera.GetComponent<CameraData>().getQRCodeMetadata();
+        
         // skip send request to server
         if (!sendRequestToServer) { return; }
         // processing respawn car (skip send request)
         if (carCollisionData && processingRespawn) { return; }
         else if (processingRespawn) { processingRespawn = false; }
-        
         // create grpc request
         var request = new ClientRequest
         {
@@ -95,7 +99,7 @@ public class CarCommunication : MonoBehaviour
             },
             CarCollisionData = carCollisionData,
             BoxesInCameraView = boxesInCameraView,
-            QrCodeMetadata = "metadata", // TODO not implemented
+            QrCodeMetadata = qrCodeMetadata,
         };
         foreach (var t in routersData)
         {
@@ -120,9 +124,9 @@ public class CarCommunication : MonoBehaviour
         }
         
         // processing command from server
-        if (!moveCarByAI) { return; }
         try{
-            if (command == "Respawn" && !processingRespawn)
+            if (command == "Noop") {} //do nothing
+            else if (command == "Respawn" && !processingRespawn)
             {
                 processingRespawn = true;
                 car.GetComponent<CarCollisionData>().TeleportToSpawn();
@@ -132,7 +136,7 @@ public class CarCommunication : MonoBehaviour
                 Debug.Log("Poweroff"); // TODO end simulation
                 processingUpdate = false;
             }
-            else
+            else if (moveCarByAI)
             {
                 car.GetComponent<CarControllerAdvanced>().CarMove(command);
             }
