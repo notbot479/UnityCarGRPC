@@ -16,6 +16,7 @@ public class CarCommunication : MonoBehaviour
     public string serverDomain = "localhost";
     private string serverApiUrl;
     public int serverPort = 50051;
+    public float scanQRMaxDistance = 1f;
     public bool processingUpdate = true;
     public bool sendRequestToServer = true;
     public bool moveCarByAI = true;
@@ -74,10 +75,16 @@ public class CarCommunication : MonoBehaviour
         carCollisionData = car.GetComponent<CarCollisionData>().isCollide;
         // teleport camera to base and collect data (teleport required)
         carCamera.GetComponent<CameraData>().teleportCameraToBase();
-        boxesInCameraView =  carCamera.GetComponent<CameraData>().getBoxesInCameraViewStatus();
-        cameraImage = carCamera.GetComponent<CameraData>().getCameraImageInBytes(); // slow
-        qrCodeMetadata = carCamera.GetComponent<CameraData>().getQRCodeMetadata(); // slower
-        
+        float distanceToNearestBox = carCamera.GetComponent<CameraData>().getDistanceToNearestVisibleBox();
+        boxesInCameraView = (distanceToNearestBox != float.PositiveInfinity);
+        cameraImage = carCamera.GetComponent<CameraData>().getCameraImageInBytes(); // bit slower
+        // not scan QR, if car is too far or not have visible contact with box
+        if (distanceToNearestBox > scanQRMaxDistance) { qrCodeMetadata = ""; }
+        else
+        {
+            qrCodeMetadata = carCamera.GetComponent<CameraData>().getQRCodeMetadata(); // much slower
+        }
+
         // skip send request to server
         if (!sendRequestToServer) { return; }
         // processing respawn car (skip send request)
