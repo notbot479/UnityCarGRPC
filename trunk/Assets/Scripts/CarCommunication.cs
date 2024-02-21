@@ -13,6 +13,7 @@ using CarCommunicationApp;
 
 public class CarCommunication : MonoBehaviour
 {
+    public int fpsLimit = 60;
     public string serverDomain = "localhost";
     private string serverApiUrl;
     public int serverPort = 50051;
@@ -46,6 +47,9 @@ public class CarCommunication : MonoBehaviour
 
     public void Start()
     {
+        // enable vsync
+        QualitySettings.vSyncCount = 0;
+        Application.targetFrameRate = fpsLimit;
         // create grpc client and channel
         serverApiUrl = $"http://{serverDomain}:{serverPort}";
         var channelOptions = new GrpcChannelOptions
