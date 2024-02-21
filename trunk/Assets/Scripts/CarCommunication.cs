@@ -136,7 +136,7 @@ public class CarCommunication : MonoBehaviour
         
         // processing command from server
         try{
-            if (command == "Noop") {} //do nothing
+            if (command == "Noop") { return;  } // no operations, skip command from server
             else if (command == "Respawn" && !processingRespawn)
             {
                 processingRespawn = true;
@@ -144,8 +144,9 @@ public class CarCommunication : MonoBehaviour
             }
             else if (command == "Poweroff")
             {
-                Debug.Log("Poweroff"); // TODO end simulation
                 processingUpdate = false;
+                UnityEditor.EditorApplication.isPlaying = false;
+                Application.Quit();
             }
             else if (moveCarByAI)
             {
@@ -160,5 +161,6 @@ public class CarCommunication : MonoBehaviour
     private void OnDestroy()
     {
         channel?.ShutdownAsync().Wait();
+        Debug.Log("End simulation");
     }
 }
