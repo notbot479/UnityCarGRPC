@@ -79,10 +79,10 @@ public class CarControllerAdvanced : MonoBehaviour {
             back = 0.0f;
         } else if (command == "Stop") {
             steer = 0.0f;
-            forward = 0.0f;
-            back = -1.0f;
+            forward = 1f;
+            back = 1f;
         }
-
+        //Debug.Log($"{steer} {forward} {back}");
         frontSet.UpdateWheels();
         backSet.UpdateWheels();
 
