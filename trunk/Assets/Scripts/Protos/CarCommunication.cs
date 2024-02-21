@@ -25,24 +25,24 @@ namespace CarCommunicationApp {
       byte[] descriptorData = global::System.Convert.FromBase64String(
           string.Concat(
             "Ch5Qcm90b3MvY2FyX2NvbW11bmljYXRpb24ucHJvdG8SE0NhckNvbW11bmlj",
-            "YXRpb25BcHAirgEKDlNlcnZlclJlc3BvbnNlEjwKB2NvbW1hbmQYASABKA4y",
+            "YXRpb25BcHAiuAEKDlNlcnZlclJlc3BvbnNlEjwKB2NvbW1hbmQYASABKA4y",
             "Ky5DYXJDb21tdW5pY2F0aW9uQXBwLlNlcnZlclJlc3BvbnNlLkNvbW1hbmQi",
-            "XgoHQ29tbWFuZBIICgRMRUZUEAASCQoFUklHSFQQARILCgdGT1JXQVJEEAIS",
-            "DAoIQkFDS1dBUkQQAxIICgRTVE9QEAQSDAoIUE9XRVJPRkYQBRILCgdSRVNQ",
-            "QVdOEAYiuAEKE0Rpc3RhbmNlU2Vuc29yc0RhdGESGwoTZnJvbnRfbGVmdF9k",
-            "aXN0YW5jZRgBIAEoAhIWCg5mcm9udF9kaXN0YW5jZRgCIAEoAhIcChRmcm9u",
-            "dF9yaWdodF9kaXN0YW5jZRgDIAEoAhIaChJiYWNrX2xlZnRfZGlzdGFuY2UY",
-            "BCABKAISFQoNYmFja19kaXN0YW5jZRgFIAEoAhIbChNiYWNrX3JpZ2h0X2Rp",
-            "c3RhbmNlGAYgASgCIiYKClJvdXRlckRhdGESCgoCaWQYASABKAkSDAoEcnNz",
-            "aRgCIAEoAiKJAgoNQ2xpZW50UmVxdWVzdBIOCgZjYXJfaWQYASABKAkSFAoM",
-            "Y2FtZXJhX2ltYWdlGAIgASgMEkcKFWRpc3RhbmNlX3NlbnNvcnNfZGF0YRgD",
-            "IAEoCzIoLkNhckNvbW11bmljYXRpb25BcHAuRGlzdGFuY2VTZW5zb3JzRGF0",
-            "YRI1Cgxyb3V0ZXJzX2RhdGEYBCADKAsyHy5DYXJDb21tdW5pY2F0aW9uQXBw",
-            "LlJvdXRlckRhdGESHAoUYm94ZXNfaW5fY2FtZXJhX3ZpZXcYBSABKAgSGgoS",
-            "Y2FyX2NvbGxpc2lvbl9kYXRhGAYgASgIEhgKEHFyX2NvZGVfbWV0YWRhdGEY",
-            "ByABKAkyZwoNQ29tbXVuaWNhdGlvbhJWCgtTZW5kUmVxdWVzdBIiLkNhckNv",
-            "bW11bmljYXRpb25BcHAuQ2xpZW50UmVxdWVzdBojLkNhckNvbW11bmljYXRp",
-            "b25BcHAuU2VydmVyUmVzcG9uc2ViBnByb3RvMw=="));
+            "aAoHQ29tbWFuZBIICgRMRUZUEAASCQoFUklHSFQQARILCgdGT1JXQVJEEAIS",
+            "DAoIQkFDS1dBUkQQAxIICgRTVE9QEAQSCAoETk9PUBAFEgwKCFBPV0VST0ZG",
+            "EAYSCwoHUkVTUEFXThAHIrgBChNEaXN0YW5jZVNlbnNvcnNEYXRhEhsKE2Zy",
+            "b250X2xlZnRfZGlzdGFuY2UYASABKAISFgoOZnJvbnRfZGlzdGFuY2UYAiAB",
+            "KAISHAoUZnJvbnRfcmlnaHRfZGlzdGFuY2UYAyABKAISGgoSYmFja19sZWZ0",
+            "X2Rpc3RhbmNlGAQgASgCEhUKDWJhY2tfZGlzdGFuY2UYBSABKAISGwoTYmFj",
+            "a19yaWdodF9kaXN0YW5jZRgGIAEoAiImCgpSb3V0ZXJEYXRhEgoKAmlkGAEg",
+            "ASgJEgwKBHJzc2kYAiABKAIiiQIKDUNsaWVudFJlcXVlc3QSDgoGY2FyX2lk",
+            "GAEgASgJEhQKDGNhbWVyYV9pbWFnZRgCIAEoDBJHChVkaXN0YW5jZV9zZW5z",
+            "b3JzX2RhdGEYAyABKAsyKC5DYXJDb21tdW5pY2F0aW9uQXBwLkRpc3RhbmNl",
+            "U2Vuc29yc0RhdGESNQoMcm91dGVyc19kYXRhGAQgAygLMh8uQ2FyQ29tbXVu",
+            "aWNhdGlvbkFwcC5Sb3V0ZXJEYXRhEhwKFGJveGVzX2luX2NhbWVyYV92aWV3",
+            "GAUgASgIEhoKEmNhcl9jb2xsaXNpb25fZGF0YRgGIAEoCBIYChBxcl9jb2Rl",
+            "X21ldGFkYXRhGAcgASgJMmcKDUNvbW11bmljYXRpb24SVgoLU2VuZFJlcXVl",
+            "c3QSIi5DYXJDb21tdW5pY2F0aW9uQXBwLkNsaWVudFJlcXVlc3QaIy5DYXJD",
+            "b21tdW5pY2F0aW9uQXBwLlNlcnZlclJlc3BvbnNlYgZwcm90bzM="));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { },
           new pbr::GeneratedClrTypeInfo(null, null, new pbr::GeneratedClrTypeInfo[] {
@@ -259,13 +259,17 @@ namespace CarCommunicationApp {
         [pbr::OriginalName("BACKWARD")] Backward = 3,
         [pbr::OriginalName("STOP")] Stop = 4,
         /// <summary>
+        ///no operations
+        /// </summary>
+        [pbr::OriginalName("NOOP")] Noop = 5,
+        /// <summary>
         /// service decision
         /// </summary>
-        [pbr::OriginalName("POWEROFF")] Poweroff = 5,
+        [pbr::OriginalName("POWEROFF")] Poweroff = 6,
         /// <summary>
         /// virtual model only
         /// </summary>
-        [pbr::OriginalName("RESPAWN")] Respawn = 6,
+        [pbr::OriginalName("RESPAWN")] Respawn = 7,
       }
 
     }

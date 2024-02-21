@@ -11,10 +11,11 @@ message ServerResponse {
         FORWARD = 2;
         BACKWARD = 3;
         STOP = 4;
+        NOOP = 5; //no operations
         // service decision
-        POWEROFF = 5;
+        POWEROFF = 6;
         // virtual model only
-        RESPAWN = 6;
+        RESPAWN = 7;
     }
     
     Command command = 1;

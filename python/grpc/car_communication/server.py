@@ -22,7 +22,7 @@ from config import *
 
 
 # server commands based on proto file
-CAR_MOVEMENT_SIGNALS = ['left','right','forward','backward','stop']
+CAR_MOVEMENT_SIGNALS = ['noop','left','right','forward','backward','stop']
 CAR_EXTRA_SIGNALS = ['poweroff','respawn']
 
 

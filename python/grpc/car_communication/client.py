@@ -56,10 +56,15 @@ def send_video_from_path(path:str) -> None:
         send_request(image_bytes)
     cap.release()
 
+def get_command_by_index(index:int) -> str:
+    command = CarCommunicationApp_pb2.ServerResponse.Command.Name(index) #pyright: ignore
+    return command
+
 def send_request(image_bytes) -> None:
     request = create_mock_client_request(image_bytes)
     response = stub.SendRequest(request)
-    command = response.command
+    command_index = response.command
+    command = get_command_by_index(index=command_index)
     print(f'Received command: {command}')
 
 
