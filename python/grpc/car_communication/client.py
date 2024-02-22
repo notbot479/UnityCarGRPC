@@ -23,9 +23,9 @@ def create_mock_client_request(image_bytes):
     )
 
     routers_data = [
-        CarCommunicationApp_pb2.RouterData(id='router1', rssi=-10.0), #pyright: ignore
-        CarCommunicationApp_pb2.RouterData(id='router2', rssi=-30.0), #pyright: ignore
-        CarCommunicationApp_pb2.RouterData(id='router3', rssi=-99.0), #pyright: ignore
+        CarCommunicationApp_pb2.RouterData(id='1', rssi=-10.0), #pyright: ignore
+        CarCommunicationApp_pb2.RouterData(id='2', rssi=-30.0), #pyright: ignore
+        CarCommunicationApp_pb2.RouterData(id='3', rssi=-99.0), #pyright: ignore
     ]
 
     client_request = CarCommunicationApp_pb2.ClientRequest( #pyright: ignore

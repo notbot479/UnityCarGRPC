@@ -42,8 +42,8 @@ class RouterData:
 class GrpcClientData:
     car_id: str
     camera_image: np.ndarray | None
-    distance_sensors_data: list[DistanceSensorData]
-    routers_data: list[RouterData]
+    distance_sensors: list[DistanceSensorData]
+    routers: list[RouterData]
     boxes_in_camera_view: bool
     car_collision_data: bool 
     qr_code_metadata: str
@@ -84,21 +84,52 @@ class Servicer(_Servicer):
         # processing data from client
         command = self._get_random_movement()
         return self.send_response_to_client(command)
-    
+
+
+    @staticmethod
+    def get_distance_sensors_distances(
+        distance_sensors:list[DistanceSensorData],
+    ) -> list[float]:
+        distances = [s.distance for s in distance_sensors]
+        return distances
+
+    def get_router_rssi_by_id(
+        self,
+        router_id:str, 
+        routers: list[RouterData],
+    ) -> float:
+        router = self.get_router_by_id(router_id=router_id, routers=routers)
+        if router is None: return float('inf')
+        rssi = router.rssi
+        return rssi
+
+    @staticmethod
+    def get_distance_sensor_by_direction(
+        direction:str, 
+        distance_sensors: list[DistanceSensorData]
+    ) -> DistanceSensorData | None:
+        for distance_sensor in distance_sensors:
+            if str(distance_sensor.direction) == str(direction):
+                return distance_sensor
+        return None
+
+    @staticmethod
+    def get_router_by_id(
+        router_id:str, 
+        routers: list[RouterData],
+    ) -> RouterData | None:
+        for router in routers:
+            if str(router.id) == str(router_id):
+                return router
+        return None
 
     def get_car_prev_command(self) -> str | None:
         return self._car_prev_command
-
-    def send_response_to_client(self, command:str) -> None: 
-        grpc_command = self._commands.get(command)
-        if grpc_command is None: return
-        # save server command, if grpc_command exists
-        self._save_car_prev_command(command)
-        return _Pb2_server_response(command=grpc_command)
-    
+   
     def get_car_prev_data(self) -> GrpcClientData | None:
         data = self._car_data_deque[0]
         return data
+
 
     def get_grpc_client_data(self, request: _Pb2_client_request) -> GrpcClientData:
         '''parse grpc request and create dataclass'''
@@ -109,23 +140,28 @@ class Servicer(_Servicer):
         camera_image = convert_bytes_to_frame(
             request.camera_image,
         )
-        distance_sensors_data = self._normalize_sensors_data(
-                request.distance_sensors_data,
+        distance_sensors = self._normalize_distance_sensors_data(
+            request.distance_sensors_data,
         )
-        routers_data = self._normalize_routers_data(
-            request.routers_data,
-        )
+        routers = self._normalize_routers_data(request.routers_data)
         data = GrpcClientData(
             car_id = car_id,
             camera_image = camera_image,
-            distance_sensors_data = distance_sensors_data,
-            routers_data = routers_data,
+            distance_sensors = distance_sensors,
+            routers = routers,
             boxes_in_camera_view = boxes_in_camera_view,
             car_collision_data = car_collision_data,
             qr_code_metadata = qr_code_metadata,
         )
         return data
     
+    def send_response_to_client(self, command:str) -> None: 
+        grpc_command = self._commands.get(command)
+        if grpc_command is None: return
+        # save server command, if grpc_command exists
+        self._save_car_prev_command(command)
+        return _Pb2_server_response(command=grpc_command)
+ 
     def SendRequest(self, request: _Pb2_client_request, _): 
         data = self.get_grpc_client_data(request)
         self._save_car_current_data(data)
@@ -149,26 +185,47 @@ class Servicer(_Servicer):
     def _send_respawn_command(self):
         return self.send_response_to_client('respawn')
     
+    def _get_random_movement(self) -> str:
+        movement = random.choice(list(self._movement_commands.keys()))
+        return movement
+
     @staticmethod
-    def _normalize_sensors_data(
+    def _normalize_distance_sensors_data(
         data: _Pb2_distance_sensors_data,
+        *,
+        round_factor:int = 5,
     ) -> list[DistanceSensorData]:
         sensors = (
-            ('front_left_distance',data.front_left_distance),
-            ('front_distance',data.front_distance),
-            ('front_right_distance',data.front_right_distance),
-            ('back_left_distance',data.back_left_distance),
-            ('back_distance',data.back_distance),
-            ('back_right_distance',data.back_right_distance),
+            ('front_left',data.front_left_distance),
+            ('front',data.front_distance),
+            ('front_right',data.front_right_distance),
+            ('back_left',data.back_left_distance),
+            ('back',data.back_distance),
+            ('back_right',data.back_right_distance),
         )
         data = []
         for direction, distance in sensors:
             sensor_data = DistanceSensorData(
                 direction=str(direction),
-                distance=float(distance),
+                distance=round(float(distance), round_factor),
             )
             data.append(sensor_data)
         return data
+
+    @staticmethod
+    def _normalize_routers_data(
+        data: list,
+        *,
+        round_factor:int = 5,
+    ) -> list[RouterData]:
+        routers = []
+        for d in data:
+            router_data = RouterData(
+                id=str(d.id),
+                rssi=round(float(d.rssi),round_factor),
+            )
+            routers.append(router_data)
+        return routers
 
     @staticmethod
     def _display_client_data(data: GrpcClientData) -> None:
@@ -177,25 +234,13 @@ class Servicer(_Servicer):
         if data.camera_image is not None:
             print(f'CameraImage: {len(data.camera_image.tobytes())} bytes')
         print('DistanceSensors:')
-        for i in data.distance_sensors_data: print(f'- {i}')
+        for i in data.distance_sensors: print(f'- {i}')
         print('Routers:')
-        for i in data.routers_data: print(f'- {i}')
+        for i in data.routers: print(f'- {i}')
         print(f'BoxesInView: {data.boxes_in_camera_view}')
         print(f'CarCollision: {data.car_collision_data}')
         print(f'QrCodeMetadata: {data.qr_code_metadata}')
         print()
-
-    @staticmethod
-    def _normalize_routers_data(data: list) -> list[RouterData]:
-        routers = []
-        for d in data:
-            router_data = RouterData(id=str(d.id),rssi=float(d.rssi))
-            routers.append(router_data)
-        return routers
-
-    def _get_random_movement(self) -> str:
-        movement = random.choice(list(self._movement_commands.keys()))
-        return movement
 
    
 def run_server(
