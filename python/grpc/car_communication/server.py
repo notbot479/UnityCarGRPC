@@ -13,7 +13,9 @@ from dataclasses import dataclass
 from concurrent import futures
 from collections import deque
 from typing import Deque
+from enum import Enum
 import numpy as np
+import threading
 import random
 
 from video import (
@@ -59,6 +61,11 @@ class GrpcClientData:
     car_collision_data: bool 
     qr_code_metadata: str
 
+from time import sleep #TODO remove
+
+class ServicerMode(Enum):
+    READY = 1
+    BUSY = 2
 
 class Servicer(_Servicer):
     @staticmethod
@@ -67,12 +74,28 @@ class Servicer(_Servicer):
         commands = {s:getattr(server_response,s.upper()) for s in signals}
         return commands
 
+    _mode: ServicerMode = ServicerMode.READY
+    
     _movement_commands = generate_grpc_commands(CAR_MOVEMENT_SIGNALS)
     _extra_commands = generate_grpc_commands(CAR_EXTRA_SIGNALS)
     _commands = _movement_commands | _extra_commands
 
     _car_data_deque: Deque[GrpcClientData | None] = deque([None],maxlen=2)
     _car_prev_command: str | None = None
+
+
+    @property
+    def mode(self) -> ServicerMode:
+        return self._mode
+
+    @staticmethod
+    def busy_until_end(func):
+        def wrapper(*args, **kwargs):
+            Servicer._mode = ServicerMode.BUSY
+            result = func(*args, **kwargs)
+            Servicer._mode = ServicerMode.READY
+            return result
+        return wrapper
 
 
     def __init__(
@@ -86,8 +109,18 @@ class Servicer(_Servicer):
         self.show_client_data = show_client_data
         super().__init__(*args,**kwargs)
     
+    @busy_until_end
+    def dqn_end_episode(self) -> None:
+        print("start dqn end episode")
+        sleep(5)
+        print("end dqn end episode")
+
     def processing_client_request(self, data: GrpcClientData):
-        if data.car_collision_data: return self._send_respawn_command()
+        if self.mode == ServicerMode.BUSY: 
+            return self._send_stop_command()
+        if data.car_collision_data: 
+            self._dqn_end_episode()
+            return self._send_respawn_command()
         # load prev data and command
         prev_data = self.get_car_prev_data()
         prev_command = self.get_car_prev_command()
@@ -181,7 +214,11 @@ class Servicer(_Servicer):
         grpc_command = self.processing_client_request(data=data)
         if not(grpc_command): return
         return grpc_command
+    
 
+    def _dqn_end_episode(self) -> None:
+        thread = threading.Thread(target=self.dqn_end_episode)
+        thread.start()
 
     def _save_car_prev_command(self, command:str) -> None:
         self._car_prev_command = str(command)

@@ -3,6 +3,7 @@ from Protos import car_communication_pb2 as CarCommunicationApp_pb2
 import grpc
 import cv2
 
+from random import randint
 from config import *
 
 server_address = 'localhost'
@@ -28,13 +29,15 @@ def create_mock_client_request(image_bytes):
         CarCommunicationApp_pb2.RouterData(id='3', rssi=-99.0), #pyright: ignore
     ]
 
+    car_collision_data = randint(0,100) == 3
+
     client_request = CarCommunicationApp_pb2.ClientRequest( #pyright: ignore
         car_id='car001',
         camera_image=image_bytes,
         distance_sensors_data=distance_sensors_data,
         routers_data=routers_data,
         boxes_in_camera_view=True,
-        car_collision_data=False,
+        car_collision_data=car_collision_data,
         qr_code_metadata='metadata'
     )
     return client_request
