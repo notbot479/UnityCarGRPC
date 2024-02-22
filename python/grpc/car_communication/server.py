@@ -18,7 +18,7 @@ import numpy as np
 import threading
 import random
 
-from video import (
+from services.video_manager import (
     convert_bytes_to_frame,
     VideoPlayer, 
 )
