@@ -35,7 +35,7 @@ def create_mock_client_request(image_bytes):
         routers_data=routers_data,
         boxes_in_camera_view=True,
         car_collision_data=False,
-        qr_code_metadata='sample_metadata'
+        qr_code_metadata='metadata'
     )
     return client_request
 

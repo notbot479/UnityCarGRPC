@@ -28,6 +28,17 @@ CAR_MOVEMENT_SIGNALS = ['noop','left','right','forward','backward','stop']
 CAR_EXTRA_SIGNALS = ['poweroff','respawn']
 
 
+class CameraImage:
+    def __init__(self, frame: np.ndarray) -> None:
+        self.frame = frame
+    
+    @property
+    def bytes_count(self) -> int:
+        return len(self.frame.tobytes())
+
+    def __repr__(self) -> str:
+        return f"CameraImage [{self.bytes_count} bytes]"
+
 @dataclass
 class DistanceSensorData:
     direction: str
@@ -41,7 +52,7 @@ class RouterData:
 @dataclass
 class GrpcClientData:
     car_id: str
-    camera_image: np.ndarray | None
+    camera_image: CameraImage | None
     distance_sensors: list[DistanceSensorData]
     routers: list[RouterData]
     boxes_in_camera_view: bool
@@ -137,9 +148,8 @@ class Servicer(_Servicer):
         boxes_in_camera_view = bool(request.boxes_in_camera_view)
         car_collision_data = bool(request.car_collision_data)
         qr_code_metadata = str(request.qr_code_metadata)
-        camera_image = convert_bytes_to_frame(
-            request.camera_image,
-        )
+        frame = convert_bytes_to_frame(request.camera_image)
+        camera_image = CameraImage(frame) if frame is not None else None
         distance_sensors = self._normalize_distance_sensors_data(
             request.distance_sensors_data,
         )
@@ -166,8 +176,8 @@ class Servicer(_Servicer):
         data = self.get_grpc_client_data(request)
         self._save_car_current_data(data)
         if self.show_client_data: self._display_client_data(data)
-        if self.show_stream_video and data.camera_image is not None: 
-            VideoPlayer.add_frame(data.camera_image)
+        if self.show_stream_video and data.camera_image: 
+            VideoPlayer.add_frame(data.camera_image.frame)
         grpc_command = self.processing_client_request(data=data)
         if not(grpc_command): return
         return grpc_command
@@ -231,8 +241,7 @@ class Servicer(_Servicer):
     def _display_client_data(data: GrpcClientData) -> None:
         print('-'*20)
         print(f'CarId: {data.car_id}')
-        if data.camera_image is not None:
-            print(f'CameraImage: {len(data.camera_image.tobytes())} bytes')
+        print(f'CameraImage: {data.camera_image}')
         print('DistanceSensors:')
         for i in data.distance_sensors: print(f'- {i}')
         print('Routers:')
