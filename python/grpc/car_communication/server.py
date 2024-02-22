@@ -18,11 +18,22 @@ import numpy as np
 import threading
 import random
 
+from api.web_service import (
+    WebServiceRequest,
+    WebService,
+)
+from services.task_manager import (
+    TaskManager,
+    Product,
+)
 from services.video_manager import (
     convert_bytes_to_frame,
     VideoPlayer, 
 )
 from config import *
+
+
+from time import sleep #TODO remove
 
 
 # setting server commands (based on proto file)
@@ -61,7 +72,6 @@ class GrpcClientData:
     car_collision_data: bool 
     qr_code_metadata: str
 
-from time import sleep #TODO remove
 
 class ServicerMode(Enum):
     READY = 1
@@ -87,12 +97,8 @@ class Servicer(_Servicer):
         commands = {s:getattr(server_response,s.upper()) for s in signals}
         return commands
 
-    @property
-    def mode(self) -> ServicerMode:
-        return self._mode
-
-
     _mode: ServicerMode = ServicerMode.READY
+    _web_service = WebService()
     
     _movement_commands = generate_grpc_commands(CAR_MOVEMENT_SIGNALS)
     _extra_commands = generate_grpc_commands(CAR_EXTRA_SIGNALS)
@@ -111,6 +117,14 @@ class Servicer(_Servicer):
     ) -> None:
         self.show_stream_video = show_stream_video
         self.show_client_data = show_client_data
+        # add mock task for car
+        product_nearest_router = '5'
+        product = Product(id=1,name='SomeBox',qr_code_metadata='qr')
+        TaskManager.create_active_task(
+            car_id='A-001',
+            product=product,
+            target_router_id=product_nearest_router,
+        )
         super().__init__(*args,**kwargs)
     
     @busy_until_end
@@ -130,9 +144,35 @@ class Servicer(_Servicer):
         prev_command = self.get_car_prev_command()
         if not(prev_data and prev_command): return self._send_stop_command()
         # processing data from client
+        nearest_router = self.get_nearest_router(data.routers)
+        if nearest_router is None: return self._get_random_movement()
+        # TODO get active task at once and reload if done or some navigation error
+        product, route = self.get_car_active_task(
+            data.car_id,
+            nearest_router_id=nearest_router.id,
+        )
+        if not(product and route): return self._send_stop_command()
+        print(product.name, route)
         command = self._get_random_movement()
         return self.send_response_to_client(command)
 
+
+    def get_car_active_task(
+        self, 
+        car_id: str, 
+        nearest_router_id:str,
+    ) -> tuple[Product | None, list[str]]:
+        request = WebServiceRequest(
+            car_id=car_id,
+            nearest_router_id=nearest_router_id,
+        )
+        response = self._web_service.send_request(request)
+        product, route = response.product, response.route
+        return product, route
+
+    @property
+    def mode(self) -> ServicerMode:
+        return self._mode
 
     @staticmethod
     def get_distance_sensors_distances(
@@ -160,6 +200,13 @@ class Servicer(_Servicer):
             if str(distance_sensor.direction) == str(direction):
                 return distance_sensor
         return None
+
+    def get_nearest_router(self, routers: list[RouterData]) -> RouterData | None:
+        if len(routers) == 0: return None
+        if len(routers) == 1: return routers[0]
+        router_id, _ = min([(i.id,abs(i.rssi)) for i in routers], key=lambda x: x[1])
+        router = self.get_router_by_id(router_id=router_id,routers=routers)
+        return router
 
     @staticmethod
     def get_router_by_id(
