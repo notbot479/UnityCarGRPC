@@ -9,9 +9,10 @@ from Protos.car_communication_pb2 import (
 )
 import grpc
 
-from collections import deque
 from dataclasses import dataclass
 from concurrent import futures
+from collections import deque
+from typing import Deque
 import numpy as np
 import random
 
@@ -22,7 +23,7 @@ from video import (
 from config import *
 
 
-# server commands based on proto file
+# setting server commands (based on proto file)
 CAR_MOVEMENT_SIGNALS = ['noop','left','right','forward','backward','stop']
 CAR_EXTRA_SIGNALS = ['poweroff','respawn']
 
@@ -59,7 +60,9 @@ class Servicer(_Servicer):
     _extra_commands = generate_grpc_commands(CAR_EXTRA_SIGNALS)
     _commands = _movement_commands | _extra_commands
 
-    _car_prev_data_deque = deque([None],maxlen=2)
+    _car_data_deque: Deque[GrpcClientData | None] = deque([None],maxlen=2)
+    _car_prev_command: str | None = None
+
 
     def __init__(
         self, 
@@ -74,11 +77,28 @@ class Servicer(_Servicer):
     
     def processing_client_request(self, data: GrpcClientData):
         if data.car_collision_data: return self._send_respawn_command()
+        # load prev data and command
         prev_data = self.get_car_prev_data()
-        if not(prev_data): return self._send_stop_command()
+        prev_command = self.get_car_prev_command()
+        if not(prev_data and prev_command): return self._send_stop_command()
         # processing data from client
         command = self._get_random_movement()
         return self.send_response_to_client(command)
+    
+
+    def get_car_prev_command(self) -> str | None:
+        return self._car_prev_command
+
+    def send_response_to_client(self, command:str) -> None: 
+        grpc_command = self._commands.get(command)
+        if grpc_command is None: return
+        # save server command, if grpc_command exists
+        self._save_car_prev_command(command)
+        return _Pb2_server_response(command=grpc_command)
+    
+    def get_car_prev_data(self) -> GrpcClientData | None:
+        data = self._car_data_deque[0]
+        return data
 
     def get_grpc_client_data(self, request: _Pb2_client_request) -> GrpcClientData:
         '''parse grpc request and create dataclass'''
@@ -106,38 +126,29 @@ class Servicer(_Servicer):
         )
         return data
     
-    def send_response_to_client(self, command:str) -> None:
-        grpc_command = self._commands.get(command)
-        if grpc_command is None: return
-        return _Pb2_server_response(command=grpc_command)
-    
-    def save_car_current_data(self, data:GrpcClientData) -> None:
-        self._car_prev_data_deque.append(data)
-
-    def get_car_prev_data(self) -> GrpcClientData | None:
-        data = self._car_prev_data_deque[0]
-        return data
-
     def SendRequest(self, request: _Pb2_client_request, _): 
         data = self.get_grpc_client_data(request)
-        self.save_car_current_data(data)
+        self._save_car_current_data(data)
         if self.show_client_data: self._display_client_data(data)
         if self.show_stream_video and data.camera_image is not None: 
             VideoPlayer.add_frame(data.camera_image)
-        command = self.processing_client_request(data=data)
-        if not(command): return
-        return command
-    
+        grpc_command = self.processing_client_request(data=data)
+        if not(grpc_command): return
+        return grpc_command
+
+
+    def _save_car_prev_command(self, command:str) -> None:
+        self._car_prev_command = str(command)
+
+    def _save_car_current_data(self, data:GrpcClientData) -> None:
+        self._car_data_deque.append(data)
+
     def _send_stop_command(self):
         return self.send_response_to_client('stop')
     
     def _send_respawn_command(self):
         return self.send_response_to_client('respawn')
     
-    def _send_poweroff_command(self):
-        print('poweroff')
-        return self.send_response_to_client('poweroff')
-
     @staticmethod
     def _normalize_sensors_data(
         data: _Pb2_distance_sensors_data,
@@ -186,7 +197,7 @@ class Servicer(_Servicer):
         movement = random.choice(list(self._movement_commands.keys()))
         return movement
 
-    
+   
 def run_server(
     *,
     port:int=50051,
