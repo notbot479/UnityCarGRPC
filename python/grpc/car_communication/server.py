@@ -72,6 +72,12 @@ class GrpcClientData:
     car_collision_data: bool 
     qr_code_metadata: str
 
+@dataclass
+class CarActiveTask:
+    car_id: str
+    product: Product
+    route: list[str]
+
 
 class ServicerMode(Enum):
     READY = 1
@@ -97,6 +103,7 @@ class Servicer(_Servicer):
         commands = {s:getattr(server_response,s.upper()) for s in signals}
         return commands
 
+
     _mode: ServicerMode = ServicerMode.READY
     _web_service = WebService()
     
@@ -105,9 +112,15 @@ class Servicer(_Servicer):
     _commands = _movement_commands | _extra_commands
 
     _car_data_deque: Deque[GrpcClientData | None] = deque([None],maxlen=2)
+    _car_prev_target_router_id: str | None = None
+    _car_active_task: CarActiveTask | None = None
     _car_prev_command: str | None = None
 
+    _dqn_episode_total_score: float = 0
+    _dqn_episode_id: int = 1
+    _dqn_state_id: int = 1
 
+    
     def __init__(
         self, 
         *args,
@@ -118,44 +131,131 @@ class Servicer(_Servicer):
         self.show_stream_video = show_stream_video
         self.show_client_data = show_client_data
         # add mock task for car
+        task_car_id = 'A-001'
         product_nearest_router = '5'
-        product = Product(id=1,name='SomeBox',qr_code_metadata='qr')
+        product = Product(
+            id = 1,
+            name = 'TargetBox',
+            qr_code_metadata = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+        )
         TaskManager.create_active_task(
-            car_id='A-001',
-            product=product,
-            target_router_id=product_nearest_router,
+            car_id = task_car_id,
+            product = product,
+            target_router_id = product_nearest_router,
         )
         super().__init__(*args,**kwargs)
-    
+
+    @busy_until_end
+    def dqn_start_training(self, car_id: str, routers: list[RouterData]) -> None:
+        nearest_router = self.get_nearest_router(routers)
+        if not(nearest_router):
+            print('Failed get task. No routers around car.')
+            return
+        # get active task from web service
+        product, route = self.get_car_active_task(
+            car_id = car_id,
+            nearest_router_id = nearest_router.id,
+        )
+        # set active task for car, if ok response
+        if not(product and route): 
+            print(f'No active task for car with id: {car_id}')
+            return
+        self._car_active_task = CarActiveTask(
+            car_id=car_id,
+            product=product, 
+            route=route,
+        )
+        self.clear_episode()
+        
     @busy_until_end
     def dqn_end_episode(self) -> None:
-        print("start updating dqn weights")
+        print(f"End episode: {self.episode_id}")
+        print(f"Total score: {self.episode_total_score}")
         sleep(5)
-        print("end updating")
+        self.start_new_episode()
+        print("Start new episode")
+
+    def get_reward_and_done(
+        self, 
+        old_state: GrpcClientData,
+        new_state: GrpcClientData,
+    ) -> tuple[float, bool]:
+        #TODO create advanced reward and done policy
+        # simple done policy
+        product = self.car_active_task.product if self.car_active_task else None
+        product_qr_code_metadata = product.qr_code_metadata if product else ""
+        target_found = old_state.qr_code_metadata == product_qr_code_metadata
+        done = new_state.car_collision_data or target_found
+        # simple reward policy
+        reward = 0.1
+        if target_found: reward += 0.3
+        return (reward, done)
 
     def processing_client_request(self, data: GrpcClientData):
+        # skip car data if server current busy
         if self.mode == ServicerMode.BUSY: 
-            return self._send_stop_command()
-        if data.car_collision_data: 
-            self.dqn_end_episode()
-            return self._send_respawn_command()
+            return self._send_stop_command() 
         # load prev data and command
         prev_data = self.get_car_prev_data()
         prev_command = self.get_car_prev_command()
-        if not(prev_data and prev_command): return self._send_stop_command()
-        # processing data from client
-        nearest_router = self.get_nearest_router(data.routers)
-        if nearest_router is None: return self._get_random_movement()
-        # TODO get active task at once and reload if done or some navigation error
-        product, route = self.get_car_active_task(
-            data.car_id,
-            nearest_router_id=nearest_router.id,
-        )
-        if not(product and route): return self._send_stop_command()
-        print(product.name, route)
+        prev_target_router_id = self.get_car_prev_target_router_id() 
+        # start dqn training, get active task from web service
+        if not(prev_data and prev_command):
+            self.dqn_start_training(car_id=data.car_id, routers=data.routers)
+            return self._send_stop_command()
+        # do nothing, if no active task or target router not visible
+        if not(self.car_active_task and prev_target_router_id): 
+            return self._send_stop_command()
+        
+        # TODO update target router policy (dont forget about extra reward, when switch target router)
+        # TODO but need ingore this feature when car in target area (last router in list)
+        
+        #print(f'Prev target router id: {prev_target_router_id}') 
+        print(f'Current target router id: {self.get_car_target_router_id()}')
+
+        reward, done = self.get_reward_and_done(prev_data, data)
+        self.total_score_add_reward(reward) 
+        # dqn end episode based on train policy
+        if done:
+            self.dqn_end_episode()
+            return self._send_respawn_command()
+        # dqn predict command or get random movement
         command = self._get_random_movement()
         return self.send_response_to_client(command)
 
+    def start_new_episode(self) -> None:
+        self._dqn_episode_id += 1
+        self.reset_total_score()
+        self.clear_state()
+
+    def clear_episode(self) -> None:
+        '''reset episode env data'''
+        self._dqn_episode_id = 1
+        self.reset_total_score()
+        self.clear_state()
+
+    def clear_state(self) -> None:
+        self._dqn_state_id = 1
+
+    def reset_total_score(self) -> None:
+        self._dqn_episode_total_score = 0
+
+    def total_score_add_reward(
+        self, 
+        reward: int | float = 0,
+        *,
+        round_factor:int = 3,
+    ) -> None:
+        '''add positive or negative reward to total score'''
+        reward = self._normalize_reward(reward, round_factor=round_factor)
+        self._dqn_episode_total_score += reward
+
+    def get_car_target_router_id(self) -> str | None:
+        if not(self.car_active_task): return
+        return self.car_active_task.route[0]
+    
+    def get_car_prev_target_router_id(self) -> str | None:
+        return self._car_prev_target_router_id
 
     def get_car_active_task(
         self, 
@@ -169,6 +269,22 @@ class Servicer(_Servicer):
         response = self._web_service.send_request(request)
         product, route = response.product, response.route
         return product, route
+
+    @property
+    def state_id(self) -> int:
+        return self._dqn_state_id
+
+    @property
+    def episode_id(self) -> int:
+        return self._dqn_episode_id
+
+    @property
+    def episode_total_score(self) -> float:
+        return self._dqn_episode_total_score
+
+    @property
+    def car_active_task(self) -> CarActiveTask | None:
+        return self._car_active_task
 
     @property
     def mode(self) -> ServicerMode:
@@ -259,13 +375,22 @@ class Servicer(_Servicer):
     def SendRequest(self, request: _Pb2_client_request, _): 
         data = self.get_grpc_client_data(request)
         self._save_car_current_data(data)
-        if self.show_client_data: self._display_client_data(data)
+        if self.show_client_data: 
+            self._display_client_data(data)
         if self.show_stream_video and data.camera_image: 
             VideoPlayer.add_frame(data.camera_image.frame)
         grpc_command = self.processing_client_request(data=data)
+        self._car_prev_target_router_id = self.get_car_target_router_id()
+        # processing send grpc command to client
         if not(grpc_command): return
+        self._dqn_state_id += 1
         return grpc_command
-    
+
+
+    @staticmethod
+    def _normalize_reward(reward: int | float, round_factor: int) -> float:
+        reward = round(float(reward), round_factor)
+        return reward
 
     def _save_car_prev_command(self, command:str) -> None:
         self._car_prev_command = str(command)

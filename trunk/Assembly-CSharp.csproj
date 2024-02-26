@@ -45,11 +45,11 @@
      <Compile Include="Assets/Scripts/CarSensors/RaySensor.cs" />
      <Compile Include="Assets/Scripts/CarCommunication.cs" />
      <Compile Include="Assets/Scripts/CarSensors/RaySensorsData.cs" />
+     <Compile Include="Assets/Scripts/FpsCounter.cs" />
      <Compile Include="Assets/Scripts/Car/CarControllerAdvanced.cs" />
      <Compile Include="Assets/Scripts/Protos/CarCommunication.cs" />
      <Compile Include="Assets/Scripts/Car/CarInfo.cs" />
      <Compile Include="Assets/Scripts/Room/OrderBox.cs" />
-     <Compile Include="Assets/Scripts/FpsCounter.cs" />
      <None Include="Assets/Dependencies/ZXing.Net.0.16.9.0/unity/zxing.unity.xml" />
      <None Include="Assets/Dependencies/Google.Protobuf/lib/net45/Google.Protobuf.xml" />
     <Reference Include="UnityEngine">
