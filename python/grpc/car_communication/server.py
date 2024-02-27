@@ -17,6 +17,7 @@ from enum import Enum
 import numpy as np
 import threading
 import random
+import time
 
 from api.web_service import (
     WebServiceRequest,
@@ -31,9 +32,6 @@ from services.video_manager import (
     VideoPlayer, 
 )
 from config import *
-
-
-from time import sleep #TODO remove
 
 
 # setting server commands (based on proto file)
@@ -157,8 +155,11 @@ class Servicer(_Servicer):
             nearest_router_id = nearest_router.id,
         )
         # set active task for car, if ok response
-        if not(product and route): 
+        if not(product): 
             print(f'No active task for car with id: {car_id}')
+            return
+        if not(route):
+            print(f'Failed get route to target router, nearest_router: {nearest_router.id}')
             return
         self._car_active_task = CarActiveTask(
             car_id=car_id,
@@ -171,7 +172,7 @@ class Servicer(_Servicer):
     def dqn_end_episode(self) -> None:
         print(f"End episode: {self.episode_id}")
         print(f"Total score: {self.episode_total_score}")
-        sleep(5)
+        time.sleep(5) #TODO remove
         self.start_new_episode()
         print("Start new episode")
 
