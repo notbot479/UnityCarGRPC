@@ -7,10 +7,20 @@ class Product:
     name: str
     qr_code_metadata: str
 
+    def __repr__(self) -> str:
+        d = f'Product: {self.name}'
+        return d
+
 @dataclass
 class Task:
     product: Product
     target_router_id: str
+
+    def __repr__(self) -> str:
+        pid = self.product.id
+        nrid = self.target_router_id
+        d = f'Task: Product: {pid}, nearest_router: {nrid}'
+        return d
 
 
 class TaskManager:
