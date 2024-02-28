@@ -105,6 +105,7 @@ class Servicer(_Servicer):
     _commands = _movement_commands | _extra_commands
 
     _car_data_deque: Deque[GrpcClientData | None] = deque([None],maxlen=2)
+    _car_target_is_found_deque: Deque[bool] = deque(maxlen=5)
     _car_prev_target_router_id: str | None = None
     _car_active_task: CarActiveTask | None = None
     _car_prev_command: str | None = None
@@ -147,12 +148,12 @@ class Servicer(_Servicer):
     ) -> tuple[Score, Done]:
         #TODO create advanced reward and done policy
         # simple done policy
-        target_found = self.is_target_box_qr(new_state.qr_code_metadata)
+        target_found_and_locked = self.is_target_found_and_locked()
         if new_state.car_collision_data: done = Done.HIT_OBJECT
-        elif target_found: done = Done.TARGET_IS_FOUND
+        elif target_found_and_locked: done = Done.TARGET_IS_FOUND
         # simple reward policy
         reward = 0.1
-        if target_found: reward += 0.3
+        if target_found_and_locked: reward += 0.3
         return (reward, done)
 
     def processing_client_request(self, data: GrpcClientData):
@@ -229,11 +230,19 @@ class Servicer(_Servicer):
         if not(active_task): return False
         return len(active_task.route) == 1
 
+    def is_target_found_and_locked(self, *, qr_metadata: str | None = None) -> bool:
+        '''use is_target_box_qr at first or send qr_metadata'''
+        if qr_metadata: self.is_target_box_qr(qr_metadata=qr_metadata)
+        return all(self._car_target_is_found_deque)
+
     def is_target_box_qr(self, qr_metadata: str) -> bool:
         active_task = self.car_active_task
         if not(active_task): return False
         target_qr = active_task.product.qr_code_metadata 
-        return target_qr == qr_metadata
+        result = target_qr == qr_metadata
+        # add data to deque, used in is_target_found_and_locked
+        self._car_target_is_found_deque.append(result)
+        return result
 
     def get_model_input_data(self, data: GrpcClientData) -> ModelInputData | None:
         target_router_id = self.get_car_target_router_id()
