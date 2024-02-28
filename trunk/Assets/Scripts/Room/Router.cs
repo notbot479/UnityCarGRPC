@@ -6,13 +6,13 @@ using System;
 public class Router : MonoBehaviour
 {
     public int routerID = -1; // Unique router id, -1 -> not set
-    public float maxDistance = 30f; // Maximum receive distance in meters
-    public float maxRSSI = -100f; // Maximum receive router strength
-    public float minRSSI = -0f; // Minimum receive router strength
+    public float maxDistance = 20f; // Maximum receive distance in meters
+    private float minRSSI = -0f; // Minimum receive router strength
+    private float maxRSSI = -100f; // Maximum receive router strength
     
     public bool sensorConnection = true;
-    public readonly double mediumRSSIstart = -40f;
-    public readonly double mediumRSSIend = -80f;
+    public readonly double mediumRSSIstart = -35f;
+    public readonly double mediumRSSIend = -75f;
     public readonly Color rssiGoodColor = Color.green;
     public readonly Color rssiMediumColor = Color.yellow;
     public readonly Color rssiBadColor = Color.red;

@@ -111,6 +111,9 @@ class Servicer(_Servicer):
     _car_prev_command: str | None = None
     _car_ignore_target_area: bool = False
 
+    _car_switch_target_router_rssi: Rssi = -20
+    _car_switch_target_router_shortcut_rssi: Rssi = -70
+
     _dqn_episode_total_score: Score = 0
     _dqn_episode_id: int = 1
     _dqn_state_id: int = 1
@@ -123,7 +126,7 @@ class Servicer(_Servicer):
         if not(nearest_router):
             print('Failed get task. No routers around car.')
             return
-        status = self.set_new_active_task_for_car(
+        status = self.set_active_task_for_car(
             car_id=car_id, 
             nearest_router_id=nearest_router.id,
         )
@@ -139,22 +142,46 @@ class Servicer(_Servicer):
         self.start_new_episode()
         print("Start new episode")
 
-    def get_reward_and_done(
-        self, 
-        old_state: GrpcClientData,
-        new_state: GrpcClientData,
-        *,
-        done: Done = Done._,
-    ) -> tuple[Score, Done]:
-        #TODO create advanced reward and done policy
-        # simple done policy
-        target_found_and_locked = self.is_target_found_and_locked()
-        if new_state.car_collision_data: done = Done.HIT_OBJECT
-        elif target_found_and_locked: done = Done.TARGET_IS_FOUND
-        # simple reward policy
-        reward = 0.1
-        if target_found_and_locked: reward += 0.3
-        return (reward, done)
+    @busy_until_end
+    def router_controller_update_route(
+        self,
+        car_id:str,
+        routers: list[RouterData],
+    ) -> None:
+        current_target_router_id = self.get_car_target_router_id()
+        next_target_router_id = self.get_car_next_target_router_id()
+        if not(current_target_router_id): return
+        current_target_rssi = self.get_router_rssi_by_id(
+            router_id=current_target_router_id,
+            routers=routers,
+        )
+        current_target_rssi = current_target_rssi
+        next_router_rssi = float('inf')
+        if next_target_router_id is not None:
+            next_router_rssi = self.get_router_rssi_by_id(
+                router_id=next_target_router_id,
+                routers=routers,
+            )
+            next_router_rssi = next_router_rssi
+        # car lose connection with target router, get new route based on nearest router
+        if current_target_rssi == float('inf'):
+            nearest_router = self.get_nearest_router(routers=routers)
+            if not(nearest_router):
+                print('TODO no routers in car view. DO some')
+                return
+            self.set_active_task_for_car(
+                car_id=car_id,
+                nearest_router_id=nearest_router.id,
+            )
+            return
+        # switch target router if current has `nice` rssi
+        if abs(current_target_rssi) < abs(self._car_switch_target_router_rssi):
+            self.car_switch_target_router()
+            return
+        # if next target router has `good` rssi -> switch target router
+        if abs(next_router_rssi) < abs(self._car_switch_target_router_shortcut_rssi):
+            self.car_switch_target_router()
+            return
 
     def processing_client_request(self, data: GrpcClientData):
         # skip car data if server current busy
@@ -171,15 +198,15 @@ class Servicer(_Servicer):
         # at start: do nothing, if no active task or target router not visible 
         if not(self.car_active_task and prev_target_router_id): 
             return self._send_stop_command()
+        # update active task route based on policy
+        self.router_controller_update_route(car_id=data.car_id, routers=data.routers)
+        
+        # processing client data
         model_input = self.get_model_input_data(data=data)
         print(model_input)
+        print(self.car_active_task.route, self.is_target_router_switched)
 
-        # TODO update target router policy (dont forget about extra reward, when switch target router)
-        # TODO but need ingore this feature when car in target area (last router in list)
-        #print('-'*20)
-        #print(f'Prev target router id: {prev_target_router_id}') 
-        #print(f'Current target router id: {self.get_car_target_router_id()}')
-
+        # calculate reward and get done based on policy
         reward, done = self.get_reward_and_done(prev_data, data)
         self.total_score_add_reward(reward) 
         # dqn end episode based on train policy
@@ -197,7 +224,36 @@ class Servicer(_Servicer):
 
     # ===============================================================================
 
-    def set_new_active_task_for_car(
+    def get_reward_and_done(
+        self, 
+        old_state: GrpcClientData,
+        new_state: GrpcClientData,
+        *,
+        done: Done = Done._,
+    ) -> tuple[Score, Done]:
+        #TODO create advanced reward and done policy
+        # simple done policy
+        target_found_and_locked = self.is_target_found_and_locked()
+        if new_state.car_collision_data: done = Done.HIT_OBJECT
+        elif target_found_and_locked: done = Done.TARGET_IS_FOUND
+        # simple reward policy
+        reward = 0.1
+        if target_found_and_locked: reward += 0.3
+        return (reward, done)
+    
+    def car_switch_target_router(self) -> None:
+        active_task = self.car_active_task
+        if not(active_task): return
+        if len(active_task.route) < 2: return
+        active_task.route.pop(0)
+
+    @property
+    def is_target_router_switched(self) -> bool: 
+        prev_router_id = self.get_car_prev_target_router_id()
+        current_router_id = self.get_car_target_router_id()
+        return prev_router_id != current_router_id
+
+    def set_active_task_for_car(
         self, 
         car_id: str, 
         nearest_router_id: str
@@ -315,6 +371,12 @@ class Servicer(_Servicer):
         route = self.car_active_task.route
         if len(route) == 0: return None
         return self.car_active_task.route[0]
+
+    def get_car_next_target_router_id(self) -> str | None:
+        if not(self.car_active_task): return
+        route = self.car_active_task.route
+        if len(route) < 2: return None
+        return self.car_active_task.route[1]
     
     def get_car_prev_target_router_id(self) -> str | None:
         return self._car_prev_target_router_id
@@ -329,6 +391,7 @@ class Servicer(_Servicer):
             nearest_router_id=nearest_router_id,
         )
         response = self._web_service.send_request(request)
+        time.sleep(0.1) #TODO remove
         product, route = response.product, response.route
         return product, route
 
