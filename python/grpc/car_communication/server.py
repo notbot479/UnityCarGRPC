@@ -109,7 +109,7 @@ class Servicer(_Servicer):
     _car_prev_target_router_id: str | None = None
     _car_active_task: CarActiveTask | None = None
     _car_prev_command: str | None = None
-    _car_ignore_target_area: bool = True
+    _car_ignore_target_area: bool = False
 
     _dqn_episode_total_score: Score = 0
     _dqn_episode_id: int = 1
@@ -171,10 +171,9 @@ class Servicer(_Servicer):
         # at start: do nothing, if no active task or target router not visible 
         if not(self.car_active_task and prev_target_router_id): 
             return self._send_stop_command()
-
         model_input = self.get_model_input_data(data=data)
         print(model_input)
-        
+
         # TODO update target router policy (dont forget about extra reward, when switch target router)
         # TODO but need ingore this feature when car in target area (last router in list)
         #print('-'*20)
@@ -233,7 +232,8 @@ class Servicer(_Servicer):
     def is_target_found_and_locked(self, *, qr_metadata: str | None = None) -> bool:
         '''use is_target_box_qr at first or send qr_metadata'''
         if qr_metadata: self.is_target_box_qr(qr_metadata=qr_metadata)
-        return all(self._car_target_is_found_deque)
+        d = self._car_target_is_found_deque
+        return all(d) and len(d) == d.maxlen
 
     def is_target_box_qr(self, qr_metadata: str) -> bool:
         active_task = self.car_active_task
@@ -258,10 +258,12 @@ class Servicer(_Servicer):
             router_id = target_router_id,
             routers = data.routers,
         )
-        in_target_area = self.car_in_target_area
-        in_target_area = in_target_area if not(self._car_ignore_target_area) else True
+        if not(self._car_ignore_target_area):
+            in_target_area = self.car_in_target_area
+        else:
+            in_target_area = True
         # second part data
-        if in_target_area or self._car_ignore_target_area:
+        if in_target_area:
             boxes_is_found = data.boxes_in_camera_view
             distance_to_box = front_sensor.distance if boxes_is_found else float('inf')
             target_found = self.is_target_box_qr(data.qr_code_metadata)
