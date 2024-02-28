@@ -5,6 +5,17 @@ import cv2
 from units import *
 
 
+def minmaxscale(
+    value:float, 
+    min_val:float, 
+    max_val:float,
+    *,
+    round_factor: int = 5
+) -> float:
+    if min_val == max_val: return 0
+    scaled_value = (value - min_val) / (max_val - min_val)
+    return round(scaled_value, round_factor)
+
 def zeroOrOne(data:bool) -> Union[Literal[0], Literal[1]]:
     if not(isinstance(data, bool)): return 0
     return 1 if data else 0
@@ -58,7 +69,8 @@ class ModelInputData:
         default = self.DISTANCE_SENSOR_DEFAULT
         # wtf negative distance
         if not(0 < distance < max_distance): return default 
-        return float(distance)
+        distance = minmaxscale(distance, 0, max_distance)
+        return distance
 
     def _normalize_sensors_data(self, distances: list[Meter]) -> np.ndarray:
         distances = [self._normalize_distance(i) for i in distances]
@@ -70,7 +82,8 @@ class ModelInputData:
         max_rssi = abs(self.ROUTER_MAX_RSSI)
         default = self.ROUTER_DEFAULT
         if rssi > max_rssi: return default
-        return float(rssi)
+        rssi = minmaxscale(rssi, 0, max_rssi)
+        return rssi
 
     def __repr__(self) -> str:
         total = '== ModelInputData ==\n'

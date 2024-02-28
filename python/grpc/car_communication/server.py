@@ -429,8 +429,7 @@ class Servicer(_Servicer):
     def SendRequest(self, request: _Pb2_client_request, _): 
         data = self.get_grpc_client_data(request)
         self._save_car_current_data(data)
-        if self.show_client_data: 
-            print(data) 
+        if self.show_client_data: print(data) 
         if self.show_stream_video and data.camera_image: 
             VideoPlayer.add_frame(data.camera_image.frame)
         grpc_command = self.processing_client_request(data=data)
