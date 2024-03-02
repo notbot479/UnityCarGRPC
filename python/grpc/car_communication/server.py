@@ -22,10 +22,11 @@ from api.web_service import (
     WebServiceRequest,
     WebService,
 )
-from services.task_manager import (
-    TaskManager,
-    Product,
+from services.mock.tasks import (
+    init_mock_tasks, 
+    add_mock_task,
 )
+from services.task_manager import Product
 from services.video_manager import (
     convert_bytes_to_frame,
     VideoPlayer, 
@@ -57,21 +58,10 @@ class ServicerMode(Enum):
     BUSY = 2
 
 class Servicer(_Servicer):
-    
+
     def __init__(self, *args, **kwargs) -> None:
-        # add mock task for car
-        task_car_id = 'A-001'
-        product_nearest_router = '5'
-        product = Product(
-            id = 1,
-            name = 'TargetBox',
-            qr_code_metadata = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-        )
-        TaskManager.create_active_task(
-            car_id = task_car_id,
-            product = product,
-            target_router_id = product_nearest_router,
-        )
+        init_mock_tasks()
+        add_mock_task()
         super().__init__(*args,**kwargs)
 
     @staticmethod
@@ -95,25 +85,31 @@ class Servicer(_Servicer):
     
     # ================================================================================
 
+    # settings: car search target box
+    _car_target_patience:int = 5
+    _car_ignore_target_area: bool = False
+    # settings: switch router policy
+    _car_switch_target_router_rssi: Rssi = -30
+    _car_switch_target_router_rssi_of_next_shortcut: Rssi = -70
+    _car_switch_target_router_rssi_of_next: Rssi = -95
+    
+    # init server
     show_stream_video = SHOW_STREAM_VIDEO
     show_client_data = SHOW_CLIENT_DATA
     _mode: ServicerMode = ServicerMode.READY
     _web_service = WebService()
-    
+    # server init commands
     _movement_commands = generate_grpc_commands(CAR_MOVEMENT_SIGNALS)
     _extra_commands = generate_grpc_commands(CAR_EXTRA_SIGNALS)
     _commands = _movement_commands | _extra_commands
-
+    # init prev episode memory
+    _ctifd_maxlen = _car_target_patience if _car_target_patience > 1 else 1
+    _car_target_is_found_deque: Deque[bool] = deque(maxlen=_ctifd_maxlen)
     _car_data_deque: Deque[GrpcClientData | None] = deque([None],maxlen=2)
-    _car_target_is_found_deque: Deque[bool] = deque(maxlen=5)
     _car_prev_target_router_id: str | None = None
     _car_active_task: CarActiveTask | None = None
     _car_prev_command: str | None = None
-    _car_ignore_target_area: bool = False
-
-    _car_switch_target_router_rssi: Rssi = -20
-    _car_switch_target_router_shortcut_rssi: Rssi = -70
-
+    # init counters and flags
     _dqn_episode_total_score: Score = 0
     _dqn_episode_id: int = 1
     _dqn_state_id: int = 1
@@ -162,7 +158,6 @@ class Servicer(_Servicer):
                 router_id=next_target_router_id,
                 routers=routers,
             )
-            next_router_rssi = next_router_rssi
         # car lose connection with target router, get new route based on nearest router
         if current_target_rssi == float('inf'):
             nearest_router = self.get_nearest_router(routers=routers)
@@ -175,11 +170,16 @@ class Servicer(_Servicer):
             )
             return
         # switch target router if current has `nice` rssi
-        if abs(current_target_rssi) < abs(self._car_switch_target_router_rssi):
+        g_rssi = self._car_switch_target_router_rssi
+        g_rssi_next = self._car_switch_target_router_rssi_of_next
+        _a = abs(current_target_rssi) < abs(g_rssi) 
+        _b = abs(next_router_rssi) < abs(g_rssi_next)
+        if _a and _b:
             self.car_switch_target_router()
             return
         # if next target router has `good` rssi -> switch target router
-        if abs(next_router_rssi) < abs(self._car_switch_target_router_shortcut_rssi):
+        s_rssi_next = self._car_switch_target_router_rssi_of_next_shortcut
+        if abs(next_router_rssi) < abs(s_rssi_next):
             self.car_switch_target_router()
             return
 
@@ -232,13 +232,18 @@ class Servicer(_Servicer):
         done: Done = Done._,
     ) -> tuple[Score, Done]:
         #TODO create advanced reward and done policy
+        
+        # get target found based on patience
+        if self._car_target_patience > 1:
+            target_found = self.is_target_found_and_locked()
+        else:
+            target_found = new_state.car_collision_data
         # simple done policy
-        target_found_and_locked = self.is_target_found_and_locked()
         if new_state.car_collision_data: done = Done.HIT_OBJECT
-        elif target_found_and_locked: done = Done.TARGET_IS_FOUND
+        elif target_found: done = Done.TARGET_IS_FOUND
         # simple reward policy
         reward = 0.1
-        if target_found_and_locked: reward += 0.3
+        if target_found: reward += 0.3
         return (reward, done)
     
     def car_switch_target_router(self) -> None:

@@ -8,8 +8,8 @@ public class CarRouterReceiver : MonoBehaviour
 {
     private GameObject carRouterReceiver;
     private GameObject[] routers;
+    private string routerID;
     private float routerRSSI;
-    private int routerID;
 
     void Start()
     {

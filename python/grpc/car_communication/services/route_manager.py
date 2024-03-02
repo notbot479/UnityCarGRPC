@@ -24,8 +24,8 @@ class RouteManager:
         cls._graph.add_edge('1', '2', 2)
         cls._graph.add_edge('2', '3', 2)
         cls._graph.add_edge('3', '4', 2)
-        cls._graph.add_edge('4', '5', 1)
-        cls._graph.add_edge('5', '6', 3)
+        cls._graph.add_edge('4', '5-1', 1)
+        cls._graph.add_edge('5-1', '6', 3)
         cls._graph.add_edge('6', '7', 3)
         cls._graph.add_edge('7', '9', 2)
         # connect with middle router
@@ -38,7 +38,7 @@ class RouteManager:
 
 def _test():
     nearest_router_id = '9'
-    target_router_id = '5'
+    target_router_id = '5-1'
     route = RouteManager.get_shortest_route(
         nearest_router_id=nearest_router_id,
         target_router_id=target_router_id,

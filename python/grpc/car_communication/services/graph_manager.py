@@ -37,7 +37,9 @@ class WeightedGraph:
             if current_distance > distances[current_vertex]:
                 continue
             # Iterate through neighbors of current_vertex
-            for neighbor, weight in self.graph[current_vertex].items():
+            neighbors = self.graph.get(current_vertex)
+            if not(neighbors): continue
+            for neighbor, weight in neighbors.items():
                 distance = current_distance + weight
                 # If the new distance is shorter, update the distance and predecessor
                 if distance < distances[neighbor]:
