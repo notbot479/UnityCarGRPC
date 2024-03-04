@@ -84,7 +84,9 @@ class Servicer(_Servicer):
         return commands
     
     # ================================================================================
-
+    
+    # settings: car route
+    _car_respawn_nearest_router_id: str = '9'
     # settings: car search target box
     _car_target_patience:int = 5
     _car_ignore_target_area: bool = False
@@ -122,6 +124,9 @@ class Servicer(_Servicer):
         if not(nearest_router):
             print('Failed get task. No routers around car.')
             return
+        # rewrite car respawn nearest router
+        self._car_respawn_nearest_router_id = nearest_router.id
+        # create request to web server and set active task for car
         status = self.set_active_task_for_car(
             car_id=car_id, 
             nearest_router_id=nearest_router.id,
@@ -131,7 +136,13 @@ class Servicer(_Servicer):
         self.clear_episode()
         
     @busy_until_end
-    def dqn_end_episode(self) -> None:
+    def dqn_end_episode(self, data: GrpcClientData) -> None:
+        # get task (new task) from respawn router (training start nearest router)
+        respawn_router_id = self._car_respawn_nearest_router_id
+        self.set_active_task_for_car(
+            car_id=data.car_id,
+            nearest_router_id=respawn_router_id,
+        )
         print(f"End episode: {self.episode_id}")
         print(f"Total score: {self.episode_total_score}")
         time.sleep(5) #TODO remove
@@ -213,10 +224,10 @@ class Servicer(_Servicer):
         if done == Done.TARGET_IS_FOUND:
             print('TODO Send message to web - target complate')
             print('TODO Ask web service for new task [target or goto hub]')
-            self.dqn_end_episode()
+            self.dqn_end_episode(data=data)
             return self._send_respawn_command()
         elif done == Done.HIT_OBJECT:
-            self.dqn_end_episode()
+            self.dqn_end_episode(data=data)
             return self._send_respawn_command()
         # dqn predict command or get random movement
         command = self._get_random_movement()
