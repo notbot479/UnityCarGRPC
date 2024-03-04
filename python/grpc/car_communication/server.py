@@ -305,7 +305,10 @@ class Servicer(_Servicer):
         '''use is_target_box_qr at first or send qr_metadata'''
         if qr_metadata: self.is_target_box_qr(qr_metadata=qr_metadata)
         d = self._car_target_is_found_deque
-        return all(d) and len(d) == d.maxlen
+        found = all(d) and len(d) == d.maxlen
+        # clear deque if found
+        if found: d.clear()
+        return found
 
     def is_target_box_qr(self, qr_metadata: str) -> bool:
         active_task = self.car_active_task
