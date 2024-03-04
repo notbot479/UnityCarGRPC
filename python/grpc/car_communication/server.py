@@ -23,8 +23,8 @@ from api.web_service import (
     WebService,
 )
 from services.mock.tasks import (
+    add_random_mock_task,
     init_mock_tasks, 
-    add_mock_task,
 )
 from services.task_manager import Product
 from services.video_manager import (
@@ -61,7 +61,7 @@ class Servicer(_Servicer):
 
     def __init__(self, *args, **kwargs) -> None:
         init_mock_tasks()
-        add_mock_task()
+        add_random_mock_task()
         super().__init__(*args,**kwargs)
 
     @staticmethod
@@ -92,7 +92,7 @@ class Servicer(_Servicer):
     _car_ignore_target_area: bool = False
     _target_router_already_locked: bool = False
     # settings: switch router policy
-    _car_lock_target_router_rssi: Rssi = -15
+    _car_lock_target_router_rssi: Rssi = -20
     _car_switch_target_router_rssi: Rssi = -30
     _car_switch_target_router_rssi_of_next_shortcut: Rssi = -70
     _car_switch_target_router_rssi_of_next: Rssi = -95
@@ -224,8 +224,8 @@ class Servicer(_Servicer):
         self.total_score_add_reward(reward) 
         # dqn end episode based on train policy
         if done == Done.TARGET_IS_FOUND:
-            print('TODO Send message to web - target complate')
-            print('TODO Ask web service for new task [target or goto hub]')
+            print('TODO Send message to web - task complate')
+            add_random_mock_task()
             self.dqn_end_episode(data=data)
             return self._send_respawn_command()
         elif done == Done.HIT_OBJECT:
