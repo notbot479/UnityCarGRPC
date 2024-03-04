@@ -31,7 +31,9 @@ from services.video_manager import (
     convert_bytes_to_frame,
     VideoPlayer, 
 )
-from dqn import ModelInputData
+
+from dqn.inputs import ModelInputData
+from dqn.reward import RewardPolicy
 
 from client.data import *
 from units import *
@@ -109,6 +111,7 @@ class Servicer(_Servicer):
     # init prev episode memory
     _ctifd_maxlen = _car_target_patience if _car_target_patience > 1 else 1
     _car_target_is_found_deque: Deque[bool] = deque(maxlen=_ctifd_maxlen)
+    _car_target_is_found_state_metadata: str = ""
     _car_data_deque: Deque[GrpcClientData | None] = deque([None],maxlen=2)
     _car_prev_target_router_id: str | None = None
     _car_active_task: CarActiveTask | None = None
@@ -212,15 +215,18 @@ class Servicer(_Servicer):
         if not(self.car_active_task and prev_target_router_id): 
             return self._send_stop_command()
         # update active task route based on policy
-        self.router_controller_update_route(car_id=data.car_id, routers=data.routers)
-        
-        # processing client data
+        self.router_controller_update_route(car_id=data.car_id, routers=data.routers) 
+        # normalize data for nerual networks: range (0 to 1 or -1 to 1)
         model_input = self.get_model_input_data(data=data)
-        print(model_input)
-        print(self.car_active_task.route, self.is_target_router_switched)
-
         # calculate reward and get done based on policy
         reward, done = self.get_reward_and_done(prev_data, data)
+        
+        print(model_input)
+        print(f'Route: {self.car_active_task.route}')
+        print(f'Reward: {reward}')
+        print()
+
+        # add reward to episode total score
         self.total_score_add_reward(reward) 
         # dqn end episode based on train policy
         if done == Done.TARGET_IS_FOUND:
@@ -243,21 +249,85 @@ class Servicer(_Servicer):
         new_state: GrpcClientData,
         *,
         done: Done = Done._,
+        round_factor: int = 2,
     ) -> tuple[Score, Done]:
-        #TODO create advanced reward and done policy
-        
         # get target found based on patience
         if self._car_target_patience > 1:
-            target_found = self.is_target_found_and_locked()
+            target_found = self.is_target_found_and_locked(
+                qr_metadata=new_state.qr_code_metadata,
+            )
         else:
             target_found = new_state.car_collision_data
-        # simple done policy
-        if new_state.car_collision_data: done = Done.HIT_OBJECT
-        elif target_found: done = Done.TARGET_IS_FOUND
-        # simple reward policy
-        reward = 0.1
-        if target_found: reward += 0.3
-        return (reward, done)
+        # done policy
+        if new_state.car_collision_data: 
+            done = Done.HIT_OBJECT
+        elif target_found: 
+            done = Done.TARGET_IS_FOUND
+        # reward policy
+        target_router_id = self.get_car_target_router_id()
+        target_router_switched = self.is_target_router_switched
+        in_target_area = self.car_in_target_area(new_state.routers)
+        if not(target_router_id): 
+            reward = RewardPolicy.PASSIVE_REWARD.value
+            return (reward, done)
+        if not(in_target_area): 
+            # stage 1: route
+            old_target_rssi = self.get_router_rssi_by_id(
+                router_id=target_router_id,
+                routers=old_state.routers,
+            )
+            new_target_rssi = self.get_router_rssi_by_id(
+                router_id=target_router_id,
+                routers=new_state.routers,
+            )
+            delta = round(old_target_rssi - new_target_rssi, round_factor)
+            if delta == 0:
+                reward = RewardPolicy.PASSIVE_REWARD.value
+                return (reward, done)
+            if target_router_switched or delta < 0:
+                reward = RewardPolicy.SHORTEN_DISTANCE_TO_ROUTER.value
+                return (reward, done)
+            else:
+                reward = RewardPolicy.INCREASE_DISTANCE_TO_ROUTER.value
+                return (reward, done)
+        else: 
+            # stage 2: search
+            boxes_in_view = new_state.boxes_in_camera_view
+            target_is_found = self.is_target_box_qr(
+                qr_metadata=new_state.qr_code_metadata,
+            )
+            if not(boxes_in_view):
+                reward = RewardPolicy.IN_TARGET_AREA_NO_BOXES_FOUND.value
+                return (reward, done)
+            if target_is_found:
+                reward = RewardPolicy.TARGET_IS_FOUND.value
+                return (reward, done)
+            # get distance from front sensor
+            old_front_sensor = self.get_distance_sensor_by_direction(
+                direction='front',
+                distance_sensors=old_state.distance_sensors,
+            )
+            new_front_sensor = self.get_distance_sensor_by_direction(
+                direction='front',
+                distance_sensors=new_state.distance_sensors,
+            )
+            if not(old_front_sensor and new_front_sensor):
+                reward = RewardPolicy.PASSIVE_REWARD.value
+                return (reward, done)
+            delta = abs(old_front_sensor.distance) - abs(new_front_sensor.distance)
+            delta = round(delta, round_factor)
+            if boxes_in_view and delta == 0:
+                reward = RewardPolicy.IN_TARGET_AREA_BOXES_FOUND.value
+                return (reward, done)
+            elif delta == 0:
+                reward = RewardPolicy.PASSIVE_REWARD.value
+                return (reward, done)
+            if delta > 0:
+                reward = RewardPolicy.SHORTEN_DISTANCE_TO_BOX.value
+                return (reward, done)
+            else:
+                reward = RewardPolicy.INCREASE_DISTANCE_TO_BOX.value
+                return (reward, done)
     
     def car_switch_target_router(self) -> None:
         active_task = self.car_active_task
@@ -320,9 +390,9 @@ class Servicer(_Servicer):
         return last_router_in_route and target_area_locked
 
 
-    def is_target_found_and_locked(self, *, qr_metadata: str | None = None) -> bool:
+    def is_target_found_and_locked(self, qr_metadata: str) -> bool:
         '''use is_target_box_qr at first or send qr_metadata'''
-        if qr_metadata: self.is_target_box_qr(qr_metadata=qr_metadata)
+        self.is_target_box_qr(qr_metadata=qr_metadata)
         d = self._car_target_is_found_deque
         found = all(d) and len(d) == d.maxlen
         # clear deque if found
@@ -335,7 +405,10 @@ class Servicer(_Servicer):
         target_qr = active_task.product.qr_code_metadata 
         result = target_qr == qr_metadata
         # add data to deque, used in is_target_found_and_locked
-        self._car_target_is_found_deque.append(result)
+        metadata = f'{self._dqn_episode_id}:{self._dqn_state_id}'
+        if metadata != self._car_target_is_found_state_metadata:
+            self._car_target_is_found_deque.append(result)
+            self._car_target_is_found_state_metadata = metadata
         return result
 
     def get_model_input_data(self, data: GrpcClientData) -> ModelInputData | None:
