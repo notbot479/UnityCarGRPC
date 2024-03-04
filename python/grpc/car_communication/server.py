@@ -90,7 +90,9 @@ class Servicer(_Servicer):
     # settings: car search target box
     _car_target_patience:int = 5
     _car_ignore_target_area: bool = False
+    _target_router_already_locked: bool = False
     # settings: switch router policy
+    _car_lock_target_router_rssi: Rssi = -15
     _car_switch_target_router_rssi: Rssi = -30
     _car_switch_target_router_rssi_of_next_shortcut: Rssi = -70
     _car_switch_target_router_rssi_of_next: Rssi = -95
@@ -295,11 +297,28 @@ class Servicer(_Servicer):
         msg = f'Success: {active_task}; CarID: {car_id}'
         return Status(ok=True, msg=msg)
 
-    @property
-    def car_in_target_area(self) -> bool:
+    def lock_target_area(self, router_rssi: Rssi) -> bool:
+        if self._target_router_already_locked: return True
+        good_rssi = abs(router_rssi) < abs(self._car_lock_target_router_rssi)
+        if not(good_rssi): return False
+        self._target_router_already_locked = True
+        return True
+
+    def car_in_target_area(self, routers: list[RouterData]) -> bool:
         active_task = self.car_active_task
-        if not(active_task): return False
-        return len(active_task.route) == 1
+        if not(active_task and active_task.route): return False        
+        last_router_in_route = len(active_task.route) == 1
+        if not(last_router_in_route): 
+            self._target_router_already_locked = False
+            return False
+        target_router = self.get_router_by_id(
+            router_id=active_task.route[0],
+            routers=routers,
+        )
+        if not(target_router): return False
+        target_area_locked = self.lock_target_area(router_rssi=target_router.rssi)
+        return last_router_in_route and target_area_locked
+
 
     def is_target_found_and_locked(self, *, qr_metadata: str | None = None) -> bool:
         '''use is_target_box_qr at first or send qr_metadata'''
@@ -334,7 +353,7 @@ class Servicer(_Servicer):
             routers = data.routers,
         )
         if not(self._car_ignore_target_area):
-            in_target_area = self.car_in_target_area
+            in_target_area = self.car_in_target_area(routers=data.routers)
         else:
             in_target_area = True
         # second part data
