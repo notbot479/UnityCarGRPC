@@ -87,6 +87,8 @@ class Servicer(_Servicer):
     
     # ================================================================================
     
+    # settings: dqn
+    _dqn_episodes_count: int = 5
     # settings: car route
     _car_respawn_nearest_router_id: str = '9'
     # settings: car search target box
@@ -200,6 +202,9 @@ class Servicer(_Servicer):
             return
 
     def processing_client_request(self, data: GrpcClientData):
+        # send poweroff command, if max train episodes reached 
+        if self.episode_id > self.max_train_episodes:
+            return self._send_poweroff_command()
         # skip car data if server current busy
         if self.mode == ServicerMode.BUSY: 
             return self._send_stop_command() 
@@ -242,6 +247,10 @@ class Servicer(_Servicer):
         return self.send_response_to_client(command)
 
     # ===============================================================================
+    
+    @property
+    def max_train_episodes(self) -> int:
+        return self._dqn_episodes_count
 
     def get_reward_and_done(
         self, 
@@ -627,6 +636,10 @@ class Servicer(_Servicer):
 
     def _save_car_current_data(self, data:GrpcClientData) -> None:
         self._car_data_deque.append(data)
+
+    def _send_poweroff_command(self):
+        return self.send_response_to_client('poweroff')
+    
 
     def _send_stop_command(self):
         return self.send_response_to_client('stop')

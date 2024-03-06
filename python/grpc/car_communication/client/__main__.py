@@ -30,13 +30,14 @@ def create_mock_client_request(image_bytes):
     ]
 
     car_collision_data = randint(0,100) == 3
+    boxes_in_camera_view = randint(1,5) == 3 
 
     client_request = CarCommunicationApp_pb2.ClientRequest( #pyright: ignore
         car_id='A-001',
         camera_image=image_bytes,
         distance_sensors_data=distance_sensors_data,
         routers_data=routers_data,
-        boxes_in_camera_view=True,
+        boxes_in_camera_view=boxes_in_camera_view,
         car_collision_data=car_collision_data,
         qr_code_metadata='metadata'
     )
