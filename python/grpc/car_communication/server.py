@@ -13,6 +13,7 @@ from typing import Callable, Deque
 from dataclasses import dataclass
 from concurrent import futures
 from collections import deque
+import tensorflow as tf
 from enum import Enum
 import threading
 import random
@@ -32,6 +33,7 @@ from services.video_manager import (
     VideoPlayer, 
 )
 
+from dqn.agent import DQNAgent
 from dqn.inputs import ModelInputData
 from dqn.reward import RewardPolicy
 
@@ -43,7 +45,23 @@ from config import *
 # setting server commands (based on proto file)
 CAR_MOVEMENT_SIGNALS = ['noop','left','right','forward','backward','stop']
 CAR_EXTRA_SIGNALS = ['poweroff','respawn']
+TRAIN_DQN = True
 
+
+# for more repetitive results
+_disable_random: int = 1
+if _disable_random:
+    random.seed(_disable_random)
+    np.random.seed(_disable_random)
+    tf.random.set_seed(_disable_random)
+
+
+def get_dqn_model_save_path(*, model_ext: str = 'keras', data: dict = {}) -> str:
+    tm = time.time()
+    path = DQN_MODELS_PATH
+    name = '_'.join([f'{k}:{v}' for k,v in data.items()])
+    model_name = f'{name}_{tm}.{model_ext}'
+    return os.path.join(path, model_name)
 
 @dataclass
 class CarActiveTask:
@@ -84,11 +102,17 @@ class Servicer(_Servicer):
         server_response = _Pb2_server_response
         commands = {s:getattr(server_response,s.upper()) for s in signals}
         return commands
-    
+   
     # ================================================================================
     
     # settings: dqn
-    _dqn_episodes_count: int = 5
+    epsilon: float = 1.0 
+    _dqn_episodes_count: int = 20_000
+    _dqn_aggregate_stats_every: int = 50
+    _dqn_min_epsilon: float = 0.001
+    _dqn_epsilon_decay:float = 0.99975
+    _dqn_min_reward: float = -200
+    _dqn_episode_rewards: list = [_dqn_min_reward, ]
     # settings: car route
     _car_respawn_nearest_router_id: str = '9'
     # settings: car search target box
@@ -101,11 +125,12 @@ class Servicer(_Servicer):
     _car_switch_target_router_rssi_of_next_shortcut: Rssi = -70
     _car_switch_target_router_rssi_of_next: Rssi = -95
     
-    # init server
+    # init service
     show_stream_video = SHOW_STREAM_VIDEO
     show_client_data = SHOW_CLIENT_DATA
     _mode: ServicerMode = ServicerMode.READY
     _web_service = WebService()
+    _agent = DQNAgent()
     # server init commands
     _movement_commands = generate_grpc_commands(CAR_MOVEMENT_SIGNALS)
     _extra_commands = generate_grpc_commands(CAR_EXTRA_SIGNALS)
@@ -115,12 +140,13 @@ class Servicer(_Servicer):
     _car_target_is_found_deque: Deque[bool] = deque(maxlen=_ctifd_maxlen)
     _car_target_is_found_state_metadata: str = ""
     _car_data_deque: Deque[GrpcClientData | None] = deque([None],maxlen=2)
+    _car_prev_model_input: ModelInputData | None = None
     _car_prev_target_router_id: str | None = None
     _car_active_task: CarActiveTask | None = None
     _car_prev_command: str | None = None
     # init counters and flags
     _dqn_episode_total_score: Score = 0
-    _dqn_episode_id: int = 1
+    _dqn_episode_id: int = 0
     _dqn_state_id: int = 1
 
     # ================================================================================
@@ -140,21 +166,46 @@ class Servicer(_Servicer):
         )
         print(status.msg)
         if not(status.ok): return
-        self.clear_episode()
+        self.start_new_episode()
         
     @busy_until_end
     def dqn_end_episode(self, data: GrpcClientData) -> None:
+        min_reward = self._dqn_min_reward
         # get task (new task) from respawn router (training start nearest router)
         respawn_router_id = self._car_respawn_nearest_router_id
         self.set_active_task_for_car(
             car_id=data.car_id,
             nearest_router_id=respawn_router_id,
         )
-        print(f"End episode: {self.episode_id}")
-        print(f"Total score: {self.episode_total_score}")
-        time.sleep(5) #TODO remove
+        # save statictic and update dqn epsilon
+        self._dqn_episode_rewards.append(self.episode_total_score)
+        _a = self.episode_id == 1
+        _b = not(self.episode_id % self._dqn_aggregate_stats_every) 
+        if _a or _b:
+            ep_batch = self._dqn_episode_rewards[-self._dqn_aggregate_stats_every:]
+            average_reward = sum(ep_batch)/len(ep_batch)
+            min_reward = min(ep_batch)
+            max_reward = max(ep_batch)
+            self._agent.tensorboard.update_stats(
+                reward_avg=average_reward, 
+                reward_min=min_reward, 
+                reward_max=max_reward, 
+                epsilon=self.epsilon,
+            )
+            # Save model, but only when min reward is greater or equal a set value
+            if min_reward >= self._dqn_min_reward: #pyright: ignore
+                reward_data = {
+                    'min_reward':min_reward, #pyright: ignore
+                    'max_reward':max_reward,
+                    'average_reward':average_reward,
+                }
+                path = get_dqn_model_save_path(data=reward_data)
+                self._agent.model.save(path)
+        # Decay epsilon
+        if self.epsilon > self._dqn_min_epsilon:
+            self.epsilon *= self._dqn_epsilon_decay
+            self.epsilon = max(self._dqn_min_epsilon, self.epsilon)
         self.start_new_episode()
-        print("Start new episode")
 
     @busy_until_end
     def router_controller_update_route(
@@ -200,7 +251,7 @@ class Servicer(_Servicer):
         if abs(next_router_rssi) < abs(s_rssi_next):
             self.car_switch_target_router()
             return
-
+    
     def processing_client_request(self, data: GrpcClientData):
         # send poweroff command, if max train episodes reached 
         if self.episode_id > self.max_train_episodes:
@@ -212,6 +263,7 @@ class Servicer(_Servicer):
         prev_data = self.get_car_prev_data()
         prev_command = self.get_car_prev_command()
         prev_target_router_id = self.get_car_prev_target_router_id() 
+        prev_model_input = self.get_prev_model_input()
         # start dqn training, get active task from web service
         if not(prev_data and prev_command):
             self.dqn_start_training(car_id=data.car_id, routers=data.routers)
@@ -223,16 +275,29 @@ class Servicer(_Servicer):
         self.router_controller_update_route(car_id=data.car_id, routers=data.routers) 
         # normalize data for nerual networks: range (0 to 1 or -1 to 1)
         model_input = self.get_model_input_data(data=data)
+        if not(model_input and prev_model_input): 
+            return self._send_stop_command()
         # calculate reward and get done based on policy
         reward, done = self.get_reward_and_done(prev_data, data)
-        
-        print(model_input)
-        print(f'Route: {self.car_active_task.route}')
-        print(f'Reward: {reward}')
-        print()
-
-        # add reward to episode total score
         self.total_score_add_reward(reward) 
+        
+        #print(model_input)
+        #print(f'Route: {self.car_active_task.route}')
+        #print(f'Reward: {reward}\n')
+        
+        # integrate dqn
+        if TRAIN_DQN:
+            #TODO send full data
+            prev_movement_index = self.get_movement_index(prev_command)
+            r = (
+                prev_model_input.image, 
+                prev_movement_index, 
+                reward, 
+                model_input.image, 
+                done,
+            ) 
+            self._agent.update_replay_memory(r)
+            self._agent.train(done)
         # dqn end episode based on train policy
         if done == Done.TARGET_IS_FOUND:
             print('TODO Send message to web - task complate')
@@ -243,11 +308,45 @@ class Servicer(_Servicer):
             self.dqn_end_episode(data=data)
             return self._send_respawn_command()
         # dqn predict command or get random movement
-        command = self._get_random_movement()
+        if np.random.random() > self.epsilon:
+            # Get action from Q table
+            state = model_input.image
+            qs = self._agent.get_qs(state=state) 
+            movement_index = int(np.argmax(qs))
+            command = self.get_movement_by_index(movement_index)
+        else:
+            command = self.get_random_movement()
         return self.send_response_to_client(command)
 
     # ===============================================================================
-    
+
+    def get_movement_index(self, movement: str) -> int | None:
+        movements = self._get_movement_list()
+        try:
+            ind = movements.index(movement)
+            return ind
+        except:
+            return None
+
+    def get_movement_by_index(self, index:int, *, default:str='noop') -> str:
+        movements = self._get_movement_list()
+        try:
+            movement = movements[index]
+            return movement
+        except:
+            return default
+
+    def get_prev_model_input(self) -> ModelInputData | None:
+        return self._car_prev_model_input
+
+    @property
+    def min_epsilon(self) -> float:
+        return self._dqn_min_epsilon
+
+    @property
+    def epsilon_decay(self) -> float:
+        return self._dqn_epsilon_decay
+ 
     @property
     def max_train_episodes(self) -> int:
         return self._dqn_episodes_count
@@ -457,12 +556,17 @@ class Servicer(_Servicer):
             boxes_is_found = boxes_is_found,
             target_is_found = target_found,
             )
+        # save prev model input data
+        self._save_model_input(model_input=model_input_data)
         return model_input_data
 
-    def start_new_episode(self) -> None:
+    def start_new_episode(self) -> None: 
+        # reset env counters
         self._dqn_episode_id += 1
         self.reset_total_score()
         self.clear_state()
+        # tensorboard init episode
+        self._agent.tensorboard.step = self.episode_id
 
     def clear_episode(self) -> None:
         '''reset episode env data'''
@@ -626,6 +730,13 @@ class Servicer(_Servicer):
 
     # ================================================================================
 
+    def _get_movement_list(self) -> list:
+        movements = list(self._movement_commands.keys())
+        return movements
+
+    def _save_model_input(self, model_input: ModelInputData | None) -> None:
+        self._car_prev_model_input = model_input
+
     @staticmethod
     def _normalize_reward(reward: Score, round_factor: int) -> float:
         reward = round(float(reward), round_factor)
@@ -647,8 +758,9 @@ class Servicer(_Servicer):
     def _send_respawn_command(self):
         return self.send_response_to_client('respawn')
     
-    def _get_random_movement(self) -> str:
-        movement = random.choice(list(self._movement_commands.keys()))
+    def get_random_movement(self) -> str:
+        movements = self._get_movement_list()
+        movement = random.choice(movements)
         return movement
 
     @staticmethod

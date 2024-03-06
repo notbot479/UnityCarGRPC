@@ -7,6 +7,7 @@ from keras.layers import (
     Flatten,
     Dropout, 
     Conv2D, 
+    Input,
     Dense, 
 )
 import tensorflow as tf
@@ -16,10 +17,8 @@ import numpy as np
 import random
 import time
 
-from .config import *
+from .parameters import *
 
-
-# TODO gpu acceleration
 
 class DQNAgent:
     def __init__(self):
@@ -33,32 +32,31 @@ class DQNAgent:
 
         # Custom tensorboard object
         tm = int(time.time())
-        log_dir = f"logs/{MODEL_NAME}-{tm}"
+        log_dir = f"logs/{tm}"
         self.tensorboard = ModifiedTensorBoard(log_dir=log_dir)
         # Used to count when to update target network with main network's weights
         self.target_update_counter = 0
 
     def create_model(self):
         # TODO create own model
-        
-        model = Sequential()
+        inputs = Input(shape=(64,64,1))
+        outputs = Dense(6, activation='linear')
+        model = Sequential([
+            inputs,
+            Conv2D(256, (3, 3)),
+            Activation('relu'),
+            MaxPooling2D(pool_size=(2, 2)),
+            Dropout(0.2),
 
-        # OBSERVATION_SPACE_VALUES = (10, 10, 3) a 10x10 RGB image.
-        model.add(Conv2D(256, (3, 3), input_shape=(10,10,3)))  
-        model.add(Activation('relu'))
-        model.add(MaxPooling2D(pool_size=(2, 2)))
-        model.add(Dropout(0.2))
+            Conv2D(256, (3, 3)),
+            Activation('relu'),
+            MaxPooling2D(pool_size=(2, 2)),
+            Dropout(0.2),
 
-        model.add(Conv2D(256, (3, 3)))
-        model.add(Activation('relu'))
-        model.add(MaxPooling2D(pool_size=(2, 2)))
-        model.add(Dropout(0.2))
-
-        model.add(Flatten())  
-        model.add(Dense(64))
-
-        # ACTION_SPACE_SIZE = how many choices (9)
-        model.add(Dense(9, activation='linear'))  
+            Flatten(), 
+            Dense(64),
+            outputs,
+        ])
         model.compile(
             loss="mse", 
             optimizer=Adam(learning_rate=0.001), 
@@ -178,8 +176,7 @@ class ModifiedTensorBoard(TensorBoard):
         Custom method for saving own metrics
         Creates writer, writes custom metrics and closes writer
         '''
-        self._write_logs(stats, self.step)
-
+        print(self.step, stats) #TODO write logs
 
 def _test():
     agent = DQNAgent()

@@ -16,7 +16,7 @@ stub = CarCommunicationApp_pb2_grpc.CommunicationStub(channel)
 def create_mock_client_request(image_bytes):
     distance_sensors_data = CarCommunicationApp_pb2.DistanceSensorsData( #pyright: ignore
         front_left_distance=1.5,
-        front_distance=2.5,
+        front_distance=randint(1,10),
         front_right_distance=1.7,
         back_left_distance=1.8,
         back_distance=-1,
@@ -30,7 +30,7 @@ def create_mock_client_request(image_bytes):
     ]
 
     car_collision_data = randint(0,100) == 3
-    boxes_in_camera_view = randint(1,5) == 3 
+    boxes_in_camera_view = randint(1,3) == 2
 
     client_request = CarCommunicationApp_pb2.ClientRequest( #pyright: ignore
         car_id='A-001',
