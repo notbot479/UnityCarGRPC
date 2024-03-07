@@ -18,6 +18,7 @@ from enum import Enum
 import threading
 import random
 import time
+import os
 
 from api.web_service import (
     WebServiceRequest,
@@ -40,6 +41,9 @@ from dqn.reward import RewardPolicy
 from client.data import *
 from units import *
 from config import *
+
+
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 
 # setting server commands (based on proto file)
