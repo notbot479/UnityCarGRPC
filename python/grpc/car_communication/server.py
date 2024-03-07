@@ -107,12 +107,12 @@ class Servicer(_Servicer):
     # ================================================================================
     
     # settings: dqn
-    epsilon: float = 1.0
+    epsilon: float = 0.8 #1.0
     _dqn_episodes_count: int = 20_000
     _dqn_aggregate_stats_every: int = 50
     _dqn_min_epsilon: float = 0.001
     _dqn_epsilon_decay:float = 0.99975
-    _dqn_min_reward: float = -200
+    _dqn_min_reward: float = -50
     _dqn_episode_rewards: list = [_dqn_min_reward, ]
     # settings: car route
     _car_respawn_nearest_router_id: str = '9'
@@ -171,8 +171,13 @@ class Servicer(_Servicer):
         
     @busy_until_end
     def dqn_end_episode(self, data: GrpcClientData) -> None:
-        min_reward = self._dqn_min_reward
+        print(f'== END episode[{self.episode_id}] state[{self.state_id}] ==')
+        print(f'- epsilon [{self.epsilon}]')
+        print(f'- total score [{self.episode_total_score}]')
+        # train dqn
+        self._agent.train_on_episode_end() #TODO tests needed
         # get task (new task) from respawn router (training start nearest router)
+        min_reward = self._dqn_min_reward
         respawn_router_id = self._car_respawn_nearest_router_id
         self.set_active_task_for_car(
             car_id=data.car_id,
@@ -206,7 +211,6 @@ class Servicer(_Servicer):
         if self.epsilon > self._dqn_min_epsilon:
             self.epsilon *= self._dqn_epsilon_decay
             self.epsilon = max(self._dqn_min_epsilon, self.epsilon)
-        print(f'== END episode[{self.episode_id}] state[{self.state_id}] epsilon[{self.epsilon}] ==')
         self.start_new_episode()
 
     @busy_until_end
@@ -299,7 +303,7 @@ class Servicer(_Servicer):
                 done,
             )
             self._agent.update_replay_memory(r)
-            self._agent.train(done)
+            #self._agent.train(bool(done))
         # dqn end episode based on train policy
         if done == Done.TARGET_IS_FOUND:
             print('TODO Send message to web - task complate')
