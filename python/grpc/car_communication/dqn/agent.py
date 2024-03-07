@@ -16,7 +16,9 @@ from collections import deque
 import numpy as np
 import random
 import time
+import os
 
+from config import DQN_LOGS_PATH
 from .parameters import *
 
 
@@ -32,7 +34,7 @@ class DQNAgent:
 
         # Custom tensorboard object
         tm = int(time.time())
-        log_dir = f"logs/{tm}"
+        log_dir = os.path.join(DQN_LOGS_PATH, f'tm{tm}')
         self.tensorboard = ModifiedTensorBoard(log_dir=log_dir)
         # Used to count when to update target network with main network's weights
         self.target_update_counter = 0
@@ -43,18 +45,18 @@ class DQNAgent:
         outputs = Dense(6, activation='linear')
         model = Sequential([
             inputs,
-            Conv2D(256, (3, 3)),
+            Conv2D(32, (3, 3), padding='same'),
             Activation('relu'),
             MaxPooling2D(pool_size=(2, 2)),
             Dropout(0.2),
 
-            Conv2D(256, (3, 3)),
+            Conv2D(32, (3, 3), padding='same'),
             Activation('relu'),
             MaxPooling2D(pool_size=(2, 2)),
             Dropout(0.2),
 
             Flatten(), 
-            Dense(64),
+            Dense(32),
             outputs,
         ])
         model.compile(
