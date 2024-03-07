@@ -13,6 +13,7 @@ using CarCommunicationApp;
 
 public class CarCommunication : MonoBehaviour
 {
+    public bool enableVsync = true;
     public int fpsLimit = 60;
     public string serverDomain = "localhost";
     private string serverApiUrl;
@@ -48,8 +49,11 @@ public class CarCommunication : MonoBehaviour
     public void Start()
     {
         // enable vsync
-        QualitySettings.vSyncCount = 0;
-        Application.targetFrameRate = fpsLimit;
+        if (enableVsync)
+        {
+            QualitySettings.vSyncCount = 0;
+            Application.targetFrameRate = fpsLimit;
+        }
         // create grpc client and channel
         serverApiUrl = $"http://{serverDomain}:{serverPort}";
         var channelOptions = new GrpcChannelOptions
@@ -67,6 +71,8 @@ public class CarCommunication : MonoBehaviour
         carCamera = GameObject.Find("Camera");
         carDistanceSensors = GameObject.Find("RaySensors");
         carRouterReceiver = GameObject.Find("CarRouterReceiver");
+        // teleport car to spawn before update
+        car.GetComponent<CarCollisionData>().TeleportToSpawn();
     }
 
     public void Update()
@@ -133,8 +139,9 @@ public class CarCommunication : MonoBehaviour
             }
             return;
         }
-        
+
         // processing command from server
+        Debug.Log(command);
         try{
             if (command == "Noop") { return;  } // no operations, skip command from server
             else if (command == "Respawn" && !processingRespawn)

@@ -59,9 +59,10 @@ if _disable_random:
 def get_dqn_model_save_path(*, model_ext: str = 'keras', data: dict = {}) -> str:
     tm = time.time()
     path = DQN_MODELS_PATH
-    name = '_'.join([f'{k}:{v}' for k,v in data.items()])
-    model_name = f'{name}_{tm}.{model_ext}'
-    return os.path.join(path, model_name)
+    name = '_'.join([f'{k}[{v}]' for k,v in data.items()])
+    model_name = f'model_{name}_{tm}.{model_ext}'
+    model_path = os.path.join(path, model_name)
+    return model_path
 
 @dataclass
 class CarActiveTask:
@@ -106,7 +107,7 @@ class Servicer(_Servicer):
     # ================================================================================
     
     # settings: dqn
-    epsilon: float = 1.0 
+    epsilon: float = 1.0
     _dqn_episodes_count: int = 20_000
     _dqn_aggregate_stats_every: int = 50
     _dqn_min_epsilon: float = 0.001
@@ -130,7 +131,7 @@ class Servicer(_Servicer):
     show_client_data = SHOW_CLIENT_DATA
     _mode: ServicerMode = ServicerMode.READY
     _web_service = WebService()
-    _agent = DQNAgent()
+    _agent = DQNAgent(filepath=DQN_LOAD_MODEL_PATH)
     # server init commands
     _movement_commands = generate_grpc_commands(CAR_MOVEMENT_SIGNALS)
     _extra_commands = generate_grpc_commands(CAR_EXTRA_SIGNALS)
@@ -205,6 +206,7 @@ class Servicer(_Servicer):
         if self.epsilon > self._dqn_min_epsilon:
             self.epsilon *= self._dqn_epsilon_decay
             self.epsilon = max(self._dqn_min_epsilon, self.epsilon)
+        print(f'== END episode[{self.episode_id}] state[{self.state_id}] epsilon[{self.epsilon}] ==')
         self.start_new_episode()
 
     @busy_until_end
@@ -282,8 +284,8 @@ class Servicer(_Servicer):
         self.total_score_add_reward(reward) 
         
         #print(model_input)
-        #print(f'Route: {self.car_active_task.route}')
-        #print(f'Reward: {reward}\n')
+        print(f'Route: {self.car_active_task.route}')
+        print(f'Reward: {reward}\n')
         
         # integrate dqn
         if TRAIN_DQN:
@@ -295,7 +297,7 @@ class Servicer(_Servicer):
                 reward, 
                 model_input.image, 
                 done,
-            ) 
+            )
             self._agent.update_replay_memory(r)
             self._agent.train(done)
         # dqn end episode based on train policy
@@ -311,11 +313,13 @@ class Servicer(_Servicer):
         if np.random.random() > self.epsilon:
             # Get action from Q table
             state = model_input.image
-            qs = self._agent.get_qs(state=state) 
+            qs = self._agent.get_qs(state=state)
             movement_index = int(np.argmax(qs))
             command = self.get_movement_by_index(movement_index)
+            print(f'Send predicted command to client: {command}')
         else:
             command = self.get_random_movement()
+            print(f'Send random command to client: {command}')
         return self.send_response_to_client(command)
 
     # ===============================================================================
@@ -365,7 +369,9 @@ class Servicer(_Servicer):
                 qr_metadata=new_state.qr_code_metadata,
             )
         else:
-            target_found = new_state.car_collision_data
+            target_found = self.is_target_box_qr(
+                qr_metadata=new_state.qr_code_metadata,
+            )
         # done policy
         if new_state.car_collision_data: 
             done = Done.HIT_OBJECT
@@ -375,6 +381,9 @@ class Servicer(_Servicer):
         target_router_id = self.get_car_target_router_id()
         target_router_switched = self.is_target_router_switched
         in_target_area = self.car_in_target_area(new_state.routers)
+        if new_state.car_collision_data:
+            reward = RewardPolicy.HIT_WALL.value
+            return (reward, done)
         if not(target_router_id): 
             reward = RewardPolicy.PASSIVE_REWARD.value
             return (reward, done)

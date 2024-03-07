@@ -8,10 +8,13 @@ TARGET_ENCODE_TO = '.jpg'
 
 # paths
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DQN_MODELS_PATH = os.path.join(BASE_DIR, 'models')
-DQN_LOGS_PATH = os.path.join(BASE_DIR, 'logs')
 SRC_PATH = os.path.join(BASE_DIR, 'src')
 VIDEO_PATH = os.path.join(SRC_PATH,'1.mp4')
+# dqn paths
+DQN_LOAD_MODEL_PATH = os.path.join(BASE_DIR, 'model.keras')
+DQN_MODELS_PATH = os.path.join(BASE_DIR, 'models')
+DQN_LOGS_PATH = os.path.join(BASE_DIR, 'logs')
+
 
 # grpc server settings
 PORT = 50051

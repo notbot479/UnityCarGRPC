@@ -1,3 +1,4 @@
+from keras.saving import load_model
 from keras.callbacks import TensorBoard
 from keras.optimizers import Adam
 from keras.models import Sequential
@@ -23,12 +24,16 @@ from .parameters import *
 
 
 class DQNAgent:
-    def __init__(self):
-        # Main model
-        self.model = self.create_model()
-        # Target network
+    def __init__(self, *, filepath:str | None = None):
+        # create main and target model
+        if filepath:
+            self.model = load_model(filepath=filepath)
+            print('Model was loaded')
+        else:
+            self.model = self.create_model()
         self.target_model = self.create_model()
         self.target_model.set_weights(self.model.get_weights())
+        
         # Array with last n steps for training
         self.replay_memory = deque(maxlen=REPLAY_MEMORY_SIZE)
 
@@ -73,7 +78,7 @@ class DQNAgent:
         '''
         self.replay_memory.append(transition)
 
-    def train(self, terminal_state):
+    def train(self, terminal_state: bool):
         '''Trains main network every step during episode'''
         # Start training only if certain number of samples is already saved
         if len(self.replay_memory) < MIN_REPLAY_MEMORY_SIZE: return
@@ -82,7 +87,7 @@ class DQNAgent:
 
         # Get current states from minibatch, then query NN model for Q values
         current_states = np.array([transition[0] for transition in minibatch])
-        current_qs_list = self.model.predict(current_states)
+        current_qs_list = self.model.predict(current_states, verbose=0)
 
         # Get future states from minibatch, then query NN model for Q values
         # When using target network, query it, otherwise main network should be queried
@@ -110,14 +115,14 @@ class DQNAgent:
             y.append(current_qs)
 
         # Fit on all samples as one batch, log only on terminal state
-        callbacks = [self.tensorboard] if terminal_state else None
+        #callbacks = [self.tensorboard] if terminal_state else None
         self.model.fit(
             np.array(X),
             np.array(y), 
             batch_size=MINIBATCH_SIZE, 
             verbose=0, 
             shuffle=False, 
-            callbacks=callbacks,
+            #callbacks=callbacks,
         )
 
         # Update target network counter every episode
@@ -132,8 +137,9 @@ class DQNAgent:
         Queries main network for Q values given current observation space 
         (environment state)
         '''
-        return self.model.predict(np.array(state).reshape(-1, *state.shape))[0]
-
+        X = np.array(state).reshape(-1, *state.shape)
+        y = self.model.predict(X, verbose=0)[0]
+        return y
 
 class ModifiedTensorBoard(TensorBoard):
     def __init__(self, **kwargs):
