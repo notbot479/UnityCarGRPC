@@ -25,6 +25,9 @@ from config import DQN_LOGS_PATH
 from .parameters import *
 
 
+def extract_inputs(data: list) -> list[np.ndarray]:
+    return [np.array(column) for column in zip(*data)]
+
 class DQNAgent:
     def __init__(self, *, filepath:str | None = None):
         # create main and target model
@@ -43,13 +46,19 @@ class DQNAgent:
 
     def create_model(self):
         # define model inputs and outputs
-        image = Input(shape=(64,64,1))
-        distance_sensors_distances = Input(shape=(6,1))
-        distance_to_target_router = Input(shape=(1,))
-        in_target_area = Input(shape=(1,))
-        boxes_is_found = Input(shape=(1,))
-        distance_to_box = Input(shape=(1,))
-        target_found = Input(shape=(1,)) 
+        image = Input(shape=(64,64,1), name='image_input')
+        distance_sensors_distances = Input(
+            shape=(6,),
+            name='distance_sensors_distances_input',
+        )
+        distance_to_target_router = Input(
+            shape=(1,),
+            name='distance_to_target_router_input',
+        )
+        in_target_area = Input(shape=(1,), name='in_target_area_input')
+        boxes_is_found = Input(shape=(1,), name='boxes_is_found_input')
+        distance_to_box = Input(shape=(1,), name='distance_to_box_input')
+        target_found = Input(shape=(1,), name='target_found_input') 
         inputs = [
             image,
             distance_sensors_distances,
@@ -61,24 +70,24 @@ class DQNAgent:
         ]
         
         # create model layers
-        x_image = Conv2D(64, (3, 3), padding='same')(image)
+        x_image = Conv2D(16, (3, 3), padding='same')(image)
         x_image = BatchNormalization()(x_image)
         x_image = Activation('relu')(x_image)
         x_image = MaxPooling2D(pool_size=(2, 2))(x_image)
         x_image = Dropout(0.2)(x_image)
-        x_image = Conv2D(128, (3, 3), padding='same')(x_image)
+        x_image = Conv2D(32, (3, 3), padding='same')(x_image)
         x_image = BatchNormalization()(x_image)
         x_image = Activation('relu')(x_image)
         x_image = MaxPooling2D(pool_size=(2, 2))(x_image)
         x_image = Dropout(0.2)(x_image)
         x_image = Flatten()(x_image)
 
-        x_sensors = Flatten()(distance_sensors_distances)
-        x_router = Flatten()(distance_to_target_router)
-        x_in_target_area = Flatten()(in_target_area)
-        x_boxes_is_found = Flatten()(boxes_is_found)
-        x_distance_to_box = Flatten()(distance_to_box)
-        x_target_found = Flatten()(target_found)
+        x_sensors = Dense(6, activation='relu')(distance_sensors_distances)
+        x_router = Dense(1, activation='relu')(distance_to_target_router)
+        x_in_target_area = Dense(1,activation='relu')(in_target_area)
+        x_boxes_is_found = Dense(1, activation='relu')(boxes_is_found)
+        x_distance_to_box = Dense(1, activation='relu')(distance_to_box)
+        x_target_found = Dense(1, activation='relu')(target_found)
 
         concatenated = Concatenate()([
             x_image,
@@ -91,13 +100,14 @@ class DQNAgent:
         ])
 
         x = Dense(128, activation='relu')(concatenated)
+        x = Dense(64, activation='relu')(x)
         outputs = Dense(6, activation='linear')(x)
         
         # create model
         model = Model(inputs=inputs, outputs=outputs)
         model.compile(
             optimizer=Adam(learning_rate=0.001), 
-            loss="categorical_crossentropy", 
+            loss="mse", 
             metrics=['accuracy'],
         )
         return model
@@ -140,27 +150,32 @@ class DQNAgent:
         # Update target network counter every episode
         if terminal_state: 
             self.target_update_counter += 1
-        if self.target_update_counter > UPDATE_TARGET_EVERY:
+        if self.target_update_counter >= UPDATE_TARGET_EVERY:
             self.update_target_network_weights()
     
     def _train(self, minibatch) -> None:
         # show stats
-        i = min((self.target_update_counter + 1, UPDATE_TARGET_EVERY))
+        i = self.target_update_counter + 1
         print(f'[{i}] Train model. Minibatch size: {len(minibatch)}')
         # Get current states from minibatch, then query NN model for Q values
-        current_states = np.array([transition[0] for transition in minibatch])
+        current_states_X = extract_inputs(
+            [transition[0] for transition in minibatch],
+        )
         current_qs_list = self.model.predict( #pyright: ignore
-            current_states, 
+            current_states_X, 
             verbose=0,
         ) 
-
         # Get future states from minibatch, then query NN model for Q values
         # When using target network, query it, otherwise main network should queried
-        new_current_states = np.array([transition[3] for transition in minibatch])
-        future_qs_list = self.target_model.predict(new_current_states, verbose=0)
-        X, y = [], []
-
+        new_current_states_X = extract_inputs(
+            [transition[3] for transition in minibatch],
+        )
+        future_qs_list = self.target_model.predict(
+            new_current_states_X, 
+            verbose=0,
+        )
         # Now we need to enumerate our batches
+        X, y = [], []
         for index, (current_state, action, reward, _, done) in enumerate(minibatch):
             # If not a terminal state, get new q from future states, 
             # otherwise set it to 0
@@ -181,8 +196,9 @@ class DQNAgent:
 
         # Fit on all samples as one batch, log only on terminal state
         #callbacks = [self.tensorboard] if terminal_state else None
+        X_extracted = extract_inputs(X)
         self.model.fit( #pyright: ignore
-            np.array(X),
+            X_extracted,
             np.array(y), 
             batch_size=MINIBATCH_SIZE, 
             verbose=0, 
@@ -195,7 +211,7 @@ class DQNAgent:
         Queries main network for Q values given current observation space 
         (environment state)
         '''
-        X = np.array(state).reshape(-1, *state.shape)
+        X = extract_inputs([state,])
         y = self.model.predict(X, verbose=0)[0] #pyright: ignore
         return y
 

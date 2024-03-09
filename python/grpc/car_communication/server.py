@@ -106,13 +106,13 @@ class Servicer(_Servicer):
    
     # ================================================================================
 
-    epsilon: float = 1.0
+    epsilon: float = 1
     dqn_load_model: bool = False
     dqn_train_each_step: bool = False
     
     # settings: dqn
     _dqn_episodes_count: int = 20_000
-    _dqn_train_each_episode_batches: int = 50
+    _dqn_train_each_episode_batches: int = 25
     _dqn_respawn_very_bad_model: bool = True
     _dqn_epsilon_decay:float = 0.99975
     _dqn_min_epsilon: float = 0.001
@@ -313,10 +313,10 @@ class Servicer(_Servicer):
         if TRAIN_DQN:
             prev_movement_index = self.get_movement_index(prev_command)
             r = (
-                prev_model_input.image, 
+                prev_model_input.inputs, 
                 prev_movement_index, 
                 reward, 
-                model_input.image, 
+                model_input.inputs, 
                 done,
             )
             self._agent.update_replay_memory(r)
@@ -339,7 +339,7 @@ class Servicer(_Servicer):
         # dqn predict command or get random movement
         if np.random.random() > self.epsilon:
             # Get action from Q table
-            state = model_input.image
+            state = model_input.inputs
             qs = self._agent.get_qs(state=state)
             movement_index = int(np.argmax(qs))
             command = self.get_movement_by_index(movement_index)
