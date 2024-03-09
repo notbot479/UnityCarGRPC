@@ -1,12 +1,14 @@
 from keras.callbacks import TensorBoard
 from keras.optimizers import Adam
-from keras.models import Sequential
+from keras.models import Model
 from keras.saving import load_model
 from keras.layers import (
-    MaxPooling2D, 
+    BatchNormalization,
+    MaxPooling2D,
+    Concatenate,
     Activation, 
     Flatten,
-    Dropout, 
+    Dropout,
     Conv2D, 
     Input,
     Dense, 
@@ -40,27 +42,62 @@ class DQNAgent:
         self.target_update_counter = 0
 
     def create_model(self):
-        inputs = Input(shape=(64,64,1))
-        outputs = Dense(6, activation='linear')
-        model = Sequential([
-            inputs,
-            Conv2D(32, (3, 3), padding='same'),
-            Activation('relu'),
-            MaxPooling2D(pool_size=(2, 2)),
-            Dropout(0.2),
+        # define model inputs and outputs
+        image = Input(shape=(64,64,1))
+        distance_sensors_distances = Input(shape=(6,1))
+        distance_to_target_router = Input(shape=(1,))
+        in_target_area = Input(shape=(1,))
+        boxes_is_found = Input(shape=(1,))
+        distance_to_box = Input(shape=(1,))
+        target_found = Input(shape=(1,)) 
+        inputs = [
+            image,
+            distance_sensors_distances,
+            distance_to_target_router,
+            in_target_area,
+            boxes_is_found,
+            distance_to_box,
+            target_found,
+        ]
+        
+        # create model layers
+        x_image = Conv2D(64, (3, 3), padding='same')(image)
+        x_image = BatchNormalization()(x_image)
+        x_image = Activation('relu')(x_image)
+        x_image = MaxPooling2D(pool_size=(2, 2))(x_image)
+        x_image = Dropout(0.2)(x_image)
+        x_image = Conv2D(128, (3, 3), padding='same')(x_image)
+        x_image = BatchNormalization()(x_image)
+        x_image = Activation('relu')(x_image)
+        x_image = MaxPooling2D(pool_size=(2, 2))(x_image)
+        x_image = Dropout(0.2)(x_image)
+        x_image = Flatten()(x_image)
 
-            Conv2D(32, (3, 3), padding='same'),
-            Activation('relu'),
-            MaxPooling2D(pool_size=(2, 2)),
-            Dropout(0.2),
+        x_sensors = Flatten()(distance_sensors_distances)
+        x_router = Flatten()(distance_to_target_router)
+        x_in_target_area = Flatten()(in_target_area)
+        x_boxes_is_found = Flatten()(boxes_is_found)
+        x_distance_to_box = Flatten()(distance_to_box)
+        x_target_found = Flatten()(target_found)
 
-            Flatten(), 
-            Dense(32),
-            outputs,
+        concatenated = Concatenate()([
+            x_image,
+            x_sensors,
+            x_router,
+            x_in_target_area,
+            x_boxes_is_found,
+            x_distance_to_box, 
+            x_target_found,
         ])
+
+        x = Dense(128, activation='relu')(concatenated)
+        outputs = Dense(6, activation='linear')(x)
+        
+        # create model
+        model = Model(inputs=inputs, outputs=outputs)
         model.compile(
-            loss="mse", 
             optimizer=Adam(learning_rate=0.001), 
+            loss="categorical_crossentropy", 
             metrics=['accuracy'],
         )
         return model
