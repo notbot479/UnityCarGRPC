@@ -10,7 +10,7 @@ class RewardPolicy(Enum):
     IN_TARGET_AREA_NO_BOXES_FOUND = -0.05
     INCREASE_DISTANCE_TO_ROUTER = -0.1
     INCREASE_DISTANCE_TO_BOX = -0.2
-    HIT_WALL = -0.3
+    HIT_OBJECT = -0.3
 
 def _test():
     reward = RewardPolicy.SHORTEN_DISTANCE_TO_ROUTER.value

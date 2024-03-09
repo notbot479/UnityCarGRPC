@@ -106,7 +106,7 @@ class Servicer(_Servicer):
    
     # ================================================================================
 
-    epsilon: float = 0.8
+    epsilon: float = 1.0
     dqn_load_model: bool = True
     dqn_train_each_step: bool = False
     
@@ -119,7 +119,7 @@ class Servicer(_Servicer):
     _dqn_min_reward: float = -100
     _dqn_aggregate_stats_every: int = 50
     # settings: car route
-    _car_hit_wall_patience = 1
+    _car_hit_object_patience = 10
     _car_respawn_nearest_router_id: str = '9'
     # settings: car search target box
     _car_target_patience:int = 5
@@ -147,6 +147,7 @@ class Servicer(_Servicer):
     _dqn_episode_rewards: list = [_dqn_min_reward, ]
     _ctifd_maxlen = _car_target_patience if _car_target_patience > 1 else 1
     _car_target_is_found_deque: Deque[bool] = deque(maxlen=_ctifd_maxlen)
+    _car_hit_object_deque: Deque[bool] = deque(maxlen=_car_hit_object_patience)
     _car_target_is_found_state_metadata: str = ""
     _car_data_deque: Deque[GrpcClientData | None] = deque([None],maxlen=2)
     _car_prev_model_input: ModelInputData | None = None
@@ -386,6 +387,12 @@ class Servicer(_Servicer):
     def max_train_episodes(self) -> int:
         return self._dqn_episodes_count
 
+    @property
+    def car_hit_object_end_patience(self) -> bool:
+        all_hits = all(self._car_hit_object_deque)
+        filled = len(self._car_hit_object_deque) == self._car_hit_object_deque.maxlen
+        return all_hits and filled
+
     def get_reward_and_done(
         self, 
         old_state: GrpcClientData,
@@ -403,9 +410,14 @@ class Servicer(_Servicer):
             target_found = self.is_target_box_qr(
                 qr_metadata=new_state.qr_code_metadata,
             )
+        car_hit_object = new_state.car_collision_data
+        # add car hit to patience
+        if self._car_hit_object_patience and car_hit_object: 
+            self._car_hit_object_deque.append(car_hit_object)
         # done policy
-        if new_state.car_collision_data: 
+        if self._car_hit_object_patience and self.car_hit_object_end_patience:
             done = Done.HIT_OBJECT
+            self._car_hit_object_deque.clear()
         elif target_found: 
             done = Done.TARGET_IS_FOUND
         # reward policy
@@ -413,7 +425,7 @@ class Servicer(_Servicer):
         target_router_switched = self.is_target_router_switched
         in_target_area = self.car_in_target_area(new_state.routers)
         if new_state.car_collision_data:
-            reward = RewardPolicy.HIT_WALL.value
+            reward = RewardPolicy.HIT_OBJECT.value
             return (reward, done)
         if not(target_router_id): 
             reward = RewardPolicy.PASSIVE_REWARD.value
