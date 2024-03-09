@@ -1,7 +1,7 @@
-from keras.saving import load_model
 from keras.callbacks import TensorBoard
 from keras.optimizers import Adam
 from keras.models import Sequential
+from keras.saving import load_model
 from keras.layers import (
     MaxPooling2D, 
     Activation, 
@@ -26,17 +26,12 @@ from .parameters import *
 class DQNAgent:
     def __init__(self, *, filepath:str | None = None):
         # create main and target model
-        if not(filepath):
-            self.model = self.create_model()
-        else:
-            self.model = load_model(filepath=filepath)
-            print('Model was loaded')
+        self.model = load_model(filepath) if filepath else self.create_model()
         self.target_model = self.create_model()
-        self.target_model.set_weights(self.model.get_weights())
-        
+        weights = self.model.get_weights() #pyright: ignore
+        self.target_model.set_weights(weights)
         # Array with last n steps for training
         self.replay_memory = deque(maxlen=REPLAY_MEMORY_SIZE)
-
         # Custom tensorboard object
         tm = int(time.time())
         log_dir = os.path.join(DQN_LOGS_PATH, f'tm{tm}')
@@ -45,7 +40,6 @@ class DQNAgent:
         self.target_update_counter = 0
 
     def create_model(self):
-        # TODO create own model
         inputs = Input(shape=(64,64,1))
         outputs = Dense(6, activation='linear')
         model = Sequential([
@@ -78,43 +72,55 @@ class DQNAgent:
         '''
         self.replay_memory.append(transition)
 
-    def train_on_episode_end(self, *, batches_count: int = 50):
-        if len(self.replay_memory) < MIN_REPLAY_MEMORY_SIZE: return
+    @property
+    def train_available(self) -> bool:
+        '''Start training only if certain number of samples is already saved'''
+        return len(self.replay_memory) > MIN_REPLAY_MEMORY_SIZE
+
+    def update_target_network_weights(self) -> None:
+        weights = self.model.get_weights() #pyright: ignore
+        self.target_model.set_weights(weights)
+        self.target_update_counter = 0
+
+    def train_on_episode_end(self, *, batches_count: int = 50) -> None:
+        if not(self.train_available): return
         rng = range(batches_count)
         batches = [random.sample(self.replay_memory, MINIBATCH_SIZE) for _ in rng]
-        for minibatch in batches: self._train(minibatch=minibatch)
+        for minibatch in batches: 
+            self._train(minibatch=minibatch)
         # Update target network counter
         self.target_update_counter += 1
-        # If counter reaches value, update target network with weights of main network
         if self.target_update_counter > UPDATE_TARGET_EVERY:
-            weights = self.model.get_weights() #pyright: ignore
-            self.target_model.set_weights(weights)
-            self.target_update_counter = 0
+            self.update_target_network_weights()
 
-    def train(self, terminal_state: bool):
+    def train(self, terminal_state: bool) -> None:
         '''Trains main network every step during episode'''
-        # Start training only if certain number of samples is already saved
+        if not(self.train_available): return
         if len(self.replay_memory) < MIN_REPLAY_MEMORY_SIZE: return
         # Get a minibatch of random samples from memory replay table
         minibatch = random.sample(self.replay_memory, MINIBATCH_SIZE)
         self._train(minibatch=minibatch)
         # Update target network counter every episode
-        if terminal_state: self.target_update_counter += 1
-        # If counter reaches value, update target network with weights of main network
+        if terminal_state: 
+            self.target_update_counter += 1
         if self.target_update_counter > UPDATE_TARGET_EVERY:
-            weights = self.model.get_weights() #pyright: ignore
-            self.target_model.set_weights(weights)
-            self.target_update_counter = 0
+            self.update_target_network_weights()
     
     def _train(self, minibatch) -> None:
+        # show stats
+        i = min((self.target_update_counter + 1, UPDATE_TARGET_EVERY))
+        print(f'[{i}] Train model. Minibatch size: {len(minibatch)}')
         # Get current states from minibatch, then query NN model for Q values
         current_states = np.array([transition[0] for transition in minibatch])
-        current_qs_list = self.model.predict(current_states, verbose=0) # pyright: ignore
+        current_qs_list = self.model.predict( #pyright: ignore
+            current_states, 
+            verbose=0,
+        ) 
 
         # Get future states from minibatch, then query NN model for Q values
-        # When using target network, query it, otherwise main network should be queried
+        # When using target network, query it, otherwise main network should queried
         new_current_states = np.array([transition[3] for transition in minibatch])
-        future_qs_list = self.target_model.predict(new_current_states)
+        future_qs_list = self.target_model.predict(new_current_states, verbose=0)
         X, y = [], []
 
         # Now we need to enumerate our batches
@@ -153,7 +159,7 @@ class DQNAgent:
         (environment state)
         '''
         X = np.array(state).reshape(-1, *state.shape)
-        y = self.model.predict(X, verbose=0)[0]
+        y = self.model.predict(X, verbose=0)[0] #pyright: ignore
         return y
 
 class ModifiedTensorBoard(TensorBoard):
@@ -199,7 +205,7 @@ class ModifiedTensorBoard(TensorBoard):
         Custom method for saving own metrics
         Creates writer, writes custom metrics and closes writer
         '''
-        print(self.step, stats) #TODO write logs
+        print(self.step, stats) #TODO write logs [LogWriter]
 
 def _test():
     agent = DQNAgent()

@@ -105,16 +105,21 @@ class Servicer(_Servicer):
         return commands
    
     # ================================================================================
+
+    epsilon: float = 0.8
+    dqn_load_model: bool = True
+    dqn_train_each_step: bool = False
     
     # settings: dqn
-    epsilon: float = 0.8 #1.0
     _dqn_episodes_count: int = 20_000
-    _dqn_aggregate_stats_every: int = 50
-    _dqn_min_epsilon: float = 0.001
+    _dqn_train_each_episode_batches: int = 50
+    _dqn_respawn_very_bad_model: bool = True
     _dqn_epsilon_decay:float = 0.99975
-    _dqn_min_reward: float = -50
-    _dqn_episode_rewards: list = [_dqn_min_reward, ]
+    _dqn_min_epsilon: float = 0.001
+    _dqn_min_reward: float = -100
+    _dqn_aggregate_stats_every: int = 50
     # settings: car route
+    _car_hit_wall_patience = 1
     _car_respawn_nearest_router_id: str = '9'
     # settings: car search target box
     _car_target_patience:int = 5
@@ -131,12 +136,15 @@ class Servicer(_Servicer):
     show_client_data = SHOW_CLIENT_DATA
     _mode: ServicerMode = ServicerMode.READY
     _web_service = WebService()
-    _agent = DQNAgent(filepath=DQN_LOAD_MODEL_PATH)
+    _agent = DQNAgent(
+        filepath = DQN_LOAD_MODEL_PATH if dqn_load_model else "",
+    )
     # server init commands
     _movement_commands = generate_grpc_commands(CAR_MOVEMENT_SIGNALS)
     _extra_commands = generate_grpc_commands(CAR_EXTRA_SIGNALS)
     _commands = _movement_commands | _extra_commands
     # init prev episode memory
+    _dqn_episode_rewards: list = [_dqn_min_reward, ]
     _ctifd_maxlen = _car_target_patience if _car_target_patience > 1 else 1
     _car_target_is_found_deque: Deque[bool] = deque(maxlen=_ctifd_maxlen)
     _car_target_is_found_state_metadata: str = ""
@@ -171,27 +179,36 @@ class Servicer(_Servicer):
         
     @busy_until_end
     def dqn_end_episode(self, data: GrpcClientData) -> None:
+        # show some stats
         print(f'== END episode[{self.episode_id}] state[{self.state_id}] ==')
         print(f'- epsilon [{self.epsilon}]')
         print(f'- total score [{self.episode_total_score}]')
-        # train dqn
-        self._agent.train_on_episode_end() #TODO tests needed
+        print()
+        # train dqn on episode end
+        if TRAIN_DQN:
+            batches_count = self._dqn_train_each_episode_batches
+            if not(self.dqn_train_each_step) and batches_count:
+                self._agent.train_on_episode_end(
+                    batches_count=batches_count,
+                ) 
         # get task (new task) from respawn router (training start nearest router)
-        min_reward = self._dqn_min_reward
         respawn_router_id = self._car_respawn_nearest_router_id
         self.set_active_task_for_car(
             car_id=data.car_id,
             nearest_router_id=respawn_router_id,
         )
         # save statictic and update dqn epsilon
+        round_factor = 3
+        min_reward = self._dqn_min_reward
         self._dqn_episode_rewards.append(self.episode_total_score)
         _a = self.episode_id == 1
         _b = not(self.episode_id % self._dqn_aggregate_stats_every) 
         if _a or _b:
-            ep_batch = self._dqn_episode_rewards[-self._dqn_aggregate_stats_every:]
-            average_reward = sum(ep_batch)/len(ep_batch)
-            min_reward = min(ep_batch)
-            max_reward = max(ep_batch)
+            aggregate_every = self._dqn_aggregate_stats_every
+            ep_batch: list[float] = self._dqn_episode_rewards[-aggregate_every:]
+            average_reward = round(sum(ep_batch)/len(ep_batch),round_factor)
+            min_reward = round(min(ep_batch),round_factor) 
+            max_reward = round(max(ep_batch),round_factor)
             self._agent.tensorboard.update_stats(
                 reward_avg=average_reward, 
                 reward_min=min_reward, 
@@ -199,14 +216,14 @@ class Servicer(_Servicer):
                 epsilon=self.epsilon,
             )
             # Save model, but only when min reward is greater or equal a set value
-            if min_reward >= self._dqn_min_reward: #pyright: ignore
+            if min_reward >= self._dqn_min_reward: 
                 reward_data = {
-                    'min_reward':min_reward, #pyright: ignore
+                    'min_reward':min_reward, 
                     'max_reward':max_reward,
                     'average_reward':average_reward,
                 }
                 path = get_dqn_model_save_path(data=reward_data)
-                self._agent.model.save(path)
+                self._agent.model.save(path) #pyright: ignore
         # Decay epsilon
         if self.epsilon > self._dqn_min_epsilon:
             self.epsilon *= self._dqn_epsilon_decay
@@ -287,13 +304,12 @@ class Servicer(_Servicer):
         reward, done = self.get_reward_and_done(prev_data, data)
         self.total_score_add_reward(reward) 
         
-        #print(model_input)
+        # show some stats
         print(f'Route: {self.car_active_task.route}')
         print(f'Reward: {reward}\n')
         
-        # integrate dqn
+        # train dqn
         if TRAIN_DQN:
-            #TODO send full data
             prev_movement_index = self.get_movement_index(prev_command)
             r = (
                 prev_model_input.image, 
@@ -303,10 +319,16 @@ class Servicer(_Servicer):
                 done,
             )
             self._agent.update_replay_memory(r)
-            #self._agent.train(bool(done))
+            if self.dqn_train_each_step:
+                self._agent.train(bool(done))
+        
+        # respawn very bad model (reached min reward)
+        if self.respawn_very_bad_model():
+            self.dqn_end_episode(data=data)
+            return self._send_respawn_command()
         # dqn end episode based on train policy
         if done == Done.TARGET_IS_FOUND:
-            print('TODO Send message to web - task complate')
+            print('Send message to web - task complate')
             add_random_mock_task()
             self.dqn_end_episode(data=data)
             return self._send_respawn_command()
@@ -325,6 +347,11 @@ class Servicer(_Servicer):
             command = self.get_random_movement()
             print(f'Send random command to client: {command}')
         return self.send_response_to_client(command)
+
+    def respawn_very_bad_model(self) -> bool:
+        if not(self._dqn_respawn_very_bad_model): return False
+        return self.episode_total_score < self._dqn_min_reward
+
 
     # ===============================================================================
 
