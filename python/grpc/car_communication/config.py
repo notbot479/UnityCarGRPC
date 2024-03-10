@@ -14,7 +14,9 @@ VIDEO_PATH = os.path.join(SRC_PATH,'1.mp4')
 # dqn paths
 DQN_LOAD_MODEL_NAME = 'model.keras'
 if DQN_LOAD_MODEL_NAME:
-    DQN_LOAD_MODEL_PATH = os.path.join(BASE_DIR, DQN_LOAD_MODEL_NAME) 
+    path = os.path.join(BASE_DIR, DQN_LOAD_MODEL_NAME) 
+    exists = os.path.isfile(path)
+    DQN_LOAD_MODEL_PATH = path if exists else ''
 else:
     DQN_LOAD_MODEL_PATH = ''
 DQN_MODELS_PATH = os.path.join(BASE_DIR, 'models')

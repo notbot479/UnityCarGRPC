@@ -136,8 +136,7 @@ def _test():
     
     # test fit single data
     X = extract_inputs([model_input.inputs,])
-    y = np.array(np.random.rand(1, 6))
-    y = np.array([np.random.rand(1,6),])
+    y = np.array([np.random.rand(1,5),])
     print([i.shape for i in X])
     model.fit(X,y)
     
@@ -145,7 +144,7 @@ def _test():
     count = 100
     data = [model_input.inputs] * count
     X = extract_inputs(data)
-    y = np.array([np.random.rand(1,6) for _ in range(count)])
+    y = np.array([np.random.rand(1,5) for _ in range(count)])
     model.fit(X,y)
 
 if __name__ == '__main__':

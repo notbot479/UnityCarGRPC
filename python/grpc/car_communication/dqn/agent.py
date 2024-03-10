@@ -31,7 +31,11 @@ def extract_inputs(data: list) -> list[np.ndarray]:
 class DQNAgent:
     def __init__(self, *, filepath:str | None = None):
         # create main and target model
-        self.model = load_model(filepath) if filepath else self.create_model()
+        if filepath:
+            self.model = load_model(filepath) 
+            print('Model was loaded')
+        else:
+            self.model = self.create_model()
         self.target_model = self.create_model()
         weights = self.model.get_weights() #pyright: ignore
         self.target_model.set_weights(weights)
@@ -70,12 +74,12 @@ class DQNAgent:
         ]
         
         # create model layers
-        x_image = Conv2D(32, (3, 3), padding='same')(image)
+        x_image = Conv2D(16, (3, 3), padding='same')(image)
         x_image = BatchNormalization()(x_image)
         x_image = Activation('relu')(x_image)
         x_image = MaxPooling2D(pool_size=(2, 2))(x_image)
         x_image = Dropout(0.2)(x_image)
-        x_image = Conv2D(64, (3, 3), padding='same')(x_image)
+        x_image = Conv2D(32, (3, 3), padding='same')(x_image)
         x_image = BatchNormalization()(x_image)
         x_image = Activation('relu')(x_image)
         x_image = MaxPooling2D(pool_size=(2, 2))(x_image)
@@ -100,7 +104,6 @@ class DQNAgent:
         ])
 
         x = Dense(512, activation='relu')(concatenated)
-        x = Dense(512, activation='relu')(x)
         x = Dense(128, activation='relu')(x)
         outputs = Dense(5, activation='linear')(x)
         
@@ -128,29 +131,29 @@ class DQNAgent:
     def update_target_network_weights(self) -> None:
         weights = self.model.get_weights() #pyright: ignore
         self.target_model.set_weights(weights)
-        self.target_update_counter = 0
+        self.target_update_counter = 1 # set 1 instead 0 after update weights
 
     def train_on_episode_end(self, *, batches_count: int = 50) -> None:
         if not(self.train_available): return
+        # Update target network counter
         self.target_update_counter += 1
+        if self.target_update_counter > UPDATE_TARGET_EVERY:
+            self.update_target_network_weights()
         rng = range(batches_count)
         batches = [random.sample(self.replay_memory, MINIBATCH_SIZE) for _ in rng]
         for minibatch in batches: 
             self._train(minibatch=minibatch)
-        # Update target network counter
-        if self.target_update_counter > UPDATE_TARGET_EVERY:
-            self.update_target_network_weights()
-
+    
     def train(self, terminal_state: bool) -> None:
         '''Trains main network every step during episode'''
         if not(self.train_available): return
         if terminal_state: self.target_update_counter += 1
+        # Update target network counter every episode
+        if self.target_update_counter > UPDATE_TARGET_EVERY:
+            self.update_target_network_weights()
         # Get a minibatch of random samples from memory replay table
         minibatch = random.sample(self.replay_memory, MINIBATCH_SIZE)
         self._train(minibatch=minibatch)
-        # Update target network counter every episode
-        if self.target_update_counter >= UPDATE_TARGET_EVERY:
-            self.update_target_network_weights()
     
     def _train(self, minibatch) -> None:
         # show stats

@@ -10,7 +10,7 @@
 **/*.drawio.bkp
 
 # ignore keras models folder
-**/models/*.keras
+**/*.keras
 
 # =============== #
 # Unity generated #
