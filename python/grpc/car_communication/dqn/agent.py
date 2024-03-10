@@ -70,12 +70,12 @@ class DQNAgent:
         ]
         
         # create model layers
-        x_image = Conv2D(16, (3, 3), padding='same')(image)
+        x_image = Conv2D(32, (3, 3), padding='same')(image)
         x_image = BatchNormalization()(x_image)
         x_image = Activation('relu')(x_image)
         x_image = MaxPooling2D(pool_size=(2, 2))(x_image)
         x_image = Dropout(0.2)(x_image)
-        x_image = Conv2D(32, (3, 3), padding='same')(x_image)
+        x_image = Conv2D(64, (3, 3), padding='same')(x_image)
         x_image = BatchNormalization()(x_image)
         x_image = Activation('relu')(x_image)
         x_image = MaxPooling2D(pool_size=(2, 2))(x_image)
@@ -99,9 +99,10 @@ class DQNAgent:
             x_target_found,
         ])
 
-        x = Dense(128, activation='relu')(concatenated)
-        x = Dense(64, activation='relu')(x)
-        outputs = Dense(6, activation='linear')(x)
+        x = Dense(512, activation='relu')(concatenated)
+        x = Dense(512, activation='relu')(x)
+        x = Dense(128, activation='relu')(x)
+        outputs = Dense(5, activation='linear')(x)
         
         # create model
         model = Model(inputs=inputs, outputs=outputs)
@@ -131,31 +132,29 @@ class DQNAgent:
 
     def train_on_episode_end(self, *, batches_count: int = 50) -> None:
         if not(self.train_available): return
+        self.target_update_counter += 1
         rng = range(batches_count)
         batches = [random.sample(self.replay_memory, MINIBATCH_SIZE) for _ in rng]
         for minibatch in batches: 
             self._train(minibatch=minibatch)
         # Update target network counter
-        self.target_update_counter += 1
         if self.target_update_counter > UPDATE_TARGET_EVERY:
             self.update_target_network_weights()
 
     def train(self, terminal_state: bool) -> None:
         '''Trains main network every step during episode'''
         if not(self.train_available): return
-        if len(self.replay_memory) < MIN_REPLAY_MEMORY_SIZE: return
+        if terminal_state: self.target_update_counter += 1
         # Get a minibatch of random samples from memory replay table
         minibatch = random.sample(self.replay_memory, MINIBATCH_SIZE)
         self._train(minibatch=minibatch)
         # Update target network counter every episode
-        if terminal_state: 
-            self.target_update_counter += 1
         if self.target_update_counter >= UPDATE_TARGET_EVERY:
             self.update_target_network_weights()
     
     def _train(self, minibatch) -> None:
         # show stats
-        i = self.target_update_counter + 1
+        i = self.target_update_counter
         print(f'[{i}] Train model. Minibatch size: {len(minibatch)}')
         # Get current states from minibatch, then query NN model for Q values
         current_states_X = extract_inputs(

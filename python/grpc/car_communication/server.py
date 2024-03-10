@@ -1,3 +1,4 @@
+from logger import *
 from Protos.car_communication_pb2_grpc import (
     add_CommunicationServicer_to_server as _AddServicer, #pyright: ignore
     CommunicationServicer as _Servicer, #pyright: ignore
@@ -18,6 +19,7 @@ from enum import Enum
 import threading
 import random
 import time
+import os
 
 from api.web_service import (
     WebServiceRequest,
@@ -33,18 +35,18 @@ from services.video_manager import (
     VideoPlayer, 
 )
 
-from dqn.agent import DQNAgent
 from dqn.inputs import ModelInputData
 from dqn.reward import RewardPolicy
+from dqn.agent import DQNAgent
 
 from client.data import *
-from units import *
 from config import *
+from units import *
 
 
 # setting server commands (based on proto file)
-CAR_MOVEMENT_SIGNALS = ['noop','left','right','forward','backward','stop']
-CAR_EXTRA_SIGNALS = ['poweroff','respawn']
+CAR_MOVEMENT_SIGNALS = ['left','right','forward','backward','noop']
+CAR_EXTRA_SIGNALS = ['poweroff','respawn','stop']
 TRAIN_DQN = True
 
 
@@ -106,17 +108,17 @@ class Servicer(_Servicer):
    
     # ================================================================================
 
-    epsilon: float = 1
+    epsilon: float = 0.8
     dqn_load_model: bool = False
     dqn_train_each_step: bool = False
     
     # settings: dqn
     _dqn_episodes_count: int = 20_000
-    _dqn_train_each_episode_batches: int = 25
+    _dqn_train_each_episode_batches: int = 256
     _dqn_respawn_very_bad_model: bool = True
     _dqn_epsilon_decay:float = 0.99975
     _dqn_min_epsilon: float = 0.001
-    _dqn_min_reward: float = -100
+    _dqn_min_reward: float = -50
     _dqn_aggregate_stats_every: int = 50
     # settings: car route
     _car_hit_object_patience = 10
@@ -399,7 +401,7 @@ class Servicer(_Servicer):
         new_state: GrpcClientData,
         *,
         done: Done = Done._,
-        round_factor: int = 2,
+        round_factor: int = 1,
     ) -> tuple[Score, Done]:
         # get target found based on patience
         if self._car_target_patience > 1:
@@ -412,7 +414,7 @@ class Servicer(_Servicer):
             )
         car_hit_object = new_state.car_collision_data
         # add car hit to patience
-        if self._car_hit_object_patience and car_hit_object: 
+        if self._car_hit_object_patience: 
             self._car_hit_object_deque.append(car_hit_object)
         # done policy
         if self._car_hit_object_patience and self.car_hit_object_end_patience:
