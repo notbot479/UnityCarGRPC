@@ -6,6 +6,7 @@ public class CarCollisionData : MonoBehaviour
 {
     public bool respawnCarOnHit = true;
     public bool isCollide = false;
+    public float outOfBoundsY = -3f;
     // init car
     private GameObject car;
     private Transform spawnPoint;
@@ -29,6 +30,15 @@ public class CarCollisionData : MonoBehaviour
             isCollide = true;
             if (respawnCarOnHit) { TeleportToSpawn(); }
         }
+    }
+
+    void Update()
+    {
+        float carY = car.transform.position.y; 
+        if (carY < outOfBoundsY)
+        {
+            TeleportToSpawn();
+        } 
     }
     void OnCollisionEnter(Collision collision)
     {
