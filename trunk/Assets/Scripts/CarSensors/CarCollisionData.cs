@@ -7,8 +7,8 @@ public class CarCollisionData : MonoBehaviour
     public bool respawnCarOnHit = true;
     public bool isCollide = false;
     // init car
-    public GameObject car;
-    public Transform spawnPoint;
+    private GameObject car;
+    private Transform spawnPoint;
 
     public void Start()
     {
@@ -22,13 +22,21 @@ public class CarCollisionData : MonoBehaviour
         transform.position = spawnPoint.position;
     }
 
-    void OnCollisionEnter(Collision collision)
+    void _processingCollision(Collision collision)
     {
         if (collision.gameObject.layer != LayerMask.NameToLayer("Ground"))
         {
             isCollide = true;
             if (respawnCarOnHit) { TeleportToSpawn(); }
         }
+    }
+    void OnCollisionEnter(Collision collision)
+    {
+        _processingCollision(collision);
+    }
+    void OnCollisionStay(Collision collision)
+    {
+        _processingCollision(collision);
     }
     void OnCollisionExit(Collision collision)
     {
