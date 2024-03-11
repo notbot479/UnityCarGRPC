@@ -43,7 +43,7 @@ class DQNAgent:
         self.replay_memory = deque(maxlen=REPLAY_MEMORY_SIZE)
         # Custom tensorboard object
         tm = int(time.time())
-        log_dir = os.path.join(DQN_LOGS_PATH, f'tm{tm}')
+        log_dir = os.path.join(DQN_LOGS_PATH, f'{tm}')
         self.tensorboard = ModifiedTensorBoard(log_dir=log_dir)
         # Used to count when to update target network with main network's weights
         self.target_update_counter = 0
@@ -124,6 +124,12 @@ class DQNAgent:
         self.replay_memory.append(transition)
 
     @property
+    def replay_memory_sample(self) -> list:
+        '''get random sample from reply memory fixed length (based - dqn parameters)'''
+        minibatch = random.sample(self.replay_memory, MINIBATCH_SIZE)
+        return minibatch
+
+    @property
     def train_available(self) -> bool:
         '''Start training only if certain number of samples is already saved'''
         return len(self.replay_memory) > MIN_REPLAY_MEMORY_SIZE
@@ -139,10 +145,13 @@ class DQNAgent:
         self.target_update_counter += 1
         if self.target_update_counter > UPDATE_TARGET_EVERY:
             self.update_target_network_weights()
-        rng = range(batches_count)
-        batches = [random.sample(self.replay_memory, MINIBATCH_SIZE) for _ in rng]
-        for minibatch in batches: 
+        batches = [self.replay_memory_sample for _ in range(batches_count)]
+        if not(batches): return
+        for minibatch in batches[:-1]:
             self._train(minibatch=minibatch)
+        # train last batch and update tensorboard (set terminal state True)
+        minibatch = batches[-1]
+        self._train(minibatch=minibatch, terminal_state=True)
     
     def train(self, terminal_state: bool) -> None:
         '''Trains main network every step during episode'''
@@ -152,11 +161,11 @@ class DQNAgent:
         if self.target_update_counter > UPDATE_TARGET_EVERY:
             self.update_target_network_weights()
         # Get a minibatch of random samples from memory replay table
-        minibatch = random.sample(self.replay_memory, MINIBATCH_SIZE)
-        self._train(minibatch=minibatch)
+        minibatch = self.replay_memory_sample
+        self._train(minibatch=minibatch, terminal_state=terminal_state)
     
-    def _train(self, minibatch) -> None:
-        # show stats
+    def _train(self, minibatch:list, *, terminal_state:bool = False) -> None:
+        # show some stats
         i = self.target_update_counter
         print(f'[{i}] Train model. Minibatch size: {len(minibatch)}')
         # Get current states from minibatch, then query NN model for Q values
@@ -197,7 +206,7 @@ class DQNAgent:
             y.append(current_qs)
 
         # Fit on all samples as one batch, log only on terminal state
-        #callbacks = [self.tensorboard] if terminal_state else None
+        callbacks = [self.tensorboard,] if terminal_state else None
         X_extracted = extract_inputs(X)
         self.model.fit( #pyright: ignore
             X_extracted,
@@ -205,7 +214,7 @@ class DQNAgent:
             batch_size=MINIBATCH_SIZE, 
             verbose=0, 
             shuffle=False, 
-            #callbacks=callbacks,
+            callbacks=callbacks,
         )
 
     def get_qs(self, state):
@@ -217,31 +226,39 @@ class DQNAgent:
         y = self.model.predict(X, verbose=0)[0] #pyright: ignore
         return y
 
+
 class ModifiedTensorBoard(TensorBoard):
-    def __init__(self, **kwargs):
+    def __init__(self, log_dir:str, **kwargs):
         '''
         Overriding init to set initial step and writer 
         (we want one log file for all .fit() calls)
         '''
-        super().__init__(**kwargs)
+        super().__init__(log_dir=log_dir, **kwargs)
         self.step = 1
-        self.writer = tf.summary.create_file_writer(self.log_dir)
+        self.writer = tf.summary.create_file_writer(log_dir)
 
     def set_model(self, model): #pyright: ignore
         '''
         Overriding this method to stop creating default log writer
         '''
-        pass
+        self._model = model
+        self._log_write_dir = self.log_dir
+
+        self._train_dir = os.path.join(self._log_write_dir, "train")
+        self._train_step = 0
+
+        self._val_dir = os.path.join(self._log_write_dir, "validation")
+        self._val_step = 0
+        
+        self._should_write_train_graph = False
 
     def on_epoch_end(self, epoch, logs=None): #pyright: ignore
         '''
         Overrided, saves logs with our step number
         (otherwise every .fit() will start writing from 0th step)
         '''
-        if logs is not None:
-            self.update_stats(**logs)
-        else:
-            self.update_stats()
+        logs = logs if logs else {}
+        self.update_stats(**logs)
 
     def on_batch_end(self, batch, logs=None): #pyright: ignore
         '''
@@ -260,7 +277,12 @@ class ModifiedTensorBoard(TensorBoard):
         Custom method for saving own metrics
         Creates writer, writes custom metrics and closes writer
         '''
-        print(self.step, stats) #TODO write logs [LogWriter]
+        print(f'\nTensorBoard write logs. Step: {self.step}. Stats: {stats}\n') 
+        with self.writer.as_default():
+            for key, value in stats.items():
+                tf.summary.scalar(key, value, step = self.step)
+                self.writer.flush()
+
 
 def _test():
     agent = DQNAgent()
