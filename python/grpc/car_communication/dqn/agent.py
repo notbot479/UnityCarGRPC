@@ -170,13 +170,12 @@ class DQNAgent:
         self.target_update_counter += 1
         if self.target_update_counter > UPDATE_TARGET_EVERY:
             self.update_target_network_weights()
-        batches = [self.replay_memory_sample for _ in range(batches_count)]
-        if not(batches): return
-        for minibatch in batches[:-1]:
-            self._train(minibatch=minibatch)
-        # train last batch and update tensorboard (set terminal state True)
-        minibatch = batches[-1]
-        self._train(minibatch=minibatch, terminal_state=True)
+        # generate batch (minibatches * batches_count)
+        batch = []
+        [batch.extend(self.replay_memory_sample) for _ in range(batches_count)]
+        if not(batch): return
+        # train on batch and update tensorboard (set terminal state True)
+        self._train(minibatch=batch, terminal_state=True)
     
     def train(self, terminal_state: bool) -> None:
         '''Trains main network every step during episode'''
@@ -189,10 +188,18 @@ class DQNAgent:
         minibatch = self.replay_memory_sample
         self._train(minibatch=minibatch, terminal_state=terminal_state)
     
-    def _train(self, minibatch:list, *, terminal_state:bool = False) -> None:
+    def _train(
+        self, 
+        minibatch:list, 
+        *, 
+        terminal_state:bool = False,
+        batch_size: int | None = None,
+        ) -> None:
+        if not(batch_size): batch_size = MINIBATCH_SIZE
         # show some stats
         i = self.target_update_counter
-        print(f'[{i}] Train model. Minibatch size: {len(minibatch)}')
+        b = len(minibatch)//batch_size
+        print(f'[{i}] Train model. Minibatch size: {batch_size}. Batches: {b}')
         # Get current states from minibatch, then query NN model for Q values
         current_states_X = extract_inputs(
             [transition[0] for transition in minibatch],
@@ -221,22 +228,19 @@ class DQNAgent:
                 new_q = reward + DISCOUNT * max_future_q
             else:
                 new_q = reward
-
             # Update Q value for given state
             current_qs = current_qs_list[index]
             current_qs[action] = new_q
-
             # And append to our training data
             X.append(current_state)
             y.append(current_qs)
-
         # Fit on all samples as one batch, log only on terminal state
         callbacks = [self.tensorboard,] if terminal_state else None
         X_extracted = extract_inputs(X)
         self.model.fit( #pyright: ignore
             X_extracted,
             np.array(y), 
-            batch_size=MINIBATCH_SIZE, 
+            batch_size=batch_size,
             verbose=0, 
             shuffle=False, 
             callbacks=callbacks,
