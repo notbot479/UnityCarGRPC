@@ -406,6 +406,7 @@ class Servicer(_Servicer):
         round_factor: int = 1,
     ) -> tuple[Score, Done]:
         # get target found based on patience
+        in_target_area = self.car_in_target_area(new_state.routers)
         if self._car_target_patience > 1:
             target_found = self.is_target_found_and_locked(
                 qr_metadata=new_state.qr_code_metadata,
@@ -422,12 +423,11 @@ class Servicer(_Servicer):
         if self._car_hit_object_patience and self.car_hit_object_end_patience:
             done = Done.HIT_OBJECT
             self._car_hit_object_deque.clear()
-        elif target_found: 
+        elif target_found and in_target_area: 
             done = Done.TARGET_IS_FOUND
         # reward policy
         target_router_id = self.get_car_target_router_id()
         target_router_switched = self.is_target_router_switched
-        in_target_area = self.car_in_target_area(new_state.routers)
         if new_state.car_collision_data:
             reward = RewardPolicy.HIT_OBJECT.value
             return (reward, done)
