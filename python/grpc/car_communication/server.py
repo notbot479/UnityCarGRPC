@@ -100,7 +100,7 @@ class Servicer(_Servicer):
     
     # ================================================================================
 
-    epsilon: float = 0.95
+    epsilon: float = 1
 
     dqn_load_model: bool = True
     dqn_train_each_step: bool = False

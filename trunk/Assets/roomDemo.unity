@@ -1531,8 +1531,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0f2bb842f6e1ebb4b9efd4ffe6b6897e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  enableVsync: 0
-  fpsLimit: 60
+  enableVsync: 1
+  fpsLimit: 30
   serverDomain: localhost
   serverPort: 50051
   scanQRMaxDistance: 1
