@@ -38,7 +38,7 @@ from services.video_manager import (
 
 from dqn.inputs import ModelInputData
 from dqn.reward import RewardPolicy
-from dqn.agent import DQNAgent
+from dqn.agent import DQNAgent, get_best_model_path
 
 from client.data import *
 from config import *
@@ -98,11 +98,19 @@ class Servicer(_Servicer):
         commands = {s:getattr(server_response,s.upper()) for s in signals}
         return commands
     
+    @staticmethod
+    def _get_model_path(load_model:bool,load_best=bool) -> str:
+        if not(load_model): path = ""
+        elif load_best: path = get_best_model_path()
+        else: path = DQN_LOAD_MODEL_PATH
+        return path
+
     # ================================================================================
 
     epsilon: float = 1
 
     dqn_load_model: bool = True
+    dqn_load_best_model: bool = True
     dqn_train_each_step: bool = False
     dqn_cuda_train_batch_multiplier: int = 10
     dqn_train_batches: int = 50
@@ -133,7 +141,10 @@ class Servicer(_Servicer):
     _mode: ServicerMode = ServicerMode.READY
     _web_service = WebService()
     _agent = DQNAgent(
-        filepath = DQN_LOAD_MODEL_PATH if dqn_load_model else "",
+        filepath = _get_model_path(
+            load_model=dqn_load_model,
+            load_best=dqn_load_best_model,
+        )
     )
     # server init commands
     _movement_commands = generate_grpc_commands(CAR_MOVEMENT_SIGNALS)
