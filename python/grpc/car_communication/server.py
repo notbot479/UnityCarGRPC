@@ -113,27 +113,27 @@ class Servicer(_Servicer):
     dqn_load_best_model: bool = True
     dqn_train_each_step: bool = False
     dqn_cuda_train_batch_multiplier: int = 10
-    dqn_train_batches: int = 50
+    dqn_train_batches: int = 100
     
     # settings: dqn
-    _dqn_episodes_count: int = 5_000
+    _dqn_episodes_count: int = 20_000
     _dqn_respawn_very_bad_model: bool = True
     _dqn_epsilon_decay:float = 0.99975
     _dqn_min_epsilon: float = 0.001
-    _dqn_min_reward: float = -50
+    _dqn_min_reward: float = -20
     _dqn_aggregate_stats_every: int = 25
     # settings: car route
     _car_hit_object_patience = 10
-    _car_respawn_nearest_router_id: str = '9'
+    _car_respawn_nearest_router_id: str = '2'
     # settings: car search target box
     _car_target_patience:int = 5
     _car_ignore_target_area: bool = False
     _target_router_already_locked: bool = False
     # settings: switch router policy
     _car_lock_target_router_rssi: Rssi = -20
-    _car_switch_target_router_rssi: Rssi = -30
-    _car_switch_target_router_rssi_of_next_shortcut: Rssi = -70
-    _car_switch_target_router_rssi_of_next: Rssi = -95
+    _car_switch_target_router_rssi: Rssi = -20
+    _car_switch_target_router_rssi_of_next_shortcut: Rssi = -60
+    _car_switch_target_router_rssi_of_next: Rssi = -80
     
     # init service
     show_stream_video = SHOW_STREAM_VIDEO

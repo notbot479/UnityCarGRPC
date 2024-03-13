@@ -25,9 +25,9 @@ def zeroOrOne(data:bool) -> Union[Literal[0], Literal[1]]:
 class ModelInputData:
     IMAGE_FIXED_SHAPE: Pixel = 64               # small image from camera
     DISTANCE_SENSOR_MAX_DISTANCE: Meter = 10    # ultrasonic max distance
-    DISTANCE_SENSOR_DEFAULT:float = -1.0        # relu drop
     ROUTER_MAX_RSSI: Rssi = -100                # typical max rssi 
-    ROUTER_DEFAULT: float = -1.0                # relu drop
+    DISTANCE_SENSOR_DEFAULT:float = 1        
+    ROUTER_DEFAULT: float = 1
 
     def __init__(
         self,
@@ -117,18 +117,18 @@ class ModelInputData:
 
 
 def _test():
+    agent = DQNAgent()
+    model = agent.create_model()
     model_input = ModelInputData(
         image = None,
-        distance_sensors_distances = [1,2,3,4,5,6],
-        distance_to_target_router = 7,
+        distance_sensors_distances = [1,2,3,4,5,11],
+        distance_to_target_router = -101,
         distance_to_box = 8,
         in_target_area = False,
         boxes_is_found = False,
         target_is_found = False,              
     )
-    agent = DQNAgent()
-    model = agent.create_model()
-    
+    print(model_input)
     # test model predict
     X = extract_inputs([model_input.inputs,])
     qs = model.predict(X)

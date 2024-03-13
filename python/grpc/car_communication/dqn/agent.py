@@ -3,10 +3,8 @@ from keras.optimizers import Adam
 from keras.models import Model
 from keras.saving import load_model
 from keras.layers import (
-    BatchNormalization,
     MaxPooling2D,
     Concatenate,
-    Activation, 
     Flatten,
     Dropout,
     Conv2D, 
@@ -99,45 +97,41 @@ class DQNAgent:
         ]
         
         # create model layers
-        x_image = Conv2D(16, (3, 3), padding='same')(image)
-        x_image = BatchNormalization()(x_image)
-        x_image = Activation('relu')(x_image)
-        x_image = MaxPooling2D(pool_size=(2, 2))(x_image)
-        x_image = Dropout(0.2)(x_image)
-        x_image = Conv2D(32, (3, 3), padding='same')(x_image)
-        x_image = BatchNormalization()(x_image)
-        x_image = Activation('relu')(x_image)
-        x_image = MaxPooling2D(pool_size=(2, 2))(x_image)
-        x_image = Dropout(0.2)(x_image)
-        x_image = Flatten()(x_image)
+        x_img = Conv2D(32,(8,8),padding='same',activation='relu')(image)
+        x_img = Conv2D(32,(4,4),padding='same',activation='relu')(x_img)
+        x_img = MaxPooling2D(pool_size=(2,2))(x_img) #32x32 image
+        x_img = Dropout(0.2)(x_img)
+        x_img = Conv2D(64,(8,8),strides=(4,4),padding='same',activation='relu')(x_img)
+        x_img = Conv2D(64,(4,4),strides=(2,2),padding='same',activation='relu')(x_img)
+        x_img = MaxPooling2D(pool_size=(2,2))(x_img) # 2x2 image
+        x_img = Conv2D(128,(2,2),padding='same',activation='relu')(x_img)
+        x_img = Flatten()(x_img)
 
-        x_sensors = Dense(6, activation='relu')(distance_sensors_distances)
-        x_router = Dense(1, activation='relu')(distance_to_target_router)
-        x_in_target_area = Dense(1,activation='relu')(in_target_area)
-        x_boxes_is_found = Dense(1, activation='relu')(boxes_is_found)
-        x_distance_to_box = Dense(1, activation='relu')(distance_to_box)
-        x_target_found = Dense(1, activation='relu')(target_found)
-
-        concatenated = Concatenate()([
-            x_image,
-            x_sensors,
-            x_router,
-            x_in_target_area,
-            x_boxes_is_found,
-            x_distance_to_box, 
-            x_target_found,
+        # create extra layer
+        x_extra = Concatenate()([
+            distance_sensors_distances,
+            distance_to_target_router,
+            in_target_area,
+            boxes_is_found,
+            distance_to_box,
+            target_found,
         ])
+        x_extra = Dense(256, activation='relu')(x_extra)
+        x_extra = Dense(512, activation='relu')(x_extra)
 
+        # connect conv and extra layer
+        concatenated = Concatenate()([x_img,x_extra])
         x = Dense(512, activation='relu')(concatenated)
+        x = Dense(256, activation='relu')(x)
         x = Dense(128, activation='relu')(x)
         outputs = Dense(5, activation='linear')(x)
         
         # create model
         model = Model(inputs=inputs, outputs=outputs)
         model.compile(
-            optimizer=Adam(learning_rate=0.001), 
+            optimizer=Adam(learning_rate=0.0005), 
             loss="mse", 
-            metrics=['accuracy'],
+            metrics=['accuracy','mae','mse'],
         )
         return model
 
