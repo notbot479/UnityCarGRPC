@@ -414,9 +414,9 @@ class Servicer(_Servicer):
         new_state: GrpcClientData,
         *,
         done: Done = Done._,
-        round_factor: int = 1,
     ) -> tuple[Score, Done]:
         # get target found based on patience
+        car_hit_object = new_state.car_collision_data
         in_target_area = self.car_in_target_area(new_state.routers)
         if self._car_target_patience > 1:
             target_found = self.is_target_found_and_locked(
@@ -426,7 +426,6 @@ class Servicer(_Servicer):
             target_found = self.is_target_box_qr(
                 qr_metadata=new_state.qr_code_metadata,
             )
-        car_hit_object = new_state.car_collision_data
         # add car hit to patience
         if self._car_hit_object_patience: 
             self._car_hit_object_deque.append(car_hit_object)
@@ -439,7 +438,7 @@ class Servicer(_Servicer):
         # reward policy
         target_router_id = self.get_car_target_router_id()
         target_router_switched = self.is_target_router_switched
-        if new_state.car_collision_data:
+        if car_hit_object:
             reward = RewardPolicy.HIT_OBJECT.value
             return (reward, done)
         if not(target_router_id): 
@@ -455,7 +454,7 @@ class Servicer(_Servicer):
                 router_id=target_router_id,
                 routers=new_state.routers,
             )
-            delta = round(old_target_rssi - new_target_rssi, round_factor)
+            delta = round(old_target_rssi - new_target_rssi, 0)
             if delta == 0:
                 reward = RewardPolicy.PASSIVE_REWARD.value
                 return (reward, done)
@@ -490,7 +489,7 @@ class Servicer(_Servicer):
                 reward = RewardPolicy.PASSIVE_REWARD.value
                 return (reward, done)
             delta = abs(old_front_sensor.distance) - abs(new_front_sensor.distance)
-            delta = round(delta, round_factor)
+            delta = round(delta, 2)
             if boxes_in_view and delta == 0:
                 reward = RewardPolicy.IN_TARGET_AREA_BOXES_FOUND.value
                 return (reward, done)
