@@ -55,9 +55,10 @@ CAR_EXTRA_SIGNALS = ['poweroff','respawn','stop']
 
 # for more repetitive results
 if DISABLE_RANDOM:
-    random.seed(777)
-    np.random.seed(777)
-    tf.random.set_seed(777)
+    seed = 4
+    random.seed(seed)
+    np.random.seed(seed)
+    tf.random.set_seed(seed)
 
 
 @dataclass
@@ -113,12 +114,12 @@ class Servicer(_Servicer):
     dqn_load_best_model: bool = True
     dqn_train_each_step: bool = False
     dqn_cuda_train_batch_multiplier: int = 10
-    dqn_train_batches: int = 100
+    dqn_train_batches: int = 50
     
     # settings: dqn
-    _dqn_episodes_count: int = 20_000
+    _dqn_episodes_count: int = 2500
     _dqn_respawn_very_bad_model: bool = True
-    _dqn_epsilon_decay:float = 0.995 
+    _dqn_epsilon_decay:float = 0.99
     _dqn_min_epsilon: float = 0.001
     _dqn_min_reward: float = -20
     _dqn_aggregate_stats_every: int = 25
@@ -131,9 +132,9 @@ class Servicer(_Servicer):
     _target_router_already_locked: bool = False
     # settings: switch router policy
     _car_lock_target_router_rssi: Rssi = -20
-    _car_switch_target_router_rssi: Rssi = -20
-    _car_switch_target_router_rssi_of_next_shortcut: Rssi = -60
-    _car_switch_target_router_rssi_of_next: Rssi = -80
+    _car_switch_target_router_rssi: Rssi = -30
+    _car_switch_target_router_rssi_of_next_shortcut: Rssi = -70
+    _car_switch_target_router_rssi_of_next: Rssi = -90
     
     # init service
     show_stream_video = SHOW_STREAM_VIDEO

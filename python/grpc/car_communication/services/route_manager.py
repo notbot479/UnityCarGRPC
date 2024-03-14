@@ -29,13 +29,13 @@ class RouteManager:
         # router 3
         cls._graph.add_edge('3', '8-2', 1)
         # router 4
-        cls._graph.add_edge('4', '8-2', 2)
-        cls._graph.add_edge('4', '5-1', 2)
+        cls._graph.add_edge('4', '8-2', 1)
+        cls._graph.add_edge('4', '5-1', 1)
         cls._graph.add_edge('4', '6-2', 3)
         # router 5-1
         cls._graph.add_edge('5-1', '5-2', 1)
+        cls._graph.add_edge('5-1', '4', 1)
         cls._graph.add_edge('5-1', '8-2', 2)
-        cls._graph.add_edge('5-1', '4', 2)
         # router 5-2
         cls._graph.add_edge('5-2', '5-1', 1)
         # router 6-1
@@ -63,8 +63,8 @@ class RouteManager:
         cls._graph.add_edge('8-2', '2', 1)
         cls._graph.add_edge('8-2', '3', 1)
         cls._graph.add_edge('8-2', '6-1', 1)
-        cls._graph.add_edge('8-2', '5-1', 2)
-        cls._graph.add_edge('8-2', '4', 2)
+        cls._graph.add_edge('8-2', '4', 1)
+        cls._graph.add_edge('8-2', '5-1', 3)
         cls._graph.add_edge('8-2', '1', 3)
         # router 9
         cls._graph.add_edge('9', '8-1', 2)
