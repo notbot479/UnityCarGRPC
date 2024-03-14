@@ -55,9 +55,9 @@ CAR_EXTRA_SIGNALS = ['poweroff','respawn','stop']
 
 # for more repetitive results
 if DISABLE_RANDOM:
-    random.seed(1)
-    np.random.seed(1)
-    tf.random.set_seed(1)
+    random.seed(777)
+    np.random.seed(777)
+    tf.random.set_seed(777)
 
 
 @dataclass
