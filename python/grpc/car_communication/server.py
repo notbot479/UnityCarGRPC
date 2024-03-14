@@ -118,7 +118,7 @@ class Servicer(_Servicer):
     # settings: dqn
     _dqn_episodes_count: int = 20_000
     _dqn_respawn_very_bad_model: bool = True
-    _dqn_epsilon_decay:float = 0.99975
+    _dqn_epsilon_decay:float = 0.995 
     _dqn_min_epsilon: float = 0.001
     _dqn_min_reward: float = -20
     _dqn_aggregate_stats_every: int = 25

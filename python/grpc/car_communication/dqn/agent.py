@@ -3,6 +3,7 @@ from keras.optimizers import Adam
 from keras.models import Model
 from keras.saving import load_model
 from keras.layers import (
+    BatchNormalization,
     MaxPooling2D,
     Concatenate,
     Flatten,
@@ -96,40 +97,63 @@ class DQNAgent:
             target_found,
         ]
         
-        # create model layers
-        x_img = Conv2D(32,(8,8),padding='same',activation='relu')(image)
-        x_img = Conv2D(32,(4,4),padding='same',activation='relu')(x_img)
-        x_img = MaxPooling2D(pool_size=(2,2))(x_img) #32x32 image
-        x_img = Dropout(0.2)(x_img)
-        x_img = Conv2D(64,(8,8),strides=(4,4),padding='same',activation='relu')(x_img)
-        x_img = Conv2D(64,(4,4),strides=(2,2),padding='same',activation='relu')(x_img)
-        x_img = MaxPooling2D(pool_size=(2,2))(x_img) # 2x2 image
-        x_img = Conv2D(128,(2,2),padding='same',activation='relu')(x_img)
-        x_img = Flatten()(x_img)
+        # create CNN layer
+        x_img = Conv2D(128,(8,8),padding='same',activation='relu')(image)
+        x_img = BatchNormalization()(x_img)
+        x_img = Conv2D(128,(8,8),padding='same',activation='relu')(x_img)
+        x_img = BatchNormalization()(x_img)
+        x_img = MaxPooling2D(pool_size=(2,2))(x_img)
+        x_img = Dropout(0.2)(x_img) 
 
-        # create extra layer
-        x_extra = Concatenate()([
+        x_img = Conv2D(256,(4,4),strides=(2,2),padding='same',activation='relu')(x_img)
+        x_img = BatchNormalization()(x_img) 
+        x_img = MaxPooling2D(pool_size=(2,2))(x_img)
+        
+        x_img = Conv2D(256,(4,4),strides=(2,2),padding='same',activation='relu')(x_img)
+        x_img = BatchNormalization()(x_img)
+        x_img = MaxPooling2D(pool_size=(2,2))(x_img)
+
+        x_img = Dropout(0.2)(x_img) 
+        x_img = Flatten()(x_img) # 2x2x256
+        x_img = Dense(512, activation='relu')(x_img)
+
+        # create extra layer: stage 1
+        x_extra1 = Concatenate()([
+            # stage metrics
+            distance_to_target_router, 
+            # navigation data
             distance_sensors_distances,
-            distance_to_target_router,
             in_target_area,
-            boxes_is_found,
-            distance_to_box,
-            target_found,
         ])
-        x_extra = Dense(256, activation='relu')(x_extra)
-        x_extra = Dense(512, activation='relu')(x_extra)
+        x_extra1 = Dense(64, activation='relu')(x_extra1)
+        x_extra1 = Dense(256, activation='relu')(x_extra1)
+
+        # create extra layer: stage 2
+        x_extra2 = Concatenate()([
+            # stage metrics
+            distance_to_box, 
+            boxes_is_found,
+            target_found,
+            # navigation data
+            distance_sensors_distances,
+            in_target_area,
+        ])
+        x_extra2 = Dense(64, activation='relu')(x_extra2)
+        x_extra2 = Dense(256, activation='relu')(x_extra2)
 
         # connect conv and extra layer
-        concatenated = Concatenate()([x_img,x_extra])
+        concatenated_extra = Concatenate()([x_extra1,x_extra2])
+        concatenated = Concatenate()([x_img,concatenated_extra])
+
+        # create full connected layers
         x = Dense(512, activation='relu')(concatenated)
         x = Dense(256, activation='relu')(x)
-        x = Dense(128, activation='relu')(x)
         outputs = Dense(5, activation='linear')(x)
         
         # create model
         model = Model(inputs=inputs, outputs=outputs)
         model.compile(
-            optimizer=Adam(learning_rate=0.0005), 
+            optimizer=Adam(learning_rate=0.001), 
             loss="mse", 
             metrics=['accuracy','mae','mse'],
         )
@@ -153,10 +177,13 @@ class DQNAgent:
         '''Start training only if certain number of samples is already saved'''
         return len(self.replay_memory) > MIN_REPLAY_MEMORY_SIZE
 
-    def update_target_network_weights(self) -> None:
-        weights = self.model.get_weights() #pyright: ignore
-        self.target_model.set_weights(weights)
-        self.target_update_counter = 1 # set 1 instead 0 after update weights
+    def update_target_network_weights(self,tau:float = 0.001) -> None:
+        target_weights = self.target_model.get_weights()
+        source_weights = self.model.get_weights()
+        updated_weights = []
+        for target_weights_arr, source_weights_arr in zip(target_weights, source_weights):
+            updated_weights.append(tau * source_weights_arr + (1 - tau) * target_weights_arr)
+        self.target_model.set_weights(updated_weights)
 
     def train_on_episode_end(self, *, batches_count: int = 50) -> None:
         if not(self.train_available): return
