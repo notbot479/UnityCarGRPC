@@ -6,8 +6,12 @@ public class CarCollisionData : MonoBehaviour
 {
     public bool respawnCarOnHit = true;
     public bool isCollide = false;
-    public float outOfBoundsY = -3f;
-    // init car
+    
+    public bool respawnRandomize = true;
+    public float respawnRadius = 1f; 
+    public float respawnRotation = 10f; 
+
+    private float outOfBoundsY = -3f;
     private GameObject car;
     private Transform spawnPoint;
 
@@ -16,11 +20,32 @@ public class CarCollisionData : MonoBehaviour
         car = GameObject.Find("Car");
         spawnPoint = GameObject.Find("SpawnPoint").transform;
     }
-    public void TeleportToSpawn()
+
+    private void RandomizeCarState()
+    {   
+        // randomize car position based on current coords
+        Vector2 randomDirection = Random.insideUnitCircle.normalized * respawnRadius;
+        Vector3 newPosition = new Vector3(
+            transform.position.x + randomDirection.x, 
+            transform.position.y, 
+            transform.position.z + randomDirection.y
+        );
+        transform.position = newPosition;
+        // randomize car rotation based on current rotation 
+        float delta = Random.Range(-respawnRotation, respawnRotation);
+        Vector3 currentRotation = transform.rotation.eulerAngles;
+        Vector3 targetRotation = currentRotation + new Vector3(0f, delta, 0f);
+        transform.rotation = Quaternion.Euler(targetRotation);
+    }
+
+    public void TeleportToSpawn(bool randomizeSpawn = false)
     {
+        // teleport car to spawn
         transform.forward = spawnPoint.forward;
         transform.rotation = spawnPoint.rotation;
         transform.position = spawnPoint.position;
+        // randomize spawn
+        if (randomizeSpawn) { RandomizeCarState(); }
     }
 
     void _processingCollision(Collision collision)
@@ -28,7 +53,7 @@ public class CarCollisionData : MonoBehaviour
         if (collision.gameObject.layer != LayerMask.NameToLayer("Ground"))
         {
             isCollide = true;
-            if (respawnCarOnHit) { TeleportToSpawn(); }
+            if (respawnCarOnHit) { TeleportToSpawn(respawnRandomize); }
         }
     }
 

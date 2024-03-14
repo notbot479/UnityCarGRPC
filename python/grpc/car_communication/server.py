@@ -454,7 +454,7 @@ class Servicer(_Servicer):
                 router_id=target_router_id,
                 routers=new_state.routers,
             )
-            delta = round(old_target_rssi - new_target_rssi, 0)
+            delta = round(old_target_rssi - new_target_rssi, 1)
             if delta == 0:
                 reward = RewardPolicy.PASSIVE_REWARD.value
                 return (reward, done)
