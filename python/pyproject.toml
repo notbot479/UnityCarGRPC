@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "grpc"
+name = "ddpg"
 version = "0.1.0"
 description = ""
 authors = ["Max <avdeenkomaxim123@gmail.com>"]
@@ -10,8 +10,10 @@ python = "^3.11"
 grpcio = "^1.59.2"
 grpcio-tools = "^1.59.2"
 opencv-python = "^4.8.1.78"
-tensorflow = "^2.15.0.post1"
-keras = "^3.0.5"
+torch = "^2.2.1"
+torchvision = "^0.17.1"
+torchaudio = "^2.2.1"
+tensorboard = "^2.16.2"
 
 
 [build-system]

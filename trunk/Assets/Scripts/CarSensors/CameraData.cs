@@ -6,7 +6,7 @@ using ZXing;
 
 public class CameraData : MonoBehaviour
 {
-    private int cameraFixedSize = 64;
+    private int cameraFixedSize = 224;
     private int cameraFullscreenFixedSize = 500;
     private Camera targetCamera;
     private GameObject cameraBase;

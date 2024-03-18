@@ -23,7 +23,7 @@ def zeroOrOne(data:bool) -> Union[Literal[0], Literal[1]]:
 
 
 class ModelInputData:
-    IMAGE_FIXED_SHAPE: Pixel = 64               # small image from camera
+    IMAGE_FIXED_SHAPE: Pixel = 224              # small image from camera
     DISTANCE_SENSOR_MAX_DISTANCE: Meter = 10    # ultrasonic max distance
     ROUTER_MAX_RSSI: Rssi = -100                # typical max rssi 
     DISTANCE_SENSOR_DEFAULT:float = 1        
