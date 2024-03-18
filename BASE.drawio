@@ -1,6 +1,6 @@
-<mxfile host="app.diagrams.net" modified="2024-03-14T16:29:28.664Z" agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36" etag="yMvMizVwMyU_XFOcxncG" version="24.0.4" type="device">
+<mxfile host="app.diagrams.net" modified="2024-03-19T13:24:17.773Z" agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36" etag="yZnLBnBGAYSmMrVgbBmI" version="24.0.6" type="device">
   <diagram name="Page-1" id="BlPKUFuIVkPSBFXPaY6b">
-    <mxGraphModel dx="2903" dy="1294" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+    <mxGraphModel dx="5487" dy="2717" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -245,7 +245,7 @@
         <mxCell id="xUUYA0Ld_gW9UQ1MdfIz-327" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="xUUYA0Ld_gW9UQ1MdfIz-343" vertex="1">
           <mxGeometry width="400" height="620" as="geometry" />
         </mxCell>
-        <mxCell id="xUUYA0Ld_gW9UQ1MdfIz-138" value="Picture from camera&lt;br&gt;64x64 pixels&lt;br&gt;(python cv2-image)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e51400;fontColor=#ffffff;strokeColor=#B20000;" parent="xUUYA0Ld_gW9UQ1MdfIz-343" vertex="1">
+        <mxCell id="xUUYA0Ld_gW9UQ1MdfIz-138" value="Picture from camera&lt;br&gt;224x224 pixels&lt;br&gt;(python cv2-image)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e51400;fontColor=#ffffff;strokeColor=#B20000;" parent="xUUYA0Ld_gW9UQ1MdfIz-343" vertex="1">
           <mxGeometry x="20" y="40" width="140" height="60" as="geometry" />
         </mxCell>
         <mxCell id="xUUYA0Ld_gW9UQ1MdfIz-237" value="6 ultrasonic sensors data&lt;br&gt;(array)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e51400;fontColor=#ffffff;strokeColor=#B20000;" parent="xUUYA0Ld_gW9UQ1MdfIz-343" vertex="1">

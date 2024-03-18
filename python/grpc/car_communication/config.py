@@ -12,15 +12,15 @@ SRC_PATH = os.path.join(BASE_DIR, 'src')
 VIDEO_PATH = os.path.join(SRC_PATH,'1.mp4')
 
 # dqn paths
-DQN_LOAD_MODEL_NAME = 'model.keras'
-if DQN_LOAD_MODEL_NAME:
-    path = os.path.join(BASE_DIR, DQN_LOAD_MODEL_NAME) 
+AGENT_LOAD_MODEL_NAME = 'model.keras'
+if AGENT_LOAD_MODEL_NAME:
+    path = os.path.join(BASE_DIR, AGENT_LOAD_MODEL_NAME) 
     exists = os.path.isfile(path)
-    DQN_LOAD_MODEL_PATH = path if exists else ''
+    AGENT_LOAD_MODEL_PATH = path if exists else ''
 else:
-    DQN_LOAD_MODEL_PATH = ''
-DQN_MODELS_PATH = os.path.join(BASE_DIR, 'models')
-DQN_LOGS_PATH = os.path.join(BASE_DIR, 'logs')
+    AGENT_LOAD_MODEL_PATH = ''
+AGENT_MODELS_PATH = os.path.join(BASE_DIR, 'models')
+AGENT_LOGS_PATH = os.path.join(BASE_DIR, 'logs')
 
 # grpc server settings
 PORT = 50051

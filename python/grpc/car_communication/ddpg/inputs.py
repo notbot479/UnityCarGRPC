@@ -2,7 +2,7 @@ from typing import Literal, Union
 import numpy as np
 import cv2
 
-from .agent import DQNAgent, extract_inputs
+from .agent import DDPGAgent, extract_inputs
 from units import *
 
 

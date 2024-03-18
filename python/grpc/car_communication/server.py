@@ -15,7 +15,6 @@ from typing import Callable, Deque
 from dataclasses import dataclass
 from concurrent import futures
 from collections import deque
-import tensorflow as tf
 from enum import Enum
 import threading
 import random
@@ -36,9 +35,9 @@ from services.video_manager import (
     VideoPlayer, 
 )
 
-from dqn.inputs import ModelInputData
-from dqn.reward import RewardPolicy
-from dqn.agent import DQNAgent, get_best_model_path
+from ddpg.inputs import ModelInputData
+from ddpg.reward import RewardPolicy
+from ddpg.agent import DDPGAgent, get_best_model_path
 
 from client.data import *
 from config import *
@@ -48,17 +47,16 @@ from units import *
 # settings 
 CUDA_AVAILABLE = False
 DISABLE_RANDOM = True
-TRAIN_DQN = True
+TRAIN_AGENT = True
 # setting server commands (based on proto file)
 CAR_MOVEMENT_SIGNALS = ['left','right','forward','backward','noop']
 CAR_EXTRA_SIGNALS = ['poweroff','respawn','stop']
 
 # for more repetitive results
 if DISABLE_RANDOM:
-    seed = 4
+    seed = 1
     random.seed(seed)
     np.random.seed(seed)
-    tf.random.set_seed(seed)
 
 
 @dataclass
@@ -103,26 +101,26 @@ class Servicer(_Servicer):
     def _get_model_path(load_model:bool,load_best=bool) -> str:
         if not(load_model): path = ""
         elif load_best: path = get_best_model_path()
-        else: path = DQN_LOAD_MODEL_PATH
+        else: path = AGENT_LOAD_MODEL_PATH
         return path
 
     # ================================================================================
 
     epsilon: float = 1
 
-    dqn_load_model: bool = True
-    dqn_load_best_model: bool = True
-    dqn_train_each_step: bool = False
-    dqn_cuda_train_batch_multiplier: int = 10
-    dqn_train_batches: int = 50
+    agent_load_model: bool = True
+    agent_load_best_model: bool = True
+    agent_train_each_step: bool = False
+    agent_cuda_train_batch_multiplier: int = 10
+    agent_train_batches: int = 50
     
-    # settings: dqn
-    _dqn_episodes_count: int = 2500
-    _dqn_respawn_very_bad_model: bool = True
-    _dqn_epsilon_decay:float = 0.99
-    _dqn_min_epsilon: float = 0.001
-    _dqn_min_reward: float = -20
-    _dqn_aggregate_stats_every: int = 25
+    # settings: agent
+    _agent_episodes_count: int = 2500
+    _agent_respawn_very_bad_model: bool = True
+    _agent_epsilon_decay:float = 0.99
+    _agent_min_epsilon: float = 0.001
+    _agent_min_reward: float = -20
+    _agent_aggregate_stats_every: int = 25
     # settings: car route
     _car_hit_object_patience = 10
     _car_respawn_nearest_router_id: str = '2'
@@ -141,10 +139,10 @@ class Servicer(_Servicer):
     show_client_data = SHOW_CLIENT_DATA
     _mode: ServicerMode = ServicerMode.READY
     _web_service = WebService()
-    _agent = DQNAgent(
+    _agent = DDPGAgent(
         filepath = _get_model_path(
-            load_model=dqn_load_model,
-            load_best=dqn_load_best_model,
+            load_model=agent_load_model,
+            load_best=agent_load_best_model,
         )
     )
     # server init commands
@@ -152,7 +150,7 @@ class Servicer(_Servicer):
     _extra_commands = generate_grpc_commands(CAR_EXTRA_SIGNALS)
     _commands = _movement_commands | _extra_commands
     # init prev episode memory
-    _dqn_episode_rewards: list = [_dqn_min_reward, ]
+    _agent_episode_rewards: list = [_agent_min_reward, ]
     _ctifd_maxlen = _car_target_patience if _car_target_patience > 1 else 1
     _car_target_is_found_deque: Deque[bool] = deque(maxlen=_ctifd_maxlen)
     _car_hit_object_deque: Deque[bool] = deque(maxlen=_car_hit_object_patience)
@@ -163,14 +161,14 @@ class Servicer(_Servicer):
     _car_active_task: CarActiveTask | None = None
     _car_prev_command: str | None = None
     # init counters and flags
-    _dqn_episode_total_score: Score = 0
-    _dqn_episode_id: int = 0
-    _dqn_state_id: int = 1
+    _agent_episode_total_score: Score = 0
+    _agent_episode_id: int = 0
+    _agent_state_id: int = 1
 
     # ================================================================================
     
     @busy_until_end
-    def dqn_start_training(self, car_id: str, routers: list[RouterData]) -> None:
+    def agent_start_training(self, car_id: str, routers: list[RouterData]) -> None:
         nearest_router = self.get_nearest_router(routers)
         if not(nearest_router):
             print('Failed get task. No routers around car.')
@@ -187,55 +185,29 @@ class Servicer(_Servicer):
         self.start_new_episode()
         
     @busy_until_end
-    def dqn_end_episode(self, data: GrpcClientData) -> None:
+    def agent_end_episode(self, data: GrpcClientData) -> None:
         # show some stats
         print(f'== END episode[{self.episode_id}] state[{self.state_id}] ==')
         print(f'- epsilon [{self.epsilon}]')
         print(f'- total score [{self.episode_total_score}]')
         print()
-        # train dqn on episode end
-        if TRAIN_DQN:
-            batches_count = self._dqn_train_each_episode_batches
-            if not(self.dqn_train_each_step) and batches_count:
-                self._agent.train_on_episode_end(
-                    batches_count=batches_count,
-                ) 
+        # train agent on episode end
+        if TRAIN_AGENT:
+            batches_count = self._agent_train_each_episode_batches
+            if not(self.agent_train_each_step) and batches_count:
+                pass
         # get task (new task) from respawn router (training start nearest router)
         respawn_router_id = self._car_respawn_nearest_router_id
         self.set_active_task_for_car(
             car_id=data.car_id,
             nearest_router_id=respawn_router_id,
         )
-        # save statictic and update dqn epsilon
-        round_factor = 3
-        self._dqn_episode_rewards.append(self.episode_total_score)
-        _a = self.episode_id == 1
-        _b = not(self.episode_id % self._dqn_aggregate_stats_every) 
-        if _a or _b:
-            aggregate_every = self._dqn_aggregate_stats_every
-            ep_batch: list[float] = self._dqn_episode_rewards[-aggregate_every:]
-            average_reward = round(sum(ep_batch)/len(ep_batch),round_factor)
-            min_reward = round(min(ep_batch),round_factor) 
-            max_reward = round(max(ep_batch),round_factor)
-            self._agent.tensorboard.update_stats(
-                reward_avg=average_reward, 
-                reward_min=min_reward, 
-                reward_max=max_reward, 
-                epsilon=self.epsilon,
-            )
-            # Save model
-            reward_data = {
-                'min_reward':min_reward, 
-                'max_reward':max_reward,
-                'average_reward':average_reward,
-            }
-            if not(_a):
-                path = self.get_dqn_model_save_path(data=reward_data)
-                self._agent.model.save(path) #pyright: ignore
+        # save statictic and save model
+
         # Decay epsilon
-        if self.epsilon > self._dqn_min_epsilon:
-            self.epsilon *= self._dqn_epsilon_decay
-            self.epsilon = max(self._dqn_min_epsilon, self.epsilon)
+        if self.epsilon > self._agent_min_epsilon:
+            self.epsilon *= self._agent_epsilon_decay
+            self.epsilon = max(self._agent_min_epsilon, self.epsilon)
         self.start_new_episode()
 
     @busy_until_end
@@ -295,9 +267,9 @@ class Servicer(_Servicer):
         prev_command = self.get_car_prev_command()
         prev_target_router_id = self.get_car_prev_target_router_id() 
         prev_model_input = self.get_prev_model_input()
-        # start dqn training, get active task from web service
+        # start agent training, get active task from web service
         if not(prev_data and prev_command):
-            self.dqn_start_training(car_id=data.car_id, routers=data.routers)
+            self.agent_start_training(car_id=data.car_id, routers=data.routers)
             return self._send_stop_command()
         # at start: do nothing, if no active task or target router not visible 
         if not(self.car_active_task and prev_target_router_id): 
@@ -314,8 +286,8 @@ class Servicer(_Servicer):
         # show some stats
         print(f'Route: {self.car_active_task.route}')
         print(f'Reward: {reward}\n')
-        # train dqn
-        if TRAIN_DQN:
+        # train agent
+        if TRAIN_AGENT:
             prev_movement_index = self.get_movement_index(prev_command)
             r = (
                 prev_model_input.inputs, 
@@ -324,28 +296,26 @@ class Servicer(_Servicer):
                 model_input.inputs, 
                 done,
             )
-            self._agent.update_replay_memory(r)
-            if self.dqn_train_each_step:
-                self._agent.train(bool(done))
+            if self.agent_train_each_step:
+                pass
         # end episode and respawn very bad model (reached min reward)
         if self.respawn_very_bad_model():
-            self.dqn_end_episode(data=data)
+            self.agent_end_episode(data=data)
             return self._send_respawn_command()
-        # dqn end episode based on train policy
+        # agent end episode based on train policy
         if done == Done.TARGET_IS_FOUND:
             print('Send message to web - task complate')
             add_random_mock_task()
-            self.dqn_end_episode(data=data)
+            self.agent_end_episode(data=data)
             return self._send_respawn_command()
         elif done == Done.HIT_OBJECT:
-            self.dqn_end_episode(data=data)
+            self.agent_end_episode(data=data)
             return self._send_respawn_command()
-        # dqn predict command or get random movement
+        # agent predict command or get random movement
         if np.random.random() > self.epsilon:
             # Get action from Q table
             state = model_input.inputs
-            qs = self._agent.get_qs(state=state)
-            movement_index = int(np.argmax(qs))
+            movement_index = 0
             command = self.get_movement_by_index(movement_index)
             print(f'Send predicted command to client: {command}')
         else:
@@ -356,12 +326,12 @@ class Servicer(_Servicer):
     # ===============================================================================
     
     def respawn_very_bad_model(self) -> bool:
-        if not(self._dqn_respawn_very_bad_model): return False
-        return self.episode_total_score < self._dqn_min_reward
+        if not(self._agent_respawn_very_bad_model): return False
+        return self.episode_total_score < self._agent_min_reward
 
-    def get_dqn_model_save_path(self, *, model_ext:str = 'keras', data: dict = {}) -> str:
+    def get_agent_model_save_path(self, *, model_ext:str = 'keras', data: dict = {}) -> str:
         tm = time.time()
-        path = DQN_MODELS_PATH
+        path = AGENT_MODELS_PATH
         name = '_'.join([f'{k}[{v}]' for k,v in data.items()])
         model_name = f'model_{name}_{tm}.{model_ext}'
         model_path = os.path.join(path, model_name)
@@ -393,15 +363,15 @@ class Servicer(_Servicer):
 
     @property
     def min_epsilon(self) -> float:
-        return self._dqn_min_epsilon
+        return self._agent_min_epsilon
 
     @property
     def epsilon_decay(self) -> float:
-        return self._dqn_epsilon_decay
+        return self._agent_epsilon_decay
  
     @property
     def max_train_episodes(self) -> int:
-        return self._dqn_episodes_count
+        return self._agent_episodes_count
 
     @property
     def car_hit_object_end_patience(self) -> bool:
@@ -455,7 +425,7 @@ class Servicer(_Servicer):
                 router_id=target_router_id,
                 routers=new_state.routers,
             )
-            delta = round(old_target_rssi - new_target_rssi, 1)
+            delta = round(old_target_rssi - new_target_rssi, 2)
             if delta == 0:
                 reward = RewardPolicy.PASSIVE_REWARD.value
                 return (reward, done)
@@ -579,7 +549,7 @@ class Servicer(_Servicer):
         target_qr = active_task.product.qr_code_metadata 
         result = target_qr == qr_metadata
         # add data to deque, used in is_target_found_and_locked
-        metadata = f'{self._dqn_episode_id}:{self._dqn_state_id}'
+        metadata = f'{self._agent_episode_id}:{self._agent_state_id}'
         if metadata != self._car_target_is_found_state_metadata:
             self._car_target_is_found_deque.append(result)
             self._car_target_is_found_state_metadata = metadata
@@ -628,23 +598,21 @@ class Servicer(_Servicer):
 
     def start_new_episode(self) -> None: 
         # reset env counters
-        self._dqn_episode_id += 1
+        self._agent_episode_id += 1
         self.reset_total_score()
         self.clear_state()
-        # tensorboard init episode
-        self._agent.tensorboard.step = self.episode_id
 
     def clear_episode(self) -> None:
         '''reset episode env data'''
-        self._dqn_episode_id = 1
+        self._agent_episode_id = 1
         self.reset_total_score()
         self.clear_state()
 
     def clear_state(self) -> None:
-        self._dqn_state_id = 1
+        self._agent_state_id = 1
 
     def reset_total_score(self) -> None:
-        self._dqn_episode_total_score = 0
+        self._agent_episode_total_score = 0
 
     def total_score_add_reward(
         self, 
@@ -654,7 +622,7 @@ class Servicer(_Servicer):
     ) -> None:
         '''add positive or negative reward to total score'''
         reward = self._normalize_reward(reward, round_factor=round_factor)
-        self._dqn_episode_total_score += reward
+        self._agent_episode_total_score += reward
 
     def get_car_target_router_id(self) -> str | None:
         if not(self.car_active_task): return
@@ -686,15 +654,15 @@ class Servicer(_Servicer):
 
     @property
     def state_id(self) -> int:
-        return self._dqn_state_id
+        return self._agent_state_id
 
     @property
     def episode_id(self) -> int:
-        return self._dqn_episode_id
+        return self._agent_episode_id
 
     @property
     def episode_total_score(self) -> Score:
-        return self._dqn_episode_total_score
+        return self._agent_episode_total_score
 
     @property
     def car_active_task(self) -> CarActiveTask | None:
@@ -790,15 +758,15 @@ class Servicer(_Servicer):
         self._car_prev_target_router_id = self.get_car_target_router_id()
         # processing send grpc command to client
         if not(grpc_command): return
-        self._dqn_state_id += 1
+        self._agent_state_id += 1
         return grpc_command
 
     # ================================================================================
 
     @cached_property
-    def _dqn_train_each_episode_batches(self) -> int:
-        if not(CUDA_AVAILABLE): return self.dqn_train_batches
-        batches_cuda = self.dqn_cuda_train_batch_multiplier * self.dqn_train_batches
+    def _agent_train_each_episode_batches(self) -> int:
+        if not(CUDA_AVAILABLE): return self.agent_train_batches
+        batches_cuda = self.agent_cuda_train_batch_multiplier * self.agent_train_batches
         return batches_cuda
 
     def _get_movement_list(self) -> list:
