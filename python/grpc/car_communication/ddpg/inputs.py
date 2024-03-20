@@ -2,7 +2,7 @@ from typing import Literal, Union
 import numpy as np
 import cv2
 
-from .agent import DDPGAgent, extract_inputs
+from .agent import DDPGAgent
 from units import *
 
 
@@ -103,22 +103,48 @@ class ModelInputData:
 
    
     @property
-    def inputs(self) -> tuple:
-        data = (
-            self.image[:,:,np.newaxis],
-            self.distance_sensors_distances,
-            self.distance_to_target_router,
-            self.in_target_area,
-            self.boxes_is_found,
-            self.distance_to_box,
-            self.target_found,
-        )
+    def inputs(self) -> dict:
+        data = {
+            'image':self.image[:,:,np.newaxis],
+            'distance_sensors_distances':self.distance_sensors_distances,
+            'distance_to_target_router':self.distance_to_target_router,
+            'in_target_area':self.in_target_area,
+            'boxes_is_found':self.boxes_is_found,
+            'distance_to_box':self.distance_to_box,
+            'target_found':self.target_found,
+        }
         return data
 
 
+def _test_train_agent(agent: DDPGAgent, model_input: ModelInputData) -> None:
+    pass
+
+def _test_prediction(agent: DDPGAgent, model_input: ModelInputData) -> None:
+    actor_network = agent.actor_network
+    critic_network = agent.critic_network
+
+    # test predict for ddpg agent
+    data = [model_input.inputs,]
+    inputs = agent.extract_inputs(data)
+    outputs_actor = actor_network(**inputs)
+    outputs_critic = critic_network(**inputs, actor_action=outputs_actor)
+ 
+    print('1. Actor and critic outputs:')
+    print(f'- Actor: {outputs_actor}')
+    print(f'- Critic: {outputs_critic}')
+    print('2. Critic extracted qs:')
+    critic_qs = agent.extract_qs(outputs_critic)
+    print(f'- QS: {critic_qs}')
+    print(f'- Prediction: {np.argmax(critic_qs)}')
+    
+    qs = agent.get_qs(model_input.inputs)
+    action = agent.predict_action(model_input.inputs)
+    print('3. DDPG agent qs')
+    print(f'- QS: {qs}')
+    print(f'- Action: {action}')
+
 def _test():
-    agent = DQNAgent()
-    model = agent.create_model()
+    agent = DDPGAgent()
     model_input = ModelInputData(
         image = None,
         distance_sensors_distances = [1,2,3,4,5,11],
@@ -129,23 +155,9 @@ def _test():
         target_is_found = False,              
     )
     print(model_input)
-    # test model predict
-    X = extract_inputs([model_input.inputs,])
-    qs = model.predict(X)
-    print(qs)
-    
-    # test fit single data
-    X = extract_inputs([model_input.inputs,])
-    y = np.array([np.random.rand(1,5),])
-    print([i.shape for i in X])
-    model.fit(X,y)
-    
-    # test fit multiple data
-    count = 100
-    data = [model_input.inputs] * count
-    X = extract_inputs(data)
-    y = np.array([np.random.rand(1,5) for _ in range(count)])
-    model.fit(X,y)
+    # tests
+    _test_prediction(agent, model_input)
+    _test_train_agent(agent, model_input)
 
 if __name__ == '__main__':
     _test()
