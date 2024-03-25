@@ -1,6 +1,7 @@
 from typing import NamedTuple
 from collections import deque
 from typing import Any
+import numpy as np
 import random
 
 
@@ -8,7 +9,7 @@ Inputs = dict[str, Any]
 
 class Transition(NamedTuple):
     state: Inputs
-    action: int
+    action: np.ndarray
     reward: float
     next_state: Inputs
     done: bool
@@ -22,7 +23,7 @@ class BufferSample(NamedTuple):
 
 
 class ReplayBuffer:
-    def __init__(self, capacity: int, *, min_capacity: int = 1000):
+    def __init__(self, capacity: int = 50000, *, min_capacity: int = 1000):
         self._capacity = capacity 
         self._min_capacity = min_capacity
         self.buffer = deque(maxlen=capacity)
@@ -46,7 +47,7 @@ class ReplayBuffer:
     def store(
         self, 
         state: Inputs, 
-        action: int, 
+        action: np.ndarray, 
         reward: float, 
         next_state: Inputs, 
         done: bool,
@@ -75,14 +76,12 @@ class ReplayBuffer:
 
 
 def _test():
-    import random
-    
     reply_buffer = ReplayBuffer()
     items = 1000
     # fill reply buffer
     for i in range(items):
         state = {'i': i}
-        action = random.randint(0,4)
+        action = np.array([0.1,]*5)
         reward = random.random()
         next_state = {'i': i+1} 
         done = random.randint(0,5) == 3 

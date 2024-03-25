@@ -117,8 +117,30 @@ class ModelInputData:
 
 
 def _test_train_agent(agent: DDPGAgent, model_input: ModelInputData) -> None:
-    pass
-
+    # fill reply buffer
+    for i in range(agent.reply_buffer.min_capacity):
+        state = model_input.inputs
+        action = np.array([0.1,] * 5)
+        reward = float(f'0.{i}')
+        next_state = model_input.inputs
+        done = False
+        agent.reply_buffer.store(
+            state=state,
+            action=action,
+            reward=reward,
+            next_state=next_state,
+            done=done,
+        )
+    print('\nTrain ddpg agent')
+    # train agent
+    batch_size = 64
+    agent.train(batch_size=batch_size)
+    agent.show_stats()
+    # test soft update weights
+    agent._step = agent.target_update_interval-1
+    agent.train(terminal_state=True, batch_size=batch_size)
+    agent.show_stats()
+   
 def _test_prediction(agent: DDPGAgent, model_input: ModelInputData) -> None:
     actor_network = agent.actor_network
     critic_network = agent.critic_network
@@ -128,8 +150,8 @@ def _test_prediction(agent: DDPGAgent, model_input: ModelInputData) -> None:
     inputs = agent.extract_inputs(data)
     outputs_actor = actor_network(**inputs)
     outputs_critic = critic_network(**inputs, actor_action=outputs_actor)
- 
-    print('1. Actor and critic outputs:')
+
+    print('\n1. Actor and critic outputs:')
     print(f'- Actor: {outputs_actor}')
     print(f'- Critic: {outputs_critic}')
     print('2. Critic extracted qs:')
@@ -138,10 +160,8 @@ def _test_prediction(agent: DDPGAgent, model_input: ModelInputData) -> None:
     print(f'- Prediction: {np.argmax(critic_qs)}')
     
     qs = agent.get_qs(model_input.inputs)
-    action = agent.predict_action(model_input.inputs)
     print('3. DDPG agent qs')
     print(f'- QS: {qs}')
-    print(f'- Action: {action}')
 
 def _test():
     agent = DDPGAgent()
@@ -154,7 +174,7 @@ def _test():
         boxes_is_found = False,
         target_is_found = False,              
     )
-    print(model_input)
+    print('\n',model_input)
     # tests
     _test_prediction(agent, model_input)
     _test_train_agent(agent, model_input)

@@ -10,6 +10,7 @@ from .buffer import ReplayBuffer
 from .critic import CriticModel
 from .actor import ActorModel
 
+# TODO load trained networks
 
 class DDPGAgent:
     def __init__(
@@ -20,9 +21,11 @@ class DDPGAgent:
         critic_lr:float = 0.001,
         target_update_interval:int = 10,
         reply_buffer_capacity:int = 50000,
-    ) -> None: # TODO load trained networks
+    ) -> None: 
+        self._step = 1
+        self._critic_loss = float('inf')
+        self._actor_loss = float('inf')
         # init parameters
-        self._step = 0
         self.tau = tau
         self.gamma = gamma
         self.target_update_interval = target_update_interval
@@ -39,6 +42,29 @@ class DDPGAgent:
         self.target_critic_network = CriticModel().to(self.device)
         self._hard_update_target_networks()
 
+    @property
+    def stats(self) -> dict:
+        stats = {
+            'step': self.step,
+            'actor_loss': self.actor_loss,
+            'critic_loss': self.critic_loss,
+        }
+        return stats
+
+    def show_stats(self) -> None:
+        cls_name = self.__class__.__name__
+        print(f'{cls_name} stats:')
+        for k,v in self.stats.items():
+            print(f'- {k.title()}: {v}')
+
+    @property
+    def critic_loss(self) -> float:
+        return self._critic_loss
+
+    @property
+    def actor_loss(self) -> float:
+        return self._actor_loss
+
     def extract_qs(self, outputs: Tensor) -> np.ndarray:
         outputs = outputs.to(self.device) 
         qs = outputs.detach().numpy()[0]
@@ -50,11 +76,6 @@ class DDPGAgent:
         tensor = self.actor_network(**inputs).to(self.device)
         qs = self.extract_qs(tensor)
         return qs
-
-    def predict_action(self, inputs: dict[str, Any]) -> int:
-        qs = self.get_qs(inputs=inputs)
-        action = np.argmax(qs)
-        return int(action)
 
     def train(self, *, terminal_state:bool=False, batch_size:int = 64) -> None:
         if terminal_state: self._step += 1
@@ -69,19 +90,20 @@ class DDPGAgent:
         [self.train(batch_size=batch_size) for _ in range(batches_count)]
 
     def extract_inputs(self, data: list[dict[str,Any]]) -> dict[str, Tensor]:
-        tensor_inputs = {}
-        for sample in data:
-            for key, value in sample.items():
-                tensor = self.convert_to_tensor(value)
-                if not(tensor.dim()): tensor = tensor.unsqueeze(0)
-                tensor_inputs.setdefault(key, []).append(tensor)
-        for k, v in tensor_inputs.items():
-            tensor_inputs[k] = torch.stack(v, dim=0)
-        return tensor_inputs
+        inputs = {}
+        [{inputs.setdefault(k, []).append(v) for k,v in row.items()} for row in data]
+        for k, v in inputs.items(): inputs[k] = self.convert_to_tensor_and_stack(v)
+        return inputs
+
+    def convert_to_tensor_and_stack(self, data:list[Any]) -> Tensor:
+        tensors = [self.convert_to_tensor(i) for i in data]
+        tensor = torch.stack(tensors, dim=0)
+        return tensor
 
     def convert_to_tensor(self, data: Any) -> Tensor:
         np_data = np.array(data, dtype=np.float32).T
         tensor = torch.tensor(np_data, dtype=torch.float32).to(self.device)
+        if not(tensor.dim()): tensor = tensor.unsqueeze(0)
         return tensor
 
     @property
@@ -100,10 +122,16 @@ class DDPGAgent:
 
     def _train(self, batch_size) -> None:
         sample = self.reply_buffer.sample(batch_size=batch_size)
-        tensors = map(self.convert_to_tensor, sample)
-        (states, actions, rewards, next_states, dones) = tensors
-        # Update Critic
-        critic_loss = self._get_critic_loss(
+        if not(sample): return
+        # convert batch items to tensors
+        states, actions, rewards, next_states, dones = sample
+        states = self.extract_inputs(states)
+        actions = self.convert_to_tensor_and_stack(actions)
+        rewards = self.convert_to_tensor_and_stack(rewards)
+        next_states = self.extract_inputs(next_states)
+        dones = self.convert_to_tensor_and_stack(dones)
+        # update critic network
+        critic_loss = self._calculate_critic_loss(
             states = states,
             rewards = rewards,
             dones = dones,
@@ -113,34 +141,42 @@ class DDPGAgent:
         self.critic_optimizer.zero_grad()
         critic_loss.backward()
         self.critic_optimizer.step()
-        # Update Actor
-        actor_loss = self._get_actor_loss(states=states) 
+        # update actor network
+        actor_loss = self._calculate_actor_loss(states=states) 
         self.actor_optimizer.zero_grad()
         actor_loss.backward()
         self.actor_optimizer.step()
-        # Update target networks
-        _b = self._step % self.target_update_interval == 0
+        # update target networks based on counter
+        _b = self.step % self.target_update_interval == 0
         if self.target_update_interval > 0 and _b:
             self._soft_update_target_networks()
 
-    def _get_critic_loss(
+    def _calculate_critic_loss(
         self, 
-        states: Tensor, 
+        states: dict[str,Tensor], 
         rewards: Tensor, 
         dones: Tensor, 
         actions: Tensor, 
-        next_states: Tensor,
+        next_states: dict[str,Tensor],
     ):
-        next_action = self.target_actor_network(next_states)
-        target_Q = self.target_critic_network(next_states, next_action) 
-        target_Q = rewards + (1 - dones) * self.gamma * target_Q.detach()
-        current_Q = self.critic_network(states, actions)
+        next_action = self.target_actor_network(**next_states)
+        target_Q_next = self.target_critic_network(
+            **next_states, 
+            actor_action=next_action,
+        ) 
+        target_Q = rewards + (self.gamma * target_Q_next * (1 - dones))
+        current_Q = self.critic_network(**states, actor_action=actions)
         critic_loss = F.mse_loss(current_Q, target_Q)
+        # save critic loss to variable
+        self._critic_loss = float(critic_loss)
         return critic_loss
 
-    def _get_actor_loss(self, states: Tensor):
-        actor_predict = self.actor_network(states)
-        actor_loss = -self.critic_network(states, actor_predict).mean()
+    def _calculate_actor_loss(self, states: dict[str,Tensor]):
+        actor_predict = self.actor_network(**states)
+        critic_predict = self.critic_network(**states, actor_action=actor_predict)
+        actor_loss = -critic_predict.mean()
+        # save actor loss to variable
+        self._actor_loss = float(actor_loss)
         return actor_loss
     
     def _hard_update_target_networks(self):
