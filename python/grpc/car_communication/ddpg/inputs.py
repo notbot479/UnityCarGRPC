@@ -1,7 +1,9 @@
 from typing import Literal, Union
 import numpy as np
 import cv2
+import os
 
+from config import AGENT_MODELS_PATH
 from .agent import DDPGAgent
 from units import *
 
@@ -116,6 +118,14 @@ class ModelInputData:
         return data
 
 
+def _test_load_model(agent: DDPGAgent) -> None:
+    dir_path = os.path.join(AGENT_MODELS_PATH, 'testmodel')
+    agent.load_model(dir_path=dir_path)
+
+def _test_save_model(agent: DDPGAgent) -> None:
+    dir_path = os.path.join(AGENT_MODELS_PATH, 'testmodel')
+    agent.save_model(dir_path=dir_path)
+
 def _test_train_agent(agent: DDPGAgent, model_input: ModelInputData) -> None:
     # fill reply buffer
     for i in range(agent.reply_buffer.min_capacity):
@@ -178,6 +188,8 @@ def _test():
     # tests
     _test_prediction(agent, model_input)
     _test_train_agent(agent, model_input)
+    _test_save_model(agent)
+    _test_load_model(agent)
 
 if __name__ == '__main__':
     _test()

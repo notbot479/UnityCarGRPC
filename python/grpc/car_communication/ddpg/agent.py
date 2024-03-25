@@ -1,18 +1,26 @@
 from torch.functional import Tensor
 import torch.nn.functional as F
 from torch.optim import Adam
+import torch.nn as nn
 import torch
 
 from typing import Any
 import numpy as np
+import os
 
 from .buffer import ReplayBuffer
 from .critic import CriticModel
 from .actor import ActorModel
 
-# TODO load trained networks
 
 class DDPGAgent:
+    _model_and_object = (
+        ('actor','actor_network'),
+        ('actor_target','target_actor_network'),
+        ('critic','critic_network'),
+        ('critic_target','target_critic_network'),
+    )
+
     def __init__(
         self,
         gamma: float = 0.99,
@@ -21,6 +29,7 @@ class DDPGAgent:
         critic_lr:float = 0.001,
         target_update_interval:int = 10,
         reply_buffer_capacity:int = 50000,
+        model_dir_path: str | None = None,
     ) -> None: 
         self._step = 1
         self._critic_loss = float('inf')
@@ -31,16 +40,32 @@ class DDPGAgent:
         self.target_update_interval = target_update_interval
         # load device and reply buffer
         self.device = torch.device(self._device) 
-        self.reply_buffer = ReplayBuffer(capacity=reply_buffer_capacity) 
-        # init networks
-        self.actor_network = ActorModel().to(self.device)
+        self.reply_buffer = ReplayBuffer(capacity=reply_buffer_capacity)  
+        # init networks; load trained networks if dir passed
+        self._init_models()
+        if model_dir_path: self.load_model(model_dir_path)
+        # init optimizers for networks
         self.actor_optimizer = Adam(self.actor_network.parameters(), lr=actor_lr)
-        self.critic_network = CriticModel().to(self.device)
         self.critic_optimizer = Adam(self.critic_network.parameters(), lr=critic_lr)
-        # init target networks and hard load weights
-        self.target_actor_network = ActorModel().to(self.device)
-        self.target_critic_network = CriticModel().to(self.device)
-        self._hard_update_target_networks()
+
+    def save_model(self, dir_path: str, *, ext:str='pth') -> None:
+        os.makedirs(dir_path, exist_ok=True)
+        for name, obj_name in self._model_and_object:
+            model_name = f'{name}.{ext}'
+            model_path = os.path.join(dir_path, model_name)
+            # get network and save state
+            model: nn.Module = self.__getattribute__(obj_name)
+            self._save_model(model, model_path)
+
+    def load_model(self, dir_path:str, *, ext:str='pth') -> None:
+        if not(os.path.exists): return
+        for name, obj_name in self._model_and_object:
+            model_name = f'{name}.{ext}'
+            model_path = os.path.join(dir_path, model_name)
+            # load networks state from file
+            model: nn.Module = self.__getattribute__(obj_name)
+            model.load_state_dict(torch.load(model_path))
+        print(f'Model was loaded: {dir_path}')
 
     @property
     def stats(self) -> dict:
@@ -113,7 +138,19 @@ class DDPGAgent:
     @property
     def cuda(self) -> bool:
         return torch.cuda.is_available()
-    
+
+    def _init_models(self) -> None:
+        # init networks
+        self.actor_network = ActorModel().to(self.device)
+        self.critic_network = CriticModel().to(self.device)
+        # init target networks
+        self.target_actor_network = ActorModel().to(self.device)
+        self.target_critic_network = CriticModel().to(self.device)
+        # hard update target networks weights from networks
+        self._hard_update_target_networks()
+
+    def _save_model(self, model: nn.Module, path:str) -> None:
+        torch.save(model.state_dict(),path)
 
     @property
     def _device(self) -> str:

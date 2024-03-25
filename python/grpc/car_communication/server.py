@@ -1,4 +1,3 @@
-from logger import *
 from Protos.car_communication_pb2_grpc import (
     add_CommunicationServicer_to_server as _AddServicer, #pyright: ignore
     CommunicationServicer as _Servicer, #pyright: ignore

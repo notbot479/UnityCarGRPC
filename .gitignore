@@ -9,8 +9,8 @@
 **/.vscode/
 **/*.drawio.bkp
 
-# ignore keras models folder
-**/*.keras
+# ignore pytorch models 
+**/*.pth
 
 # =============== #
 # Unity generated #
