@@ -19,7 +19,7 @@ class DDPGAgent:
         actor_lr:float = 0.001,
         critic_lr:float = 0.001,
         target_update_interval:int = 10,
-        reply_buffer_capacity:int | None = None,
+        reply_buffer_capacity:int = 50000,
     ) -> None: # TODO load trained networks
         # init parameters
         self._step = 0
