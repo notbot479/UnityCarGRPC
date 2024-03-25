@@ -120,6 +120,8 @@ class DDPGAgent:
 
     def train(self, *, terminal_state:bool=False, batch_size:int = 64) -> None:
         if terminal_state: self._step += 1
+        if not(self.reply_buffer.ready): return 
+        print(f'[DDPG] Train model. BatchSize: {batch_size}')
         self._train(batch_size=batch_size)
 
     def train_on_episode_end(
@@ -128,6 +130,8 @@ class DDPGAgent:
         batches_count: int = 50,
     ) -> None:
         self._step += 1
+        if not(self.reply_buffer.ready): return 
+        print(f'[DDPG] Train on episode end. Batches: {batches_count}, BatchSize: {batch_size}')
         [self.train(batch_size=batch_size) for _ in range(batches_count)]
 
     def extract_inputs(self, data: list[dict[str,Any]]) -> dict[str, Tensor]:

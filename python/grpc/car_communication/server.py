@@ -54,7 +54,7 @@ CAR_EXTRA_SIGNALS = ['poweroff','respawn','stop']
 
 # for more repetitive results
 if DISABLE_RANDOM:
-    seed = 1
+    seed = 42
     random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
@@ -97,17 +97,23 @@ class Servicer(_Servicer):
         server_response = _Pb2_server_response
         commands = {s:getattr(server_response,s.upper()) for s in signals}
         return commands
+
+    @staticmethod
+    def get_random_qs(num_actions: int) -> np.ndarray:
+        qs = np.random.rand(num_actions)
+        return qs
     
     # ================================================================================
 
     epsilon: float = 1
 
     agent_train_each_step: bool = False
-    agent_cuda_train_batch_multiplier: int = 10
     agent_train_batches: int = 50
+    agent_train_batch_size: int = 64
+    agent_cuda_train_batch_multiplier: int = 10
     
     # settings: agent
-    _agent_episodes_count: int = 2500
+    _agent_episodes_count: int = 5000
     _agent_respawn_very_bad_model: bool = True
     _agent_epsilon_decay:float = 0.99
     _agent_min_epsilon: float = 0.001
@@ -149,6 +155,8 @@ class Servicer(_Servicer):
     _car_prev_target_router_id: str | None = None
     _car_active_task: CarActiveTask | None = None
     _car_prev_command: str | None = None
+    _agent_num_actions = len(_movement_commands)
+    _agent_prev_qs: np.ndarray = get_random_qs(_agent_num_actions)
     # init counters and flags
     _agent_episode_total_score: Score = 0
     _agent_episode_id: int = 0
@@ -184,7 +192,10 @@ class Servicer(_Servicer):
         if TRAIN_AGENT:
             batches_count = self._agent_train_each_episode_batches
             if not(self.agent_train_each_step) and batches_count:
-                pass
+                self._agent.train_on_episode_end(
+                    batch_size = self.agent_train_batch_size,
+                    batches_count = batches_count,
+                )
         # get task (new task) from respawn router (training start nearest router)
         respawn_router_id = self._car_respawn_nearest_router_id
         self.set_active_task_for_car(
@@ -277,16 +288,18 @@ class Servicer(_Servicer):
         print(f'Reward: {reward}\n')
         # train agent
         if TRAIN_AGENT:
-            prev_movement_index = self.get_movement_index(prev_command)
-            r = (
-                prev_model_input.inputs, 
-                prev_movement_index, 
-                reward, 
-                model_input.inputs, 
-                done,
+            self._agent.reply_buffer.store(
+                state=prev_model_input.inputs,
+                action=self._agent_prev_qs,
+                reward=reward,
+                next_state=model_input.inputs,
+                done=bool(done),
             )
             if self.agent_train_each_step:
-                pass
+                self._agent.train(
+                    terminal_state=bool(done),
+                    batch_size=self.agent_train_batch_size,
+                )
         # end episode and respawn very bad model (reached min reward)
         if self.respawn_very_bad_model():
             self.agent_end_episode(data=data)
@@ -302,13 +315,16 @@ class Servicer(_Servicer):
             return self._send_respawn_command()
         # agent predict command or get random movement
         if np.random.random() > self.epsilon:
-            # Get action from Q table
-            state = model_input.inputs
-            movement_index = 0
+            qs = self._agent.get_qs(model_input.inputs)
+            self._agent_prev_qs = qs
+            movement_index = int(np.argmax(qs))
             command = self.get_movement_by_index(movement_index)
             print(f'Send predicted command to client: {command}')
         else:
-            command = self.get_random_movement()
+            rand_qs = self.get_random_qs(self._agent_num_actions)
+            self._agent_prev_qs = rand_qs
+            movement_index = int(np.argmax(rand_qs))
+            command = self.get_movement_by_index(movement_index)
             print(f'Send random command to client: {command}')
         return self.send_response_to_client(command)
 
@@ -755,7 +771,7 @@ class Servicer(_Servicer):
     @cached_property
     def _agent_train_each_episode_batches(self) -> int:
         if not(CUDA_AVAILABLE): return self.agent_train_batches
-        batches_cuda = self.agent_cuda_train_batch_multiplier * self.agent_train_batches
+        batches_cuda = self.agent_cuda_train_batch_multiplier*self.agent_train_batches
         return batches_cuda
 
     def _get_movement_list(self) -> list:
