@@ -8,6 +8,7 @@ from typing import Any
 import numpy as np
 import os
 
+from .model_selector import get_best_model_path
 from .buffer import ReplayBuffer
 from .critic import CriticModel
 from .actor import ActorModel
@@ -29,7 +30,9 @@ class DDPGAgent:
         critic_lr:float = 0.001,
         target_update_interval:int = 10,
         reply_buffer_capacity:int = 50000,
-        model_dir_path: str | None = None,
+        # load from dir or best
+        load_from_dir: str | None = None,
+        load_best_from_dir: str | None = None,
     ) -> None: 
         self._step = 1
         self._critic_loss = float('inf')
@@ -43,7 +46,10 @@ class DDPGAgent:
         self.reply_buffer = ReplayBuffer(capacity=reply_buffer_capacity)  
         # init networks; load trained networks if dir passed
         self._init_models()
-        if model_dir_path: self.load_model(model_dir_path)
+        if load_from_dir:
+            self.load_model(dir_path=load_from_dir)
+        elif load_best_from_dir: 
+            self.load_best_model(load_best_from_dir)
         # init optimizers for networks
         self.actor_optimizer = Adam(self.actor_network.parameters(), lr=actor_lr)
         self.critic_optimizer = Adam(self.critic_network.parameters(), lr=critic_lr)
@@ -56,6 +62,14 @@ class DDPGAgent:
             # get network and save state
             model: nn.Module = self.__getattribute__(obj_name)
             self._save_model(model, model_path)
+        # show logs
+        name = os.path.basename(dir_path)
+        print(f'[DDPG] Save model: {name}')
+
+    def load_best_model(self, dir_path:str) -> None:
+        best_model_path = get_best_model_path(dir_path=dir_path)
+        if not(best_model_path): return
+        self.load_model(dir_path=best_model_path)
 
     def load_model(self, dir_path:str, *, ext:str='pth') -> None:
         if not(os.path.exists): return
@@ -65,7 +79,9 @@ class DDPGAgent:
             # load networks state from file
             model: nn.Module = self.__getattribute__(obj_name)
             model.load_state_dict(torch.load(model_path))
-        print(f'Model was loaded: {dir_path}')
+        # show logs
+        name = os.path.basename(dir_path)
+        print(f'[DDPG] Model was loaded: {name}')
 
     @property
     def stats(self) -> dict:
@@ -224,7 +240,7 @@ class DDPGAgent:
         self.target_critic_network.load_state_dict(c)
     
     def _soft_update_target_networks(self):
-        # soft updat for actor
+        # soft update for actor
         ta = self.target_actor_network.parameters()
         a = self.actor_network.parameters()
         for tp, p in zip(ta,a):

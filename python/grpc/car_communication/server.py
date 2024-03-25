@@ -17,6 +17,7 @@ from collections import deque
 from enum import Enum
 import threading
 import random
+import torch
 import time
 import os
 
@@ -36,7 +37,7 @@ from services.video_manager import (
 
 from ddpg.inputs import ModelInputData
 from ddpg.reward import RewardPolicy
-from ddpg.agent import DDPGAgent, get_best_model_path
+from ddpg.agent import DDPGAgent
 
 from client.data import *
 from config import *
@@ -44,9 +45,9 @@ from units import *
 
 
 # settings 
-CUDA_AVAILABLE = False
-DISABLE_RANDOM = True
 TRAIN_AGENT = True
+DISABLE_RANDOM = True
+CUDA_AVAILABLE = torch.cuda.is_available()
 # setting server commands (based on proto file)
 CAR_MOVEMENT_SIGNALS = ['left','right','forward','backward','noop']
 CAR_EXTRA_SIGNALS = ['poweroff','respawn','stop']
@@ -55,7 +56,8 @@ CAR_EXTRA_SIGNALS = ['poweroff','respawn','stop']
 if DISABLE_RANDOM:
     seed = 1
     random.seed(seed)
-    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
 
 
 @dataclass
@@ -96,19 +98,10 @@ class Servicer(_Servicer):
         commands = {s:getattr(server_response,s.upper()) for s in signals}
         return commands
     
-    @staticmethod
-    def _get_model_path(load_model:bool,load_best=bool) -> str:
-        if not(load_model): path = ""
-        elif load_best: path = get_best_model_path()
-        else: path = AGENT_LOAD_MODEL_PATH
-        return path
-
     # ================================================================================
 
     epsilon: float = 1
 
-    agent_load_model: bool = True
-    agent_load_best_model: bool = True
     agent_train_each_step: bool = False
     agent_cuda_train_batch_multiplier: int = 10
     agent_train_batches: int = 50
@@ -139,10 +132,7 @@ class Servicer(_Servicer):
     _mode: ServicerMode = ServicerMode.READY
     _web_service = WebService()
     _agent = DDPGAgent(
-        filepath = _get_model_path(
-            load_model=agent_load_model,
-            load_best=agent_load_best_model,
-        )
+        load_best_from_dir=AGENT_MODELS_PATH,
     )
     # server init commands
     _movement_commands = generate_grpc_commands(CAR_MOVEMENT_SIGNALS)
@@ -849,5 +839,5 @@ def run_server(*, port:int = 50051, max_workers:int = 10) -> None:
 if __name__ == '__main__':
     port = PORT
     max_workers = MAX_WORKERS
-    print(f'Start server on port: {port}')
+    print(f'[Service] Start server on port: {port}')
     run_server(port=port, max_workers=max_workers)
