@@ -106,10 +106,9 @@ class Servicer(_Servicer):
     # ================================================================================
 
     epsilon: float = 1
-
     agent_train_each_step: bool = False
-    agent_train_batches: int = 50
     agent_train_batch_size: int = 64
+    agent_train_batches: int = 10
     agent_cuda_train_batch_multiplier: int = 10
     
     # settings: agent
@@ -118,7 +117,7 @@ class Servicer(_Servicer):
     _agent_epsilon_decay:float = 0.99
     _agent_min_epsilon: float = 0.001
     _agent_min_reward: float = -20
-    _agent_aggregate_stats_every: int = 25
+    _agent_aggregate_stats_every: int = 10
     # settings: car route
     _car_hit_object_patience = 10
     _car_respawn_nearest_router_id: str = '2'
@@ -203,7 +202,10 @@ class Servicer(_Servicer):
             nearest_router_id=respawn_router_id,
         )
         # save statictic and save model
-
+        if self.episode_id and not(self.episode_id % 10):
+            name = 'model_min_reward[1]_max_reward[2]_average_reward[3]_1710233149.7119274'
+            dir_path = os.path.join(AGENT_MODELS_PATH, name)
+            self._agent.save_model(dir_path=dir_path)
         # Decay epsilon
         if self.epsilon > self._agent_min_epsilon:
             self.epsilon *= self._agent_epsilon_decay

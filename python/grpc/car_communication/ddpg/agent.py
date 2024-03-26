@@ -26,10 +26,10 @@ class DDPGAgent:
         self,
         gamma: float = 0.99,
         tau:float = 0.005,
-        actor_lr:float = 0.001,
+        actor_lr:float = 0.0001,
         critic_lr:float = 0.001,
         target_update_interval:int = 10,
-        reply_buffer_capacity:int = 50000,
+        reply_buffer_capacity:int = 10000,
         # load from dir or best
         load_from_dir: str | None = None,
         load_best_from_dir: str | None = None,
@@ -107,7 +107,7 @@ class DDPGAgent:
         return self._actor_loss
 
     def extract_qs(self, outputs: Tensor) -> np.ndarray:
-        outputs = outputs.to(self.device) 
+        outputs = outputs.cpu()
         qs = outputs.detach().numpy()[0]
         return qs
 
@@ -174,7 +174,7 @@ class DDPGAgent:
 
     @property
     def _device(self) -> str:
-        device = 'gpu' if self.cuda else 'cpu'
+        device = 'cuda' if self.cuda else 'cpu'
         return device
 
     def _train(self, batch_size) -> None:
