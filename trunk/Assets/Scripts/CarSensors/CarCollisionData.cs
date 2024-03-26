@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class CarCollisionData : MonoBehaviour
 {
-    public bool respawnCarOnHit = true;
+    public bool respawnCarOnHit = false;
     public bool isCollide = false;
     
     public bool respawnRandomize = true;

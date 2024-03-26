@@ -9,6 +9,9 @@ from Protos.car_communication_pb2 import (
 )
 import grpc
 
+from torch.utils.tensorboard import SummaryWriter
+import torch
+
 from functools import cached_property
 from typing import Callable, Deque
 from dataclasses import dataclass
@@ -17,7 +20,6 @@ from collections import deque
 from enum import Enum
 import threading
 import random
-import torch
 import time
 import os
 
@@ -102,6 +104,13 @@ class Servicer(_Servicer):
     def get_random_qs(num_actions: int) -> np.ndarray:
         qs = np.random.rand(num_actions)
         return qs
+
+    @staticmethod
+    def _get_logs_path() -> str:
+        tm = int(time.time())
+        path = os.path.join(AGENT_LOGS_PATH, str(tm))
+        os.makedirs(path)
+        return path
     
     # ================================================================================
 
@@ -120,15 +129,15 @@ class Servicer(_Servicer):
     _agent_aggregate_stats_every: int = 10
     # settings: car route
     _car_hit_object_patience = 10
-    _car_respawn_nearest_router_id: str = '2'
+    _car_respawn_nearest_router_id: str = '9'
     # settings: car search target box
     _car_target_patience:int = 5
     _car_ignore_target_area: bool = False
     _target_router_already_locked: bool = False
     # settings: switch router policy
-    _car_lock_target_router_rssi: Rssi = -20
-    _car_switch_target_router_rssi: Rssi = -30
-    _car_switch_target_router_rssi_of_next_shortcut: Rssi = -70
+    _car_lock_target_router_rssi: Rssi = -15
+    _car_switch_target_router_rssi: Rssi = -10
+    _car_switch_target_router_rssi_of_next_shortcut: Rssi = -50
     _car_switch_target_router_rssi_of_next: Rssi = -90
     
     # init service
@@ -139,6 +148,7 @@ class Servicer(_Servicer):
     _agent = DDPGAgent(
         load_best_from_dir=AGENT_MODELS_PATH,
     )
+    _writer = SummaryWriter(_get_logs_path())
     # server init commands
     _movement_commands = generate_grpc_commands(CAR_MOVEMENT_SIGNALS)
     _extra_commands = generate_grpc_commands(CAR_EXTRA_SIGNALS)
@@ -207,22 +217,23 @@ class Servicer(_Servicer):
         _a = self.episode_id == 1
         _b = not(self.episode_id % self._agent_aggregate_stats_every) 
         if _a or _b:
+            # calculate reward stats
             aggregate_every = self._agent_aggregate_stats_every
             ep_batch: list[float] = self._agent_episode_rewards[-aggregate_every:]
             average_reward = round(sum(ep_batch)/len(ep_batch),round_factor)
             min_reward = round(min(ep_batch),round_factor) 
             max_reward = round(max(ep_batch),round_factor)
-
-            # TODO tensorboard update stats (write logs)
-
-            # Save model
             reward_data = {
                 'min_reward':min_reward, 
                 'max_reward':max_reward,
                 'average_reward':average_reward,
             }
-            print(reward_data)
-            print(self._agent.stats)
+            # tensorboard update stats (write logs)
+            extra_stats = {'epsilon': self.epsilon}
+            stats = self._agent.stats | reward_data | extra_stats
+            for k,v in stats.items():
+                self._writer.add_scalar(k,v,self.episode_id)
+            # Save model
             if not(_a):
                 dir_path = self.get_agent_save_dir_path(data=reward_data)
                 self._agent.save_model(dir_path=dir_path)
@@ -357,7 +368,7 @@ class Servicer(_Servicer):
         return self.episode_total_score < self._agent_min_reward
 
     def get_agent_save_dir_path(self, *, data: dict = {}) -> str:
-        tm = time.time()
+        tm = int(time.time())
         path = AGENT_MODELS_PATH
         name = '_'.join([f'{k}[{v}]' for k,v in data.items()])
         model_name = f'model_{name}_{tm}'
@@ -452,7 +463,7 @@ class Servicer(_Servicer):
                 router_id=target_router_id,
                 routers=new_state.routers,
             )
-            delta = round(old_target_rssi - new_target_rssi, 2)
+            delta = round(old_target_rssi - new_target_rssi, 1)
             if delta == 0:
                 reward = RewardPolicy.PASSIVE_REWARD.value
                 return (reward, done)

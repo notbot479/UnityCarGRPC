@@ -86,7 +86,6 @@ class DDPGAgent:
     @property
     def stats(self) -> dict:
         stats = {
-            'step': self.step,
             'actor_loss': self.actor_loss,
             'critic_loss': self.critic_loss,
         }

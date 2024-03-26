@@ -11,8 +11,8 @@ public class Router : MonoBehaviour
     private float maxRSSI = -100f; // Maximum receive router strength
     
     public bool sensorConnection = true;
-    public readonly double mediumRSSIstart = -30f;
-    public readonly double mediumRSSIend = -70f;
+    public readonly double mediumRSSIstart = -10f;
+    public readonly double mediumRSSIend = -50f;
     public readonly double badRSSIstart = -90f;
     public readonly Color rssiGoodColor = Color.green;
     public readonly Color rssiMediumColor = Color.yellow;
