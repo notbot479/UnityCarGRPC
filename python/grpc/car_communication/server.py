@@ -202,10 +202,30 @@ class Servicer(_Servicer):
             nearest_router_id=respawn_router_id,
         )
         # save statictic and save model
-        if self.episode_id and not(self.episode_id % 10):
-            name = 'model_min_reward[1]_max_reward[2]_average_reward[3]_1710233149.7119274'
-            dir_path = os.path.join(AGENT_MODELS_PATH, name)
-            self._agent.save_model(dir_path=dir_path)
+        round_factor = 3
+        self._agent_episode_rewards.append(self.episode_total_score)
+        _a = self.episode_id == 1
+        _b = not(self.episode_id % self._agent_aggregate_stats_every) 
+        if _a or _b:
+            aggregate_every = self._agent_aggregate_stats_every
+            ep_batch: list[float] = self._agent_episode_rewards[-aggregate_every:]
+            average_reward = round(sum(ep_batch)/len(ep_batch),round_factor)
+            min_reward = round(min(ep_batch),round_factor) 
+            max_reward = round(max(ep_batch),round_factor)
+
+            # TODO tensorboard update stats (write logs)
+
+            # Save model
+            reward_data = {
+                'min_reward':min_reward, 
+                'max_reward':max_reward,
+                'average_reward':average_reward,
+            }
+            print(reward_data)
+            print(self._agent.stats)
+            if not(_a):
+                dir_path = self.get_agent_save_dir_path(data=reward_data)
+                self._agent.save_model(dir_path=dir_path)
         # Decay epsilon
         if self.epsilon > self._agent_min_epsilon:
             self.epsilon *= self._agent_epsilon_decay
@@ -336,11 +356,11 @@ class Servicer(_Servicer):
         if not(self._agent_respawn_very_bad_model): return False
         return self.episode_total_score < self._agent_min_reward
 
-    def get_agent_model_save_path(self, *, model_ext:str = 'keras', data: dict = {}) -> str:
+    def get_agent_save_dir_path(self, *, data: dict = {}) -> str:
         tm = time.time()
         path = AGENT_MODELS_PATH
         name = '_'.join([f'{k}[{v}]' for k,v in data.items()])
-        model_name = f'model_{name}_{tm}.{model_ext}'
+        model_name = f'model_{name}_{tm}'
         model_path = os.path.join(path, model_name)
         return model_path
 
