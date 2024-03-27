@@ -5,10 +5,10 @@ using UnityEngine;
 public class CarCollisionData : MonoBehaviour
 {
     public bool respawnCarOnHit = false;
+    public bool respawnRandomize = false;
     public bool isCollide = false;
     
-    public bool respawnRandomize = true;
-    public float respawnRadius = 1f; 
+    public float respawnRadius = 0.5f; 
     public float respawnRotation = 10f; 
 
     private float outOfBoundsY = -3f;

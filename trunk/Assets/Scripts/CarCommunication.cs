@@ -14,7 +14,7 @@ using CarCommunicationApp;
 public class CarCommunication : MonoBehaviour
 {
     public bool enableVsync = true;
-    public int fpsLimit = 60;
+    public int fpsLimit = 30;
     public string serverDomain = "localhost";
     private string serverApiUrl;
     public int serverPort = 50051;
@@ -22,6 +22,7 @@ public class CarCommunication : MonoBehaviour
     public bool processingUpdate = true;
     public bool sendRequestToServer = true;
     public bool moveCarByAI = true;
+    public bool randomizeSpawn = true;
    
     // grpc client & grpc channel
     private GrpcChannel channel;
@@ -147,7 +148,7 @@ public class CarCommunication : MonoBehaviour
             else if (command == "Respawn" && !processingRespawn)
             {
                 processingRespawn = true;
-                car.GetComponent<CarCollisionData>().TeleportToSpawn();
+                car.GetComponent<CarCollisionData>().TeleportToSpawn(randomizeSpawn);
             }
             else if (command == "Poweroff")
             {

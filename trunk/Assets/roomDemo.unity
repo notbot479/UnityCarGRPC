@@ -349,8 +349,8 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 171277609}
-  m_LocalRotation: {x: 0, y: -0.08715578, z: 0, w: 0.9961947}
-  m_LocalPosition: {x: 1.966, y: -0.202, z: 1.565}
+  m_LocalRotation: {x: 0, y: 0.5, z: 0, w: 0.8660254}
+  m_LocalPosition: {x: -13.55, y: -0.202, z: 27.11}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -359,7 +359,7 @@ Transform:
   - {fileID: 1186990700}
   m_Father: {fileID: 0}
   m_RootOrder: 4
-  m_LocalEulerAnglesHint: {x: 0, y: -10, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 60, z: 0}
 --- !u!1 &195870821
 GameObject:
   m_ObjectHideFlags: 0
@@ -1366,8 +1366,8 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 959333139}
-  m_LocalRotation: {x: -0, y: -0.0000018104909, z: -0, w: 1}
-  m_LocalPosition: {x: 15.509341, y: -4.359072, z: -15.5928}
+  m_LocalRotation: {x: -0, y: -0.000006824732, z: -0, w: 1}
+  m_LocalPosition: {x: 15.509341, y: -4.359072, z: -15.592799}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1479,8 +1479,8 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1075406119}
-  m_LocalRotation: {x: -0, y: -0.0000018104909, z: -0, w: 1}
-  m_LocalPosition: {x: 15.509341, y: -4.359072, z: -15.5928}
+  m_LocalRotation: {x: -0, y: -0.000006824732, z: -0, w: 1}
+  m_LocalPosition: {x: 15.509341, y: -4.359072, z: -15.592799}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -1539,7 +1539,8 @@ MonoBehaviour:
   scanQRMaxDistance: 1
   processingUpdate: 1
   sendRequestToServer: 1
-  moveCarByAI: 0
+  moveCarByAI: 1
+  randomizeSpawn: 1
 --- !u!1001 &1177478698
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1755,7 +1756,7 @@ PrefabInstance:
     - target: {fileID: 8902268117528618847, guid: 3084982c011f1ceec8e87e99c48de62a,
         type: 3}
       propertyPath: respawnRadius
-      value: 1
+      value: 0.5
       objectReference: {fileID: 0}
     - target: {fileID: 8902268117528618847, guid: 3084982c011f1ceec8e87e99c48de62a,
         type: 3}
@@ -1765,7 +1766,7 @@ PrefabInstance:
     - target: {fileID: 8902268117528618847, guid: 3084982c011f1ceec8e87e99c48de62a,
         type: 3}
       propertyPath: respawnRandomize
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 387594629333846701, guid: 3084982c011f1ceec8e87e99c48de62a, type: 3}

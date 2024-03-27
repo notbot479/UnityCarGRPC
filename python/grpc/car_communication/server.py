@@ -131,7 +131,7 @@ class Servicer(_Servicer):
     # settings: car
     _car_respawn_on_object_hit: bool = True
     _car_hit_object_patience = framerate * 2
-    _car_respawn_nearest_router_id: str = '9'
+    _car_respawn_nearest_router_id: str = '2'
     _car_target_patience:int = framerate // 2
     _car_ignore_target_area: bool = False
     # settings: switch router policy
