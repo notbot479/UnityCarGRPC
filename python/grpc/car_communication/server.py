@@ -9,7 +9,7 @@ from Protos.car_communication_pb2 import (
 )
 import grpc
 
-from torch.utils.tensorboard import SummaryWriter
+from torch.utils.tensorboard import SummaryWriter #pyright: ignore
 import torch
 
 from functools import cached_property
@@ -118,27 +118,27 @@ class Servicer(_Servicer):
     agent_train_each_step: bool = False
     agent_train_batch_size: int = 64
     agent_train_batches: int = 10
-    agent_cuda_train_batch_multiplier: int = 10
+    agent_cuda_train_batch_multiplier: int = 20
     
     # settings: agent
-    _agent_episodes_count: int = 5000
     _agent_respawn_very_bad_model: bool = True
+    _agent_episodes_count: int = 5000
     _agent_epsilon_decay:float = 0.99
     _agent_min_epsilon: float = 0.001
     _agent_min_reward: float = -20
     _agent_aggregate_stats_every: int = 10
-    # settings: car route
+    # settings: car
+    _car_respawn_on_object_hit: bool = False
     _car_hit_object_patience = 10
     _car_respawn_nearest_router_id: str = '9'
-    # settings: car search target box
     _car_target_patience:int = 5
     _car_ignore_target_area: bool = False
-    _target_router_already_locked: bool = False
     # settings: switch router policy
     _car_lock_target_router_rssi: Rssi = -15
-    _car_switch_target_router_rssi: Rssi = -10
+    _car_switch_target_router_rssi: Rssi = -15
     _car_switch_target_router_rssi_of_next_shortcut: Rssi = -50
     _car_switch_target_router_rssi_of_next: Rssi = -90
+    _car_target_router_already_locked: bool = False
     
     # init service
     show_stream_video = SHOW_STREAM_VIDEO
@@ -436,10 +436,12 @@ class Servicer(_Servicer):
                 qr_metadata=new_state.qr_code_metadata,
             )
         # add car hit to patience
-        if self._car_hit_object_patience: 
+        if self._car_respawn_on_object_hit and self._car_hit_object_patience: 
             self._car_hit_object_deque.append(car_hit_object)
         # done policy
-        if self._car_hit_object_patience and self.car_hit_object_end_patience:
+        _a = self._car_respawn_on_object_hit
+        _b = self._car_hit_object_patience and self.car_hit_object_end_patience
+        if _a and _b:
             done = Done.HIT_OBJECT
             self._car_hit_object_deque.clear()
         elif target_found and in_target_area: 
@@ -551,10 +553,10 @@ class Servicer(_Servicer):
         return Status(ok=True, msg=msg)
 
     def lock_target_area(self, router_rssi: Rssi) -> bool:
-        if self._target_router_already_locked: return True
+        if self._car_target_router_already_locked: return True
         good_rssi = abs(router_rssi) < abs(self._car_lock_target_router_rssi)
         if not(good_rssi): return False
-        self._target_router_already_locked = True
+        self._car_target_router_already_locked = True
         return True
 
     def car_in_target_area(self, routers: list[RouterData]) -> bool:
@@ -562,7 +564,7 @@ class Servicer(_Servicer):
         if not(active_task and active_task.route): return False        
         last_router_in_route = len(active_task.route) == 1
         if not(last_router_in_route): 
-            self._target_router_already_locked = False
+            self._car_target_router_already_locked = False
             return False
         target_router = self.get_router_by_id(
             router_id=active_task.route[0],
