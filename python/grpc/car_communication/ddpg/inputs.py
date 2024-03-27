@@ -61,7 +61,8 @@ class ModelInputData:
 
     def _normalize_image(self, image: np.ndarray | None) -> np.ndarray:
         shape = [self.IMAGE_FIXED_SHAPE, self.IMAGE_FIXED_SHAPE]
-        if image is None: return np.zeros(shape=shape)
+        if image is None: # generate random grb image
+            image = np.random.randint(0, 256, size=shape+[3], dtype=np.uint8)
         image_shape = image.shape[:-1]
         if image_shape != shape: image = cv2.resize(image, shape)
         grayscale_image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
@@ -173,7 +174,7 @@ def _test_prediction(agent: DDPGAgent, model_input: ModelInputData) -> None:
     print('3. DDPG agent qs')
     print(f'- QS: {qs}')
 
-def _test():
+def _test(test_saveload:bool = False):
     agent = DDPGAgent()
     model_input = ModelInputData(
         image = None,
@@ -188,8 +189,9 @@ def _test():
     # tests
     _test_prediction(agent, model_input)
     _test_train_agent(agent, model_input)
-    _test_save_model(agent)
-    _test_load_model(agent)
+    if test_saveload:
+        _test_save_model(agent)
+        _test_load_model(agent)
 
 if __name__ == '__main__':
     _test()
