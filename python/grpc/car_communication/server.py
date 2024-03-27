@@ -115,6 +115,7 @@ class Servicer(_Servicer):
     # ================================================================================
 
     epsilon: float = 1
+    framerate: int = 30
     agent_train_each_step: bool = False
     agent_train_batch_size: int = 64
     agent_train_batches: int = 10
@@ -128,10 +129,10 @@ class Servicer(_Servicer):
     _agent_min_reward: float = -20
     _agent_aggregate_stats_every: int = 10
     # settings: car
-    _car_respawn_on_object_hit: bool = False
-    _car_hit_object_patience = 10
+    _car_respawn_on_object_hit: bool = True
+    _car_hit_object_patience = framerate * 2
     _car_respawn_nearest_router_id: str = '9'
-    _car_target_patience:int = 5
+    _car_target_patience:int = framerate
     _car_ignore_target_area: bool = False
     # settings: switch router policy
     _car_lock_target_router_rssi: Rssi = -15
