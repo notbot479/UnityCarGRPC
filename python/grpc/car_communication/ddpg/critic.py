@@ -23,7 +23,6 @@ class CriticModel(nn.Module):
         self.bn4_img = nn.BatchNorm2d(512)
         self.pool4_img = nn.MaxPool2d(kernel_size=2)
         # img layer 5 (flatten + fc) 
-        self.dropout_img = nn.Dropout(0.2)
         self.fc_img = nn.Linear(512, 512)
         # Sensor inputs
         self.fc_sensors = nn.Linear(6 + 2, 512)
@@ -48,7 +47,6 @@ class CriticModel(nn.Module):
         x_img = self.pool2_img(nn.functional.relu(self.bn2_img(self.conv2_img(x_img))))
         x_img = self.pool3_img(nn.functional.relu(self.bn3_img(self.conv3_img(x_img))))
         x_img = self.pool4_img(nn.functional.relu(self.bn4_img(self.conv4_img(x_img))))
-        x_img = self.dropout_img(x_img)
         x_img = torch.flatten(x_img, 1)
         x_img = nn.functional.relu(self.fc_img(x_img))
         # Sensor processing
