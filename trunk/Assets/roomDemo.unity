@@ -823,7 +823,7 @@ PrefabInstance:
     - target: {fileID: 5649130420918798629, guid: 6e6ea6cbc3204aa43b6ec0fb48845e2e,
         type: 3}
       propertyPath: maxDistance
-      value: 25
+      value: 20
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 6e6ea6cbc3204aa43b6ec0fb48845e2e, type: 3}
@@ -1201,7 +1201,7 @@ PrefabInstance:
     - target: {fileID: 5649130420918798629, guid: 6e6ea6cbc3204aa43b6ec0fb48845e2e,
         type: 3}
       propertyPath: maxDistance
-      value: 30
+      value: 20
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 6e6ea6cbc3204aa43b6ec0fb48845e2e, type: 3}
@@ -1539,7 +1539,7 @@ MonoBehaviour:
   scanQRMaxDistance: 1
   processingUpdate: 1
   sendRequestToServer: 1
-  moveCarByAI: 1
+  moveCarByAI: 0
 --- !u!1001 &1177478698
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2101,7 +2101,7 @@ PrefabInstance:
     - target: {fileID: 5649130420918798629, guid: 6e6ea6cbc3204aa43b6ec0fb48845e2e,
         type: 3}
       propertyPath: maxDistance
-      value: 25
+      value: 20
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 6e6ea6cbc3204aa43b6ec0fb48845e2e, type: 3}

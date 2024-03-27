@@ -10,10 +10,10 @@ public class Router : MonoBehaviour
     private float minRSSI = -0f; // Minimum receive router strength
     private float maxRSSI = -100f; // Maximum receive router strength
     
-    public bool sensorConnection = true;
-    public readonly double mediumRSSIstart = -15f;
-    public readonly double mediumRSSIend = -50f;
-    public readonly double badRSSIstart = -90f;
+    private bool sensorConnection = true;
+    public readonly double mediumRSSIstart = -5f;   //less - green
+    public readonly double mediumRSSIend = -50f;     //less - yellow
+    public readonly double badRSSIstart = -90f;     //less - red
     public readonly Color rssiGoodColor = Color.green;
     public readonly Color rssiMediumColor = Color.yellow;
     public readonly Color rssiBadColor = Color.red;
@@ -49,8 +49,10 @@ public class Router : MonoBehaviour
 
     double CalculateRSSI(float distance)
     {
-        double rssi = ((distance / maxDistance) * (maxRSSI - minRSSI)) + minRSSI;
-        //double rssi = maxRSSI - 10 * Math.Log10(distance/maxDistance);
+        //double rssi = ((distance / maxDistance) * (maxRSSI - minRSSI)) + minRSSI;
+        float maxDistanceSquare = maxDistance * maxDistance;
+        float distanceSquare = distance * distance;
+        double rssi = minRSSI - (((minRSSI - maxRSSI) / maxDistanceSquare) * distanceSquare);
         return rssi;
     }
 }

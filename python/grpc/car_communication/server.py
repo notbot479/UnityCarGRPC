@@ -123,7 +123,7 @@ class Servicer(_Servicer):
     
     # settings: agent
     _agent_respawn_very_bad_model: bool = True
-    _agent_episodes_count: int = 5000
+    _agent_episodes_count: int = 1000
     _agent_epsilon_decay:float = 0.99
     _agent_min_epsilon: float = 0.001
     _agent_min_reward: float = -20
@@ -132,11 +132,11 @@ class Servicer(_Servicer):
     _car_respawn_on_object_hit: bool = True
     _car_hit_object_patience = framerate * 2
     _car_respawn_nearest_router_id: str = '9'
-    _car_target_patience:int = framerate
+    _car_target_patience:int = framerate // 2
     _car_ignore_target_area: bool = False
     # settings: switch router policy
-    _car_lock_target_router_rssi: Rssi = -15
-    _car_switch_target_router_rssi: Rssi = -15
+    _car_lock_target_router_rssi: Rssi = -5
+    _car_switch_target_router_rssi: Rssi = -5
     _car_switch_target_router_rssi_of_next_shortcut: Rssi = -50
     _car_switch_target_router_rssi_of_next: Rssi = -90
     _car_target_router_already_locked: bool = False
@@ -318,8 +318,9 @@ class Servicer(_Servicer):
         reward, done = self.get_reward_and_done(prev_data, data)
         self.total_score_add_reward(reward) 
         # show some stats
+        print(data)
         print(f'Route: {self.car_active_task.route}')
-        print(f'Reward: {reward}\n')
+        print(f'Reward: {reward}')
         # train agent
         if TRAIN_AGENT:
             self._agent.reply_buffer.store(
@@ -353,13 +354,13 @@ class Servicer(_Servicer):
             self._agent_prev_qs = qs
             movement_index = int(np.argmax(qs))
             command = self.get_movement_by_index(movement_index)
-            print(f'Send predicted command to client: {command}')
+            print(f'Send predicted command to client: {command}\n')
         else:
             rand_qs = self.get_random_qs(self._agent_num_actions)
             self._agent_prev_qs = rand_qs
             movement_index = int(np.argmax(rand_qs))
             command = self.get_movement_by_index(movement_index)
-            print(f'Send random command to client: {command}')
+            print(f'Send random command to client: {command}\n')
         return self.send_response_to_client(command)
 
     # ===============================================================================
@@ -449,7 +450,6 @@ class Servicer(_Servicer):
             done = Done.TARGET_IS_FOUND
         # reward policy
         target_router_id = self.get_car_target_router_id()
-        target_router_switched = self.is_target_router_switched
         if car_hit_object:
             reward = RewardPolicy.HIT_OBJECT.value
             return (reward, done)
@@ -466,16 +466,16 @@ class Servicer(_Servicer):
                 router_id=target_router_id,
                 routers=new_state.routers,
             )
-            delta = round(old_target_rssi - new_target_rssi, 1)
-            if delta == 0:
+            if self.is_target_router_switched: 
+                reward = RewardPolicy.TARGET_ROUTER_SWITCHED.value
+                return (reward, done)
+            delta = round(old_target_rssi - new_target_rssi, 2)
+            k = round(1 - abs(old_target_rssi)/100, 2)
+            if not(delta):
                 reward = RewardPolicy.PASSIVE_REWARD.value
                 return (reward, done)
-            if target_router_switched or delta < 0:
-                reward = RewardPolicy.SHORTEN_DISTANCE_TO_ROUTER.value
-                return (reward, done)
-            else:
-                reward = RewardPolicy.INCREASE_DISTANCE_TO_ROUTER.value
-                return (reward, done)
+            reward = round(-delta * k, 1)
+            return (reward, done)
         else: 
             # stage 2: search
             boxes_in_view = new_state.boxes_in_camera_view
@@ -501,7 +501,7 @@ class Servicer(_Servicer):
                 reward = RewardPolicy.PASSIVE_REWARD.value
                 return (reward, done)
             delta = abs(old_front_sensor.distance) - abs(new_front_sensor.distance)
-            delta = round(delta, 2)
+            delta = round(delta, 1)
             if boxes_in_view and delta == 0:
                 reward = RewardPolicy.IN_TARGET_AREA_BOXES_FOUND.value
                 return (reward, done)
