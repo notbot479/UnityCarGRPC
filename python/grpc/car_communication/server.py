@@ -126,11 +126,11 @@ class Servicer(_Servicer):
     _agent_episodes_count: int = 1000
     _agent_epsilon_decay:float = 0.99
     _agent_min_epsilon: float = 0.001
-    _agent_min_reward: float = -20
+    _agent_min_reward: float = -50
     _agent_aggregate_stats_every: int = 10
     # settings: car
     _car_respawn_on_object_hit: bool = True
-    _car_hit_object_patience = framerate * 2
+    _car_hit_object_patience = framerate * 3
     _car_respawn_nearest_router_id: str = '2'
     _car_target_patience:int = framerate // 2
     _car_ignore_target_area: bool = False
@@ -470,11 +470,12 @@ class Servicer(_Servicer):
                 reward = RewardPolicy.TARGET_ROUTER_SWITCHED.value
                 return (reward, done)
             delta = round(old_target_rssi - new_target_rssi, 2)
+            f = round(self.framerate / 10, 1)
             k = round(1 - abs(old_target_rssi)/100, 2)
             if not(delta):
                 reward = RewardPolicy.PASSIVE_REWARD.value
                 return (reward, done)
-            reward = round(-delta * k, 1)
+            reward = round(-delta * f * k, 1)
             return (reward, done)
         else: 
             # stage 2: search
