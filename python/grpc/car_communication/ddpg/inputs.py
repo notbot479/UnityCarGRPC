@@ -168,11 +168,12 @@ def _test_prediction(agent: DDPGAgent, model_input: ModelInputData) -> None:
     print('2. Critic extracted qs:')
     critic_qs = agent.extract_qs(outputs_critic)
     print(f'- QS: {critic_qs}')
-    print(f'- Prediction: {np.argmax(critic_qs)}')
     
     qs = agent.get_qs(model_input.inputs)
     print('3. DDPG agent qs')
     print(f'- QS: {qs}')
+    action = np.argmax(qs)
+    print(f'- Predicted action: {action}')
 
 def _test(test_saveload:bool = False):
     agent = DDPGAgent()

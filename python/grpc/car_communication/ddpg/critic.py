@@ -31,7 +31,7 @@ class CriticModel(nn.Module):
         # Concatenate image, sensors, and action
         self.fc1 = nn.Linear(1536, 1024)
         self.fc2 = nn.Linear(1024, 256)
-        self.fc3 = nn.Linear(256, 5)
+        self.fc3 = nn.Linear(256, 1)
 
     def forward(
         self, 

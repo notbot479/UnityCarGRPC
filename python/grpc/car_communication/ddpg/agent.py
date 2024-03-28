@@ -26,10 +26,10 @@ class DDPGAgent:
         self,
         gamma: float = 0.99,
         tau:float = 0.005,
-        actor_lr:float = 0.0001,
-        critic_lr:float = 0.001,
+        actor_lr:float = 0.001,
+        critic_lr:float = 0.002,
         target_update_interval:int = 10,
-        reply_buffer_capacity:int = 10000,
+        reply_buffer_capacity:int = 50000,
         # load from dir or best
         load_from_dir: str | None = None,
         load_best_from_dir: str | None = None,
@@ -51,8 +51,14 @@ class DDPGAgent:
         elif load_best_from_dir: 
             self.load_best_model(load_best_from_dir)
         # init optimizers for networks
-        self.actor_optimizer = Adam(self.actor_network.parameters(), lr=actor_lr)
-        self.critic_optimizer = Adam(self.critic_network.parameters(), lr=critic_lr)
+        self.actor_optimizer = Adam(
+            params=self.actor_network.parameters(), 
+            lr=actor_lr,
+        )
+        self.critic_optimizer = Adam(
+            params=self.critic_network.parameters(),
+            lr=critic_lr,
+        )
 
     def save_model(self, dir_path: str, *, ext:str='pth') -> None:
         os.makedirs(dir_path, exist_ok=True)
@@ -99,11 +105,11 @@ class DDPGAgent:
 
     @property
     def critic_loss(self) -> float:
-        return self._critic_loss
+        return float(self._critic_loss)
 
     @property
     def actor_loss(self) -> float:
-        return self._actor_loss
+        return float(self._actor_loss)
 
     def extract_qs(self, outputs: Tensor) -> np.ndarray:
         outputs = outputs.cpu()
@@ -117,7 +123,7 @@ class DDPGAgent:
         qs = self.extract_qs(tensor)
         return qs
 
-    def train(self, *, terminal_state:bool=False, batch_size:int = 64) -> None:
+    def train(self, *, terminal_state:bool = False, batch_size:int = 64) -> None:
         if terminal_state: self._step += 1
         if not(self.reply_buffer.ready): return 
         print(f'[DDPG] Train model. BatchSize: {batch_size}')
@@ -129,8 +135,9 @@ class DDPGAgent:
         batches_count: int = 50,
     ) -> None:
         self._step += 1
-        if not(self.reply_buffer.ready): return 
-        print(f'[DDPG] Train on episode end. Batches: {batches_count}, BatchSize: {batch_size}')
+        if not(self.reply_buffer.ready): return
+        bc, bs = batches_count, batch_size
+        print(f'[DDPG] Train on episode end. Batches: {bc}, BatchSize: {bs}')
         [self.train(batch_size=batch_size) for _ in range(batches_count)]
 
     def extract_inputs(self, data: list[dict[str,Any]]) -> dict[str, Tensor]:
@@ -147,16 +154,18 @@ class DDPGAgent:
     def convert_to_tensor(self, data: Any) -> Tensor:
         np_data = np.array(data, dtype=np.float32).T
         tensor = torch.tensor(np_data, dtype=torch.float32).to(self.device)
+        # add batch dim for tensor if singleton
         if not(tensor.dim()): tensor = tensor.unsqueeze(0)
         return tensor
 
     @property
-    def step(self) -> int:
+    def step(self) -> int: 
         return self._step
 
     @property
-    def cuda(self) -> bool:
+    def cuda(self) -> bool: 
         return torch.cuda.is_available()
+
 
     def _init_models(self) -> None:
         # init networks
@@ -214,42 +223,60 @@ class DDPGAgent:
         dones: Tensor, 
         actions: Tensor, 
         next_states: dict[str,Tensor],
-    ):
-        next_action = self.target_actor_network(**next_states)
-        target_Q_next = self.target_critic_network(
+    ) -> Tensor:
+        next_actions = self.target_actor_network(**next_states)
+        target_Q = self.target_critic_network(
             **next_states, 
-            actor_action=next_action,
+            actor_action=next_actions,
         ) 
-        target_Q = rewards + (self.gamma * target_Q_next * (1 - dones))
+        target_Q = rewards + (self.gamma * target_Q * (1 - dones))
         current_Q = self.critic_network(**states, actor_action=actions)
         critic_loss = F.mse_loss(current_Q, target_Q)
-        # save critic loss to variable
         self._critic_loss = float(critic_loss)
         return critic_loss
 
-    def _calculate_actor_loss(self, states: dict[str,Tensor]):
-        actor_predict = self.actor_network(**states)
-        critic_predict = self.critic_network(**states, actor_action=actor_predict)
+    def _calculate_actor_loss(self, states: dict[str,Tensor]) -> Tensor:
+        actions = self.actor_network(**states)
+        critic_predict = self.critic_network(
+            **states, 
+            actor_action=actions,
+        )
         actor_loss = -critic_predict.mean()
-        # save actor loss to variable
         self._actor_loss = float(actor_loss)
         return actor_loss
     
-    def _hard_update_target_networks(self):
-        a = self.actor_network.state_dict()
-        c = self.critic_network.state_dict()
-        # update by copy weights
-        self.target_actor_network.load_state_dict(a)
-        self.target_critic_network.load_state_dict(c)
+    def _hard_update_target_networks(self) -> None:
+        self._hard_update_network(
+            network = self.actor_network, 
+            target_network = self.target_actor_network,
+        )
+        self._hard_update_network(
+            network = self.critic_network,
+            target_network = self.target_critic_network,
+        )
     
-    def _soft_update_target_networks(self):
-        # soft update for actor
-        ta = self.target_actor_network.parameters()
-        a = self.actor_network.parameters()
-        for tp, p in zip(ta,a):
+    def _soft_update_target_networks(self) -> None:
+        self._soft_update_network(
+            network = self.actor_network, 
+            target_network = self.target_actor_network,
+        )
+        self._soft_update_network(
+            network = self.critic_network,
+            target_network = self.target_critic_network,
+        )
+
+    def _soft_update_network(
+        self,
+        network: nn.Module,
+        target_network: nn.Module,
+    ) -> None:
+        for p, tp in zip(network.parameters(), target_network.parameters()):
             tp.data.copy_(self.tau * p.data + (1 - self.tau) * tp.data)
-        # soft update for ctitic
-        tc = self.target_critic_network.parameters()
-        c = self.critic_network.parameters()
-        for tp, p in zip(tc,c):
-            tp.data.copy_(self.tau * p.data + (1 - self.tau) * tp.data) 
+
+    def _hard_update_network(
+        self,
+        network: nn.Module,
+        target_network: nn.Module,
+    ) -> None:
+        state = network.state_dict()
+        target_network.load_state_dict(state)
