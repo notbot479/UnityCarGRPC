@@ -16,7 +16,7 @@ class Transition(NamedTuple):
 
 class BufferSample(NamedTuple):
     states: list[Inputs]
-    actions: list[int]
+    actions: list[np.ndarray]
     rewards: list[float]
     next_states: list[Inputs]
     dones: list[bool]

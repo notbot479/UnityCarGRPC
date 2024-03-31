@@ -25,11 +25,10 @@ class DDPGAgent:
     def __init__(
         self,
         gamma: float = 0.99,
-        tau:float = 0.005,
-        actor_lr:float = 0.001,
-        critic_lr:float = 0.002,
-        target_update_interval:int = 10,
-        reply_buffer_capacity:int = 50000,
+        tau: float = 0.005,
+        actor_lr: float = 0.0001,
+        critic_lr: float = 0.001,
+        reply_buffer_capacity:int = 25000,
         # load from dir or best
         load_from_dir: str | None = None,
         load_best_from_dir: str | None = None,
@@ -40,7 +39,6 @@ class DDPGAgent:
         # init parameters
         self.tau = tau
         self.gamma = gamma
-        self.target_update_interval = target_update_interval
         # load device and reply buffer
         self.device = torch.device(self._device) 
         self.reply_buffer = ReplayBuffer(capacity=reply_buffer_capacity)  
@@ -211,10 +209,8 @@ class DDPGAgent:
         self.actor_optimizer.zero_grad()
         actor_loss.backward()
         self.actor_optimizer.step()
-        # update target networks based on counter
-        _b = self.step % self.target_update_interval == 0
-        if self.target_update_interval > 0 and _b:
-            self._soft_update_target_networks()
+        # update target networks 
+        self._soft_update_target_networks()
 
     def _calculate_critic_loss(
         self, 
@@ -229,9 +225,9 @@ class DDPGAgent:
             **next_states, 
             actor_action=next_actions,
         ) 
-        target_Q = rewards + (self.gamma * target_Q * (1 - dones))
+        target_Q = rewards + (1 - dones) * self.gamma * target_Q
         current_Q = self.critic_network(**states, actor_action=actions)
-        critic_loss = F.mse_loss(current_Q, target_Q)
+        critic_loss = F.mse_loss(current_Q, target_Q.detach())
         self._critic_loss = float(critic_loss)
         return critic_loss
 

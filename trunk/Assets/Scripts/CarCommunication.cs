@@ -15,12 +15,15 @@ public class CarCommunication : MonoBehaviour
 {
     public bool enableVsync = true;
     public int fpsLimit = 30;
+
     public string serverDomain = "localhost";
     private string serverApiUrl;
     public int serverPort = 50051;
+    
     public float scanQRMaxDistance = 1f;
+    
     public bool processingUpdate = true;
-    public bool sendRequestToServer = true;
+    public int requestsPerSecond = 10;
     public bool moveCarByAI = true;
     public bool randomizeSpawn = true;
    
@@ -33,7 +36,7 @@ public class CarCommunication : MonoBehaviour
     private GameObject car;
     private string carID;
     private bool carCollisionData;
-    private string command;
+    private string command = "";
     // camera & camera data
     private GameObject carCamera;
     private byte[] cameraImage;
@@ -62,7 +65,7 @@ public class CarCommunication : MonoBehaviour
             HttpHandler = new YetAnotherHttpHandler { Http2Only = true },
             DisposeHttpClient = true
         };
-        if (sendRequestToServer)
+        if (requestsPerSecond != 0)
         {
             channel = GrpcChannel.ForAddress(serverApiUrl, channelOptions);
             client = new Communication.CommunicationClient(channel);
@@ -74,30 +77,15 @@ public class CarCommunication : MonoBehaviour
         carRouterReceiver = GameObject.Find("CarRouterReceiver");
         // teleport car to spawn before update
         car.GetComponent<CarCollisionData>().TeleportToSpawn();
+        // send request to grpc server N times per second
+        float repeatRate = 1f / requestsPerSecond;
+        InvokeRepeating("Communicate", 1f, repeatRate);
     }
 
-    public void Update()
+    public void Communicate()
     {
-        if (!processingUpdate) { return; }
-        // get data: car state, camera image, sensors data, routers data
-        carID = car.GetComponent<CarInfo>().ID;
-        distanceSensorsData = carDistanceSensors.GetComponent<RaySensorsData>().GetSensorsData();
-        routersData = carRouterReceiver.GetComponent<CarRouterReceiver>().GetRoutersData();
-        carCollisionData = car.GetComponent<CarCollisionData>().isCollide;
-        // teleport camera to base and collect data (teleport required)
-        carCamera.GetComponent<CameraData>().teleportCameraToBase();
-        float distanceToNearestBox = carCamera.GetComponent<CameraData>().getDistanceToNearestVisibleBox();
-        boxesInCameraView = (distanceToNearestBox != float.PositiveInfinity);
-        cameraImage = carCamera.GetComponent<CameraData>().getCameraImageInBytes(); // bit slower
-        // not scan QR, if car is too far or not have visible contact with box
-        if (distanceToNearestBox > scanQRMaxDistance) { qrCodeMetadata = ""; }
-        else
-        {
-            qrCodeMetadata = carCamera.GetComponent<CameraData>().getQRCodeMetadata(); // much slower
-        }
-
         // skip send request to server
-        if (!sendRequestToServer) { return; }
+        if (requestsPerSecond == 0) { return; }
         // processing respawn car (skip send request)
         if (carCollisionData && processingRespawn) { return; }
         else if (processingRespawn) { processingRespawn = false; }
@@ -140,9 +128,30 @@ public class CarCommunication : MonoBehaviour
             }
             return;
         }
-
-        // processing command from server
         Debug.Log(command);
+    }
+
+    public void Update()
+    {
+        if (!processingUpdate) { return; }
+        // get data: car state, camera image, sensors data, routers data
+        carID = car.GetComponent<CarInfo>().ID;
+        distanceSensorsData = carDistanceSensors.GetComponent<RaySensorsData>().GetSensorsData();
+        routersData = carRouterReceiver.GetComponent<CarRouterReceiver>().GetRoutersData();
+        carCollisionData = car.GetComponent<CarCollisionData>().isCollide;
+        // teleport camera to base and collect data (teleport required)
+        carCamera.GetComponent<CameraData>().teleportCameraToBase();
+        float distanceToNearestBox = carCamera.GetComponent<CameraData>().getDistanceToNearestVisibleBox();
+        boxesInCameraView = (distanceToNearestBox != float.PositiveInfinity);
+        cameraImage = carCamera.GetComponent<CameraData>().getCameraImageInBytes(); // bit slower
+        // not scan QR, if car is too far or not have visible contact with box
+        if (distanceToNearestBox > scanQRMaxDistance) { qrCodeMetadata = ""; }
+        else
+        {
+            qrCodeMetadata = carCamera.GetComponent<CameraData>().getQRCodeMetadata(); // much slower
+        }
+        // processing command from server
+        if (command == "") { return; }
         try{
             if (command == "Noop") { return;  } // no operations, skip command from server
             else if (command == "Respawn" && !processingRespawn)

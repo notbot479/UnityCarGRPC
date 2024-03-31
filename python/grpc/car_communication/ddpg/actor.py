@@ -38,6 +38,7 @@ class ActorModel(nn.Module):
         self.fc_combined_hint = nn.Linear(128 * 3, 256)
         # Output layer
         self.fc_output = nn.Linear(256, 5)
+        self.tanh = nn.Tanh()
         
     def forward(
         self, 
@@ -82,5 +83,5 @@ class ActorModel(nn.Module):
         x = torch.cat([x1, x2, x3], dim=1)
         x = nn.functional.relu(self.fc_combined_hint(x))
         # Output layer
-        outputs = self.fc_output(x)
+        outputs = self.tanh(self.fc_output(x))
         return outputs

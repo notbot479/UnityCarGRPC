@@ -147,10 +147,6 @@ def _test_train_agent(agent: DDPGAgent, model_input: ModelInputData) -> None:
     batch_size = 64
     agent.train(batch_size=batch_size)
     agent.show_stats()
-    # test soft update weights
-    agent._step = agent.target_update_interval-1
-    agent.train(terminal_state=True, batch_size=batch_size)
-    agent.show_stats()
    
 def _test_prediction(agent: DDPGAgent, model_input: ModelInputData) -> None:
     actor_network = agent.actor_network

@@ -115,12 +115,15 @@ class Servicer(_Servicer):
     # ================================================================================
 
     epsilon: float = 1
-    framerate: int = 30
+    
     agent_train_each_step: bool = False
     agent_train_batch_size: int = 64
     agent_train_batches: int = 10
     agent_cuda_train_batch_multiplier: int = 20
     
+    # settings: env
+    _env_framerate: int = 30
+    _env_requests_per_second: int = 10
     # settings: agent
     _agent_respawn_very_bad_model: bool = True
     _agent_episodes_count: int = 1000
@@ -130,9 +133,9 @@ class Servicer(_Servicer):
     _agent_aggregate_stats_every: int = 10
     # settings: car
     _car_respawn_on_object_hit: bool = True
-    _car_hit_object_patience = framerate * 3
+    _car_hit_object_patience = _env_requests_per_second * 2
     _car_respawn_nearest_router_id: str = '2'
-    _car_target_patience:int = framerate // 2
+    _car_target_patience:int = _env_requests_per_second
     _car_ignore_target_area: bool = False
     # settings: switch router policy
     _car_lock_target_router_rssi: Rssi = -5
@@ -349,6 +352,7 @@ class Servicer(_Servicer):
             self.agent_end_episode(data=data)
             return self._send_respawn_command()
         # agent predict command or get random movement
+        print(f'\nPrev command: {prev_command}')
         if np.random.random() > self.epsilon:
             qs = self._agent.get_qs(model_input.inputs)
             self._agent_prev_qs = qs
@@ -470,12 +474,12 @@ class Servicer(_Servicer):
                 reward = RewardPolicy.TARGET_ROUTER_SWITCHED.value
                 return (reward, done)
             delta = round(old_target_rssi - new_target_rssi, 2)
-            f = round(self.framerate / 10, 1)
             k = round(1 - abs(old_target_rssi)/100, 2)
+            r = round(self._env_requests_per_second / 10, 1)
             if not(delta):
                 reward = RewardPolicy.PASSIVE_REWARD.value
                 return (reward, done)
-            reward = round(-delta * f * k, 1)
+            reward = round((-delta * r * k), 1)
             return (reward, done)
         else: 
             # stage 2: search
