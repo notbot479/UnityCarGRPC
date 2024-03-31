@@ -4,8 +4,9 @@ import torch
 
 
 class ActorModel(nn.Module):
-    def __init__(self) -> None:
+    def __init__(self, action_dim:int, max_action:int = 1) -> None:
         super().__init__()
+        self.max_action = max_action
         # img layer 1
         self.conv1_img = nn.Conv2d(1, 64, kernel_size=16, stride=2, padding=0)
         self.bn1_img = nn.BatchNorm2d(64)
@@ -37,7 +38,7 @@ class ActorModel(nn.Module):
         # Combined hint layer
         self.fc_combined_hint = nn.Linear(128 * 3, 256)
         # Output layer
-        self.fc_output = nn.Linear(256, 5)
+        self.fc_output = nn.Linear(256, action_dim)
         self.tanh = nn.Tanh()
         
     def forward(
@@ -83,5 +84,5 @@ class ActorModel(nn.Module):
         x = torch.cat([x1, x2, x3], dim=1)
         x = nn.functional.relu(self.fc_combined_hint(x))
         # Output layer
-        outputs = self.tanh(self.fc_output(x))
+        outputs = self.max_action * self.tanh(self.fc_output(x))
         return outputs

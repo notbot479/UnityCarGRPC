@@ -9,7 +9,7 @@ public class CarCollisionData : MonoBehaviour
     public bool isCollide = false;
     
     public float respawnRadius = 0.5f; 
-    public float respawnRotation = 10f; 
+    public float respawnRotation = 30f; 
 
     private float outOfBoundsY = -3f;
     private GameObject car;

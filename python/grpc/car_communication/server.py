@@ -75,6 +75,10 @@ class ServicerMode(Enum):
     READY = 1
     BUSY = 2
 
+class ExplorationMode(Enum):
+    GREEDY = 1
+    NOISE = 2
+
 class Servicer(_Servicer):
     def __init__(self, *args, **kwargs) -> None:
         init_mock_tasks()
@@ -101,8 +105,8 @@ class Servicer(_Servicer):
         return commands
 
     @staticmethod
-    def get_random_qs(num_actions: int) -> np.ndarray:
-        qs = np.random.rand(num_actions)
+    def get_random_qs(action_dim: int, max_action:int = 1) -> np.ndarray:
+        qs = max_action * np.random.rand(action_dim)
         return qs
 
     @staticmethod
@@ -114,7 +118,10 @@ class Servicer(_Servicer):
     
     # ================================================================================
 
+    exploration_mode: ExplorationMode = ExplorationMode.NOISE
+
     epsilon: float = 1
+    exploration: bool = True
     
     agent_train_each_step: bool = False
     agent_train_batch_size: int = 64
@@ -122,8 +129,8 @@ class Servicer(_Servicer):
     agent_cuda_train_batch_multiplier: int = 20
     
     # settings: env
-    _env_framerate: int = 30
     _env_requests_per_second: int = 10
+    _env_action_dim: int = len(CAR_MOVEMENT_SIGNALS)
     # settings: agent
     _agent_respawn_very_bad_model: bool = True
     _agent_episodes_count: int = 1000
@@ -149,7 +156,10 @@ class Servicer(_Servicer):
     show_client_data = SHOW_CLIENT_DATA
     _mode: ServicerMode = ServicerMode.READY
     _web_service = WebService()
+
+
     _agent = DDPGAgent(
+        action_dim=_env_action_dim,
         load_best_from_dir=AGENT_MODELS_PATH,
     )
     _writer = SummaryWriter(_get_logs_path())
@@ -168,8 +178,7 @@ class Servicer(_Servicer):
     _car_prev_target_router_id: str | None = None
     _car_active_task: CarActiveTask | None = None
     _car_prev_command: str | None = None
-    _agent_num_actions = len(_movement_commands)
-    _agent_prev_qs: np.ndarray = get_random_qs(_agent_num_actions)
+    _agent_prev_qs: np.ndarray = get_random_qs(_env_action_dim)
     # init counters and flags
     _agent_episode_total_score: Score = 0
     _agent_episode_id: int = 0
@@ -198,8 +207,7 @@ class Servicer(_Servicer):
     def agent_end_episode(self, data: GrpcClientData) -> None:
         # show some stats
         print(f'== END episode[{self.episode_id}] state[{self.state_id}] ==')
-        print(f'- epsilon [{self.epsilon}]')
-        print(f'- total score [{self.episode_total_score}]')
+        print(f'Total score [{self.episode_total_score}]')
         print()
         # train agent on episode end
         if TRAIN_AGENT:
@@ -232,19 +240,25 @@ class Servicer(_Servicer):
                 'max_reward':max_reward,
                 'average_reward':average_reward,
             }
+            # create stats (merge all stats)
+            extra_stats = {}
+            if self.exploration_mode == ExplorationMode.GREEDY:
+                extra_stats = {'epsilon': self.epsilon}
+            stats = self._agent.stats | reward_data | extra_stats 
             # tensorboard update stats (write logs)
-            extra_stats = {'epsilon': self.epsilon}
-            stats = self._agent.stats | reward_data | extra_stats
             for k,v in stats.items():
                 self._writer.add_scalar(k,v,self.episode_id)
             # Save model
             if not(_a):
                 dir_path = self.get_agent_save_dir_path(data=reward_data)
                 self._agent.save_model(dir_path=dir_path)
-        # Decay epsilon
-        if self.epsilon > self._agent_min_epsilon:
-            self.epsilon *= self._agent_epsilon_decay
-            self.epsilon = max(self._agent_min_epsilon, self.epsilon)
+        
+        if self.exploration_mode == ExplorationMode.GREEDY:
+            # decay epsilon if e greedy method
+            if self.epsilon > self._agent_min_epsilon:
+                self.epsilon *= self._agent_epsilon_decay
+                self.epsilon = max(self._agent_min_epsilon, self.epsilon)
+        
         self.start_new_episode()
 
     @busy_until_end
@@ -324,6 +338,7 @@ class Servicer(_Servicer):
         print(data)
         print(f'Route: {self.car_active_task.route}')
         print(f'Reward: {reward}')
+        print()
         # train agent
         if TRAIN_AGENT:
             self._agent.reply_buffer.store(
@@ -351,24 +366,49 @@ class Servicer(_Servicer):
         elif done == Done.HIT_OBJECT:
             self.agent_end_episode(data=data)
             return self._send_respawn_command()
-        # agent predict command or get random movement
-        print(f'\nPrev command: {prev_command}')
-        if np.random.random() > self.epsilon:
-            qs = self._agent.get_qs(model_input.inputs)
-            self._agent_prev_qs = qs
-            movement_index = int(np.argmax(qs))
-            command = self.get_movement_by_index(movement_index)
-            print(f'Send predicted command to client: {command}\n')
-        else:
-            rand_qs = self.get_random_qs(self._agent_num_actions)
-            self._agent_prev_qs = rand_qs
-            movement_index = int(np.argmax(rand_qs))
-            command = self.get_movement_by_index(movement_index)
-            print(f'Send random command to client: {command}\n')
+        # get command based on policy
+        print(f'Prev server command: {prev_command}')
+        command = self.get_command_from_agent(model_input=model_input)
         return self.send_response_to_client(command)
 
     # ===============================================================================
-    
+
+    def get_command_from_agent(self, model_input: ModelInputData) -> str:
+        if self.exploration_mode == ExplorationMode.GREEDY:
+            command = self.agent_get_greedy_command(model_input=model_input)
+        elif self.exploration_mode == ExplorationMode.NOISE:
+            command = self.agent_get_noise_command(model_input=model_input)
+        else:
+            raise NotImplementedError
+        return command
+
+    def agent_get_greedy_command(self, model_input: ModelInputData) -> str:
+        if np.random.random() > self.epsilon:
+            qs = self._agent.get_qs(inputs=model_input.inputs)
+            command = self.get_command_by_qs(qs=qs)
+            print(f'Send predicted movement to client: {command}')
+        else:
+            rand_qs = self.get_random_qs(self._env_action_dim)
+            command = self.get_command_by_qs(qs=rand_qs)
+            print(f'Send random movement to client: {command}')
+        return command
+
+    def agent_get_noise_command(self, model_input: ModelInputData) -> str:
+        qs = self._agent.get_qs(
+            inputs=model_input.inputs, 
+            exploration=self.exploration,
+        )
+        command = self.get_command_by_qs(qs=qs)
+        w = 'with' if self.exploration else 'without'
+        print(f'Send movement {w} exploration noise to client: {command}')
+        return command
+
+    def get_command_by_qs(self, qs: np.ndarray) -> str:
+        self._agent_prev_qs = qs # save qs, used in reply buffer
+        movement_index = int(np.argmax(qs))
+        command = self.get_movement_by_index(movement_index)
+        return command
+
     def respawn_very_bad_model(self) -> bool:
         if not(self._agent_respawn_very_bad_model): return False
         return self.episode_total_score < self._agent_min_reward

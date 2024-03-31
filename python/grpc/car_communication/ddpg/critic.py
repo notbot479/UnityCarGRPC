@@ -4,7 +4,7 @@ import torch
 
 
 class CriticModel(nn.Module):
-    def __init__(self, *, num_actions:int=5):
+    def __init__(self, *, action_dim:int):
         super().__init__()
         # img layer 1
         self.conv1_img = nn.Conv2d(1, 64, kernel_size=16, stride=2, padding=0)
@@ -27,7 +27,7 @@ class CriticModel(nn.Module):
         # Sensor inputs
         self.fc_sensors = nn.Linear(6 + 2, 512)
         # Action input
-        self.fc_action = nn.Linear(num_actions, 512)
+        self.fc_action = nn.Linear(action_dim, 512)
         # Concatenate image, sensors, and action
         self.fc1 = nn.Linear(1536, 1024)
         self.fc2 = nn.Linear(1024, 256)

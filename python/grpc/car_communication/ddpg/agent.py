@@ -12,6 +12,7 @@ from .model_selector import get_best_model_path
 from .buffer import ReplayBuffer
 from .critic import CriticModel
 from .actor import ActorModel
+from .noise import OUNoise
 
 
 class DDPGAgent:
@@ -24,6 +25,8 @@ class DDPGAgent:
 
     def __init__(
         self,
+        action_dim: int = 5,
+        max_action: int = 1,
         gamma: float = 0.99,
         tau: float = 0.005,
         actor_lr: float = 0.0001,
@@ -39,9 +42,12 @@ class DDPGAgent:
         # init parameters
         self.tau = tau
         self.gamma = gamma
-        # load device and reply buffer
+        self.max_action = max_action
+        self.action_dim = action_dim
+        # load device, reply buffer, noise
         self.device = torch.device(self._device) 
         self.reply_buffer = ReplayBuffer(capacity=reply_buffer_capacity)  
+        self.noise = OUNoise(action_dim=action_dim)
         # init networks; load trained networks if dir passed
         self._init_models()
         if load_from_dir:
@@ -111,14 +117,16 @@ class DDPGAgent:
 
     def extract_qs(self, outputs: Tensor) -> np.ndarray:
         outputs = outputs.cpu()
-        qs = outputs.detach().numpy()[0]
+        qs = outputs.data.numpy().flatten()
         return qs
 
-    def get_qs(self, inputs: dict[str, Any]) -> np.ndarray:
+    def get_qs(self, inputs: dict[str, Any], exploration:bool = False) -> np.ndarray:
         '''get prediction from actor model'''
         inputs = self.extract_inputs([inputs,])
         tensor = self.actor_network(**inputs).to(self.device)
         qs = self.extract_qs(tensor)
+        if exploration: qs += self.noise.sample()
+        qs = np.clip(qs, -self.max_action, self.max_action)
         return qs
 
     def train(self, *, terminal_state:bool = False, batch_size:int = 64) -> None:
@@ -167,11 +175,21 @@ class DDPGAgent:
 
     def _init_models(self) -> None:
         # init networks
-        self.actor_network = ActorModel().to(self.device)
-        self.critic_network = CriticModel().to(self.device)
+        self.actor_network = ActorModel(
+            action_dim = self.action_dim,
+            max_action = self.max_action
+        ).to(self.device)
+        self.critic_network = CriticModel(
+            action_dim=self.action_dim,
+        ).to(self.device)
         # init target networks
-        self.target_actor_network = ActorModel().to(self.device)
-        self.target_critic_network = CriticModel().to(self.device)
+        self.target_actor_network = ActorModel(
+            action_dim = self.action_dim,
+            max_action = self.max_action,
+        ).to(self.device)
+        self.target_critic_network = CriticModel(
+            action_dim=self.action_dim,
+        ).to(self.device)
         # hard update target networks weights from networks
         self._hard_update_target_networks()
 

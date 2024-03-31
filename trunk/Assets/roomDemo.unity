@@ -1765,6 +1765,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8902268117528618847, guid: 3084982c011f1ceec8e87e99c48de62a,
         type: 3}
+      propertyPath: respawnRotation
+      value: 30
+      objectReference: {fileID: 0}
+    - target: {fileID: 8902268117528618847, guid: 3084982c011f1ceec8e87e99c48de62a,
+        type: 3}
       propertyPath: respawnRandomize
       value: 0
       objectReference: {fileID: 0}
