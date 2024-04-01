@@ -132,6 +132,7 @@ class Servicer(_Servicer):
     _env_requests_per_second: int = 10
     _env_action_dim: int = len(CAR_MOVEMENT_SIGNALS)
     # settings: agent
+    _agent_exploration_seconds: int = 3 * 60
     _agent_respawn_very_bad_model: bool = True
     _agent_episodes_count: int = 1000
     _agent_epsilon_decay:float = 0.99
@@ -354,7 +355,7 @@ class Servicer(_Servicer):
                     batch_size=self.agent_train_batch_size,
                 )
         # end episode and respawn very bad model (reached min reward)
-        if self.respawn_very_bad_model():
+        if self.respawn_very_bad_model:
             self.agent_end_episode(data=data)
             return self._send_respawn_command()
         # agent end episode based on train policy
@@ -409,9 +410,12 @@ class Servicer(_Servicer):
         command = self.get_movement_by_index(movement_index)
         return command
 
+    @property
     def respawn_very_bad_model(self) -> bool:
         if not(self._agent_respawn_very_bad_model): return False
-        return self.episode_total_score < self._agent_min_reward
+        a = self.episode_total_score < self._agent_min_reward
+        b = self.state_id > self.max_state_id
+        return a or b
 
     def get_agent_save_dir_path(self, *, data: dict = {}) -> str:
         tm = int(time.time())
@@ -737,6 +741,10 @@ class Servicer(_Servicer):
         response = self._web_service.send_request(request)
         product, route = response.product, response.route
         return product, route
+
+    @property
+    def max_state_id(self) -> int:
+        return self._env_requests_per_second * self._agent_exploration_seconds
 
     @property
     def state_id(self) -> int:
