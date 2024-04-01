@@ -336,7 +336,7 @@ class Servicer(_Servicer):
         reward, done = self.get_reward_and_done(prev_data, data)
         self.total_score_add_reward(reward) 
         # show some stats
-        print(data)
+        print(model_input)
         print(f'Route: {self.car_active_task.route}')
         print(f'Reward: {reward}')
         print()
@@ -653,6 +653,7 @@ class Servicer(_Servicer):
         )
         if not(target_router_id and front_sensor): return
         # first part data
+        speed = data.car_speed
         image = data.camera_image.frame if data.camera_image else None
         distance_sensors_distances = [i.distance for i in data.distance_sensors]
         distance_to_target_router = self.get_router_rssi_by_id(
@@ -675,6 +676,7 @@ class Servicer(_Servicer):
         # convert to model input data
         model_input_data = ModelInputData(
             image=image,
+            speed = speed,
             distance_sensors_distances = distance_sensors_distances,
             distance_to_target_router = distance_to_target_router,
             distance_to_box = distance_to_box,
@@ -815,6 +817,7 @@ class Servicer(_Servicer):
     def get_grpc_client_data(self, request: _Pb2_client_request) -> GrpcClientData:
         '''parse grpc request and create dataclass'''
         car_id = str(request.car_id)
+        car_speed = round(float(request.car_speed),2)
         boxes_in_camera_view = bool(request.boxes_in_camera_view)
         car_collision_data = bool(request.car_collision_data)
         qr_code_metadata = str(request.qr_code_metadata)
@@ -826,6 +829,7 @@ class Servicer(_Servicer):
         routers = self._normalize_routers_data(request.routers_data)
         data = GrpcClientData(
             car_id = car_id,
+            car_speed = car_speed,
             camera_image = camera_image,
             distance_sensors = distance_sensors,
             routers = routers,

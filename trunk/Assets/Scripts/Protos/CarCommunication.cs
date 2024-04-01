@@ -34,22 +34,23 @@ namespace CarCommunicationApp {
             "KAISHAoUZnJvbnRfcmlnaHRfZGlzdGFuY2UYAyABKAISGgoSYmFja19sZWZ0",
             "X2Rpc3RhbmNlGAQgASgCEhUKDWJhY2tfZGlzdGFuY2UYBSABKAISGwoTYmFj",
             "a19yaWdodF9kaXN0YW5jZRgGIAEoAiImCgpSb3V0ZXJEYXRhEgoKAmlkGAEg",
-            "ASgJEgwKBHJzc2kYAiABKAIiiQIKDUNsaWVudFJlcXVlc3QSDgoGY2FyX2lk",
-            "GAEgASgJEhQKDGNhbWVyYV9pbWFnZRgCIAEoDBJHChVkaXN0YW5jZV9zZW5z",
-            "b3JzX2RhdGEYAyABKAsyKC5DYXJDb21tdW5pY2F0aW9uQXBwLkRpc3RhbmNl",
-            "U2Vuc29yc0RhdGESNQoMcm91dGVyc19kYXRhGAQgAygLMh8uQ2FyQ29tbXVu",
-            "aWNhdGlvbkFwcC5Sb3V0ZXJEYXRhEhwKFGJveGVzX2luX2NhbWVyYV92aWV3",
-            "GAUgASgIEhoKEmNhcl9jb2xsaXNpb25fZGF0YRgGIAEoCBIYChBxcl9jb2Rl",
-            "X21ldGFkYXRhGAcgASgJMmcKDUNvbW11bmljYXRpb24SVgoLU2VuZFJlcXVl",
-            "c3QSIi5DYXJDb21tdW5pY2F0aW9uQXBwLkNsaWVudFJlcXVlc3QaIy5DYXJD",
-            "b21tdW5pY2F0aW9uQXBwLlNlcnZlclJlc3BvbnNlYgZwcm90bzM="));
+            "ASgJEgwKBHJzc2kYAiABKAIinAIKDUNsaWVudFJlcXVlc3QSDgoGY2FyX2lk",
+            "GAEgASgJEhEKCWNhcl9zcGVlZBgCIAEoAhIUCgxjYW1lcmFfaW1hZ2UYAyAB",
+            "KAwSRwoVZGlzdGFuY2Vfc2Vuc29yc19kYXRhGAQgASgLMiguQ2FyQ29tbXVu",
+            "aWNhdGlvbkFwcC5EaXN0YW5jZVNlbnNvcnNEYXRhEjUKDHJvdXRlcnNfZGF0",
+            "YRgFIAMoCzIfLkNhckNvbW11bmljYXRpb25BcHAuUm91dGVyRGF0YRIcChRi",
+            "b3hlc19pbl9jYW1lcmFfdmlldxgGIAEoCBIaChJjYXJfY29sbGlzaW9uX2Rh",
+            "dGEYByABKAgSGAoQcXJfY29kZV9tZXRhZGF0YRgIIAEoCTJnCg1Db21tdW5p",
+            "Y2F0aW9uElYKC1NlbmRSZXF1ZXN0EiIuQ2FyQ29tbXVuaWNhdGlvbkFwcC5D",
+            "bGllbnRSZXF1ZXN0GiMuQ2FyQ29tbXVuaWNhdGlvbkFwcC5TZXJ2ZXJSZXNw",
+            "b25zZWIGcHJvdG8z"));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { },
           new pbr::GeneratedClrTypeInfo(null, null, new pbr::GeneratedClrTypeInfo[] {
             new pbr::GeneratedClrTypeInfo(typeof(global::CarCommunicationApp.ServerResponse), global::CarCommunicationApp.ServerResponse.Parser, new[]{ "Command" }, null, new[]{ typeof(global::CarCommunicationApp.ServerResponse.Types.Command) }, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::CarCommunicationApp.DistanceSensorsData), global::CarCommunicationApp.DistanceSensorsData.Parser, new[]{ "FrontLeftDistance", "FrontDistance", "FrontRightDistance", "BackLeftDistance", "BackDistance", "BackRightDistance" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::CarCommunicationApp.RouterData), global::CarCommunicationApp.RouterData.Parser, new[]{ "Id", "Rssi" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::CarCommunicationApp.ClientRequest), global::CarCommunicationApp.ClientRequest.Parser, new[]{ "CarId", "CameraImage", "DistanceSensorsData", "RoutersData", "BoxesInCameraView", "CarCollisionData", "QrCodeMetadata" }, null, null, null, null)
+            new pbr::GeneratedClrTypeInfo(typeof(global::CarCommunicationApp.ClientRequest), global::CarCommunicationApp.ClientRequest.Parser, new[]{ "CarId", "CarSpeed", "CameraImage", "DistanceSensorsData", "RoutersData", "BoxesInCameraView", "CarCollisionData", "QrCodeMetadata" }, null, null, null, null)
           }));
     }
     #endregion
@@ -915,6 +916,7 @@ namespace CarCommunicationApp {
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public ClientRequest(ClientRequest other) : this() {
       carId_ = other.carId_;
+      carSpeed_ = other.carSpeed_;
       cameraImage_ = other.cameraImage_;
       distanceSensorsData_ = other.distanceSensorsData_ != null ? other.distanceSensorsData_.Clone() : null;
       routersData_ = other.routersData_.Clone();
@@ -945,8 +947,20 @@ namespace CarCommunicationApp {
       }
     }
 
+    /// <summary>Field number for the "car_speed" field.</summary>
+    public const int CarSpeedFieldNumber = 2;
+    private float carSpeed_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public float CarSpeed {
+      get { return carSpeed_; }
+      set {
+        carSpeed_ = value;
+      }
+    }
+
     /// <summary>Field number for the "camera_image" field.</summary>
-    public const int CameraImageFieldNumber = 2;
+    public const int CameraImageFieldNumber = 3;
     private pb::ByteString cameraImage_ = pb::ByteString.Empty;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
@@ -958,7 +972,7 @@ namespace CarCommunicationApp {
     }
 
     /// <summary>Field number for the "distance_sensors_data" field.</summary>
-    public const int DistanceSensorsDataFieldNumber = 3;
+    public const int DistanceSensorsDataFieldNumber = 4;
     private global::CarCommunicationApp.DistanceSensorsData distanceSensorsData_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
@@ -970,9 +984,9 @@ namespace CarCommunicationApp {
     }
 
     /// <summary>Field number for the "routers_data" field.</summary>
-    public const int RoutersDataFieldNumber = 4;
+    public const int RoutersDataFieldNumber = 5;
     private static readonly pb::FieldCodec<global::CarCommunicationApp.RouterData> _repeated_routersData_codec
-        = pb::FieldCodec.ForMessage(34, global::CarCommunicationApp.RouterData.Parser);
+        = pb::FieldCodec.ForMessage(42, global::CarCommunicationApp.RouterData.Parser);
     private readonly pbc::RepeatedField<global::CarCommunicationApp.RouterData> routersData_ = new pbc::RepeatedField<global::CarCommunicationApp.RouterData>();
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
@@ -981,7 +995,7 @@ namespace CarCommunicationApp {
     }
 
     /// <summary>Field number for the "boxes_in_camera_view" field.</summary>
-    public const int BoxesInCameraViewFieldNumber = 5;
+    public const int BoxesInCameraViewFieldNumber = 6;
     private bool boxesInCameraView_;
     /// <summary>
     /// virtual model data
@@ -996,7 +1010,7 @@ namespace CarCommunicationApp {
     }
 
     /// <summary>Field number for the "car_collision_data" field.</summary>
-    public const int CarCollisionDataFieldNumber = 6;
+    public const int CarCollisionDataFieldNumber = 7;
     private bool carCollisionData_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
@@ -1008,7 +1022,7 @@ namespace CarCommunicationApp {
     }
 
     /// <summary>Field number for the "qr_code_metadata" field.</summary>
-    public const int QrCodeMetadataFieldNumber = 7;
+    public const int QrCodeMetadataFieldNumber = 8;
     private string qrCodeMetadata_ = "";
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
@@ -1035,6 +1049,7 @@ namespace CarCommunicationApp {
         return true;
       }
       if (CarId != other.CarId) return false;
+      if (!pbc::ProtobufEqualityComparers.BitwiseSingleEqualityComparer.Equals(CarSpeed, other.CarSpeed)) return false;
       if (CameraImage != other.CameraImage) return false;
       if (!object.Equals(DistanceSensorsData, other.DistanceSensorsData)) return false;
       if(!routersData_.Equals(other.routersData_)) return false;
@@ -1049,6 +1064,7 @@ namespace CarCommunicationApp {
     public override int GetHashCode() {
       int hash = 1;
       if (CarId.Length != 0) hash ^= CarId.GetHashCode();
+      if (CarSpeed != 0F) hash ^= pbc::ProtobufEqualityComparers.BitwiseSingleEqualityComparer.GetHashCode(CarSpeed);
       if (CameraImage.Length != 0) hash ^= CameraImage.GetHashCode();
       if (distanceSensorsData_ != null) hash ^= DistanceSensorsData.GetHashCode();
       hash ^= routersData_.GetHashCode();
@@ -1077,25 +1093,29 @@ namespace CarCommunicationApp {
         output.WriteRawTag(10);
         output.WriteString(CarId);
       }
+      if (CarSpeed != 0F) {
+        output.WriteRawTag(21);
+        output.WriteFloat(CarSpeed);
+      }
       if (CameraImage.Length != 0) {
-        output.WriteRawTag(18);
+        output.WriteRawTag(26);
         output.WriteBytes(CameraImage);
       }
       if (distanceSensorsData_ != null) {
-        output.WriteRawTag(26);
+        output.WriteRawTag(34);
         output.WriteMessage(DistanceSensorsData);
       }
       routersData_.WriteTo(output, _repeated_routersData_codec);
       if (BoxesInCameraView != false) {
-        output.WriteRawTag(40);
+        output.WriteRawTag(48);
         output.WriteBool(BoxesInCameraView);
       }
       if (CarCollisionData != false) {
-        output.WriteRawTag(48);
+        output.WriteRawTag(56);
         output.WriteBool(CarCollisionData);
       }
       if (QrCodeMetadata.Length != 0) {
-        output.WriteRawTag(58);
+        output.WriteRawTag(66);
         output.WriteString(QrCodeMetadata);
       }
       if (_unknownFields != null) {
@@ -1112,25 +1132,29 @@ namespace CarCommunicationApp {
         output.WriteRawTag(10);
         output.WriteString(CarId);
       }
+      if (CarSpeed != 0F) {
+        output.WriteRawTag(21);
+        output.WriteFloat(CarSpeed);
+      }
       if (CameraImage.Length != 0) {
-        output.WriteRawTag(18);
+        output.WriteRawTag(26);
         output.WriteBytes(CameraImage);
       }
       if (distanceSensorsData_ != null) {
-        output.WriteRawTag(26);
+        output.WriteRawTag(34);
         output.WriteMessage(DistanceSensorsData);
       }
       routersData_.WriteTo(ref output, _repeated_routersData_codec);
       if (BoxesInCameraView != false) {
-        output.WriteRawTag(40);
+        output.WriteRawTag(48);
         output.WriteBool(BoxesInCameraView);
       }
       if (CarCollisionData != false) {
-        output.WriteRawTag(48);
+        output.WriteRawTag(56);
         output.WriteBool(CarCollisionData);
       }
       if (QrCodeMetadata.Length != 0) {
-        output.WriteRawTag(58);
+        output.WriteRawTag(66);
         output.WriteString(QrCodeMetadata);
       }
       if (_unknownFields != null) {
@@ -1145,6 +1169,9 @@ namespace CarCommunicationApp {
       int size = 0;
       if (CarId.Length != 0) {
         size += 1 + pb::CodedOutputStream.ComputeStringSize(CarId);
+      }
+      if (CarSpeed != 0F) {
+        size += 1 + 4;
       }
       if (CameraImage.Length != 0) {
         size += 1 + pb::CodedOutputStream.ComputeBytesSize(CameraImage);
@@ -1176,6 +1203,9 @@ namespace CarCommunicationApp {
       }
       if (other.CarId.Length != 0) {
         CarId = other.CarId;
+      }
+      if (other.CarSpeed != 0F) {
+        CarSpeed = other.CarSpeed;
       }
       if (other.CameraImage.Length != 0) {
         CameraImage = other.CameraImage;
@@ -1215,30 +1245,34 @@ namespace CarCommunicationApp {
             CarId = input.ReadString();
             break;
           }
-          case 18: {
-            CameraImage = input.ReadBytes();
+          case 21: {
+            CarSpeed = input.ReadFloat();
             break;
           }
           case 26: {
+            CameraImage = input.ReadBytes();
+            break;
+          }
+          case 34: {
             if (distanceSensorsData_ == null) {
               DistanceSensorsData = new global::CarCommunicationApp.DistanceSensorsData();
             }
             input.ReadMessage(DistanceSensorsData);
             break;
           }
-          case 34: {
+          case 42: {
             routersData_.AddEntriesFrom(input, _repeated_routersData_codec);
             break;
           }
-          case 40: {
+          case 48: {
             BoxesInCameraView = input.ReadBool();
             break;
           }
-          case 48: {
+          case 56: {
             CarCollisionData = input.ReadBool();
             break;
           }
-          case 58: {
+          case 66: {
             QrCodeMetadata = input.ReadString();
             break;
           }
@@ -1261,30 +1295,34 @@ namespace CarCommunicationApp {
             CarId = input.ReadString();
             break;
           }
-          case 18: {
-            CameraImage = input.ReadBytes();
+          case 21: {
+            CarSpeed = input.ReadFloat();
             break;
           }
           case 26: {
+            CameraImage = input.ReadBytes();
+            break;
+          }
+          case 34: {
             if (distanceSensorsData_ == null) {
               DistanceSensorsData = new global::CarCommunicationApp.DistanceSensorsData();
             }
             input.ReadMessage(DistanceSensorsData);
             break;
           }
-          case 34: {
+          case 42: {
             routersData_.AddEntriesFrom(ref input, _repeated_routersData_codec);
             break;
           }
-          case 40: {
+          case 48: {
             BoxesInCameraView = input.ReadBool();
             break;
           }
-          case 48: {
+          case 56: {
             CarCollisionData = input.ReadBool();
             break;
           }
-          case 58: {
+          case 66: {
             QrCodeMetadata = input.ReadString();
             break;
           }

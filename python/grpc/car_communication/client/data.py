@@ -37,6 +37,7 @@ class CameraImage:
 @dataclass
 class GrpcClientData:
     car_id: str
+    car_speed: float
     camera_image: CameraImage | None
     distance_sensors: list[DistanceSensorData]
     routers: list[RouterData]
@@ -53,6 +54,7 @@ class GrpcClientData:
     def __repr__(self) -> str:
         total = '== GrpcClientData ==\n'
         total += f'CarId: {self.car_id}\n'
+        total += f'CarSpeed: {self.car_speed}\n'
         total += f'CameraImage: {self.camera_image}\n'
         total += 'DistanceSensors:\n'
         for i in self.distance_sensors: total += f'- {i}\n'

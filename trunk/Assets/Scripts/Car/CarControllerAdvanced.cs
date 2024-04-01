@@ -16,13 +16,12 @@ public class CarControllerAdvanced : MonoBehaviour {
     public float brakeMax; // Max braking (In N*m)
 
     public Vector3 objectCentreOfMass; // Allows the centre of mass to be offset (relative, in metres)
-
     public bool debugDisplay = true; // Whether or not debug information should be displayed
-
+    public float speed = 0.0f; // The net velocity of the object (In m/s)
+    
     float steer = 0.0f;
     float forward = 0.0f;
     float back = 0.0f;
-    float speed = 0.0f; // The net velocity of the object (In m/s)
     float motor = 0.0f;
     float brake = 0.0f;
 

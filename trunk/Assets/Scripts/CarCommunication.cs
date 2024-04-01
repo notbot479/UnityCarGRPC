@@ -37,6 +37,7 @@ public class CarCommunication : MonoBehaviour
     private string carID;
     private bool carCollisionData;
     private string command = "";
+    private float carSpeed = 0f;
     // camera & camera data
     private GameObject carCamera;
     private byte[] cameraImage;
@@ -93,6 +94,7 @@ public class CarCommunication : MonoBehaviour
         var request = new ClientRequest
         {
             CarId = carID,
+            CarSpeed = carSpeed,
             CameraImage = ByteString.CopyFrom(cameraImage),
             DistanceSensorsData = new DistanceSensorsData
             {
@@ -136,6 +138,7 @@ public class CarCommunication : MonoBehaviour
         if (!processingUpdate) { return; }
         // get data: car state, camera image, sensors data, routers data
         carID = car.GetComponent<CarInfo>().ID;
+        carSpeed = car.GetComponent<CarControllerAdvanced>().speed;
         distanceSensorsData = carDistanceSensors.GetComponent<RaySensorsData>().GetSensorsData();
         routersData = carRouterReceiver.GetComponent<CarRouterReceiver>().GetRoutersData();
         carCollisionData = car.GetComponent<CarCollisionData>().isCollide;

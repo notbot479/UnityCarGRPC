@@ -40,13 +40,14 @@ message RouterData {
 message ClientRequest {
     // real model data
     string car_id = 1;
-    bytes camera_image = 2;
-    DistanceSensorsData distance_sensors_data = 3;
-    repeated RouterData routers_data = 4; 
+    float car_speed = 2;
+    bytes camera_image = 3;
+    DistanceSensorsData distance_sensors_data = 4;
+    repeated RouterData routers_data = 5; 
     // virtual model data
-    bool boxes_in_camera_view = 5; // yolo - real model
-    bool car_collision_data = 6;
-    string qr_code_metadata = 7;
+    bool boxes_in_camera_view = 6; // yolo - real model
+    bool car_collision_data = 7;
+    string qr_code_metadata = 8;
 }
 
 service Communication {
