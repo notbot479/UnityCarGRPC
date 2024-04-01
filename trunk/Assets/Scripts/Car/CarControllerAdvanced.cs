@@ -43,8 +43,6 @@ public class CarControllerAdvanced : MonoBehaviour {
             GUI.Label(new Rect(10.0f, 30.0f, 100.0f, 20.0f), "Steer: " + steer.ToString());
             GUI.Label(new Rect(10.0f, 50.0f, 100.0f, 20.0f), "Motor: " + (-1 * motor).ToString());
             GUI.Label(new Rect(10.0f, 70.0f, 100.0f, 20.0f), "Brake: " + brake.ToString());
-            GUI.Label(new Rect(10.0f, 90.0f, 500.0f, 20.0f), "Left Motor Torque: " + backSet.GetTorque(Side.left));
-            GUI.Label(new Rect(10.0f, 110.0f, 500.0f, 20.0f), "Right Motor Torque: " + backSet.GetTorque(Side.right));
         }
     }
 
