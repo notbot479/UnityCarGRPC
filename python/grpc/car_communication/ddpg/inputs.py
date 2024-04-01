@@ -119,7 +119,7 @@ class ModelInputData:
         return rssi
 
     def __repr__(self) -> str:
-        total = '== ModelInputData ==\n'
+        total = '\n== ModelInputData ==\n'
         image_bytes = len(self.image.tobytes())
         # searching target area
         total += f'Speed: {self.speed}\n' 

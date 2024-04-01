@@ -17,14 +17,14 @@ public class CarControllerAdvanced : MonoBehaviour {
 
     public Vector3 objectCentreOfMass; // Allows the centre of mass to be offset (relative, in metres)
     public bool debugDisplay = true; // Whether or not debug information should be displayed
+    
+    public float steer = 0.0f;
+    public float forward = 0.0f;
+    public float back = 0.0f;
     public float speed = 0.0f; // The net velocity of the object (In m/s)
     
-    float steer = 0.0f;
-    float forward = 0.0f;
-    float back = 0.0f;
     float motor = 0.0f;
     float brake = 0.0f;
-
     bool reverse = false;
    
 	// Use this for initialization
@@ -47,52 +47,66 @@ public class CarControllerAdvanced : MonoBehaviour {
     }
 
     void Update(){
-        if (!moveCarByUser) { return; }
-        string command = UserMoveCommand;
-        CarMove(command);
+        if (moveCarByUser) {
+          string command = UserMoveCommand;
+          CarMove(command);
+        }
+        UpdateCar();
+    }
+
+    public (float,float,float) GetParameters() { return (steer, forward, back); }
+
+    public void CarMove(float steer_, float forward_, float back_)
+    {
+        steer = steer_;
+        forward = forward_;
+        back = back_;
     }
 
     public void CarMove(string command) {
-        // Retrieve Input
-        if (command == UserMoveCommand) { 
-            steer = Mathf.Clamp(Input.GetAxis("Horizontal"), -1, 1);
-            forward = Mathf.Clamp(Input.GetAxis("Vertical"), 1, 0);
-            back = -1 * Mathf.Clamp(Input.GetAxis("Vertical"), 0, -1);
-        } else if (command == "Forward") {
-            steer = 0.0f;
-            forward = -1.0f;
-            back = 0.0f;
-        } else if (command == "Backward") {
-            steer = 0.0f;
-            forward = 1.0f;
-            back = 0.0f;
-        } else if (command == "Left") {
-            steer = -1.0f;
-            forward = -1.0f;
-            back = 0.0f;
-        } else if (command == "Right") {
-            steer = 1.0f;
-            forward = -1.0f;
-            back = 0.0f;
-        } else if (command == "Stop") {
-            steer = 0.0f;
-            forward = 1f;
-            back = 1f;
-        }
-        //Debug.Log($"{steer} {forward} {back}");
+          // Retrieve Input
+          if (command == UserMoveCommand) { 
+              steer = Mathf.Clamp(Input.GetAxis("Horizontal"), -1, 1);
+              forward = Mathf.Clamp(Input.GetAxis("Vertical"), 1, 0);
+              back = -1 * Mathf.Clamp(Input.GetAxis("Vertical"), 0, -1);
+          } else if (command == "Forward") {
+              steer = 0.0f;
+              forward = -1.0f;
+              back = 0.0f;
+          } else if (command == "Backward") {
+              steer = 0.0f;
+              forward = 1.0f;
+              back = 0.0f;
+          } else if (command == "Left") {
+              steer = -1.0f;
+              forward = -1.0f;
+              back = 0.0f;
+          } else if (command == "Right") {
+              steer = 1.0f;
+              forward = -1.0f;
+              back = 0.0f;
+          } else if (command == "Stop") {
+              steer = 0.0f;
+              forward = 1f;
+              back = 1f;
+          }
+          CarMove(steer, forward, back);
+       }
+
+    private void UpdateCar()
+    {
         frontSet.UpdateWheels();
         backSet.UpdateWheels();
-
         // Calculate the speed of the 
         speed = GetComponent<Rigidbody>().velocity.magnitude;
-
-        if ((int)speed == 0) { // Cast as an (int) due to the accuracy of floating point and the physics setup, speed will never be exactly zero
+        // Cast as an (int) due to the accuracy of floating point 
+        // and the physics setup, speed will never be exactly zero
+        if ((int)speed == 0) { 
             if (back > 0)
                 reverse = true;
             if (forward > 0)
                 reverse = false;
         }
-
         if (reverse) { 
             motor = -1 * back;
             brake = forward;

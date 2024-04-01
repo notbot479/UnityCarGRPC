@@ -6,6 +6,7 @@ from Protos.car_communication_pb2 import (
     DistanceSensorsData as _Pb2_distance_sensors_data, #pyright: ignore
     ServerResponse as _Pb2_server_response, #pyright: ignore
     ClientRequest as _Pb2_client_request, #pyright: ignore
+    CarParameters as _Pb2_car_parameters, #pyright: ignore
 )
 import grpc
 
@@ -52,7 +53,8 @@ DISABLE_RANDOM = True
 CUDA_AVAILABLE = torch.cuda.is_available()
 # setting server commands (based on proto file)
 CAR_MOVEMENT_SIGNALS = ['left','right','forward','backward','noop']
-CAR_EXTRA_SIGNALS = ['poweroff','respawn','stop']
+CAR_EXTRA_SIGNALS = ['poweroff','respawn','stop', 'movement']
+CAR_PARAMETERS = ['steer','forward']
 
 # for more repetitive results
 if DISABLE_RANDOM:
@@ -74,10 +76,6 @@ class CarActiveTask:
 class ServicerMode(Enum):
     READY = 1
     BUSY = 2
-
-class ExplorationMode(Enum):
-    GREEDY = 1
-    NOISE = 2
 
 class Servicer(_Servicer):
     def __init__(self, *args, **kwargs) -> None:
@@ -118,9 +116,6 @@ class Servicer(_Servicer):
     
     # ================================================================================
 
-    exploration_mode: ExplorationMode = ExplorationMode.NOISE
-
-    epsilon: float = 1
     exploration: bool = True
     
     agent_train_each_step: bool = False
@@ -130,14 +125,12 @@ class Servicer(_Servicer):
     
     # settings: env
     _env_requests_per_second: int = 10
-    _env_action_dim: int = len(CAR_MOVEMENT_SIGNALS)
+    _env_action_dim: int = len(CAR_PARAMETERS)
     # settings: agent
     _agent_exploration_seconds: int = 3 * 60
     _agent_respawn_very_bad_model: bool = True
     _agent_episodes_count: int = 1000
-    _agent_epsilon_decay:float = 0.99
-    _agent_min_epsilon: float = 0.001
-    _agent_min_reward: float = -50
+    _agent_min_reward: float = -25
     _agent_aggregate_stats_every: int = 10
     # settings: car
     _car_respawn_on_object_hit: bool = True
@@ -242,10 +235,7 @@ class Servicer(_Servicer):
                 'average_reward':average_reward,
             }
             # create stats (merge all stats)
-            extra_stats = {}
-            if self.exploration_mode == ExplorationMode.GREEDY:
-                extra_stats = {'epsilon': self.epsilon}
-            stats = self._agent.stats | reward_data | extra_stats 
+            stats = self._agent.stats | reward_data 
             # tensorboard update stats (write logs)
             for k,v in stats.items():
                 self._writer.add_scalar(k,v,self.episode_id)
@@ -253,12 +243,6 @@ class Servicer(_Servicer):
             if not(_a):
                 dir_path = self.get_agent_save_dir_path(data=reward_data)
                 self._agent.save_model(dir_path=dir_path)
-        
-        if self.exploration_mode == ExplorationMode.GREEDY:
-            # decay epsilon if e greedy method
-            if self.epsilon > self._agent_min_epsilon:
-                self.epsilon *= self._agent_epsilon_decay
-                self.epsilon = max(self._agent_min_epsilon, self.epsilon)
         
         self.start_new_episode()
 
@@ -369,40 +353,26 @@ class Servicer(_Servicer):
             return self._send_respawn_command()
         # get command based on policy
         print(f'Prev server command: {prev_command}')
-        command = self.get_command_from_agent(model_input=model_input)
-        return self.send_response_to_client(command)
+        command, parameters = self.get_command_from_agent(model_input=model_input)
+        return self.send_response_to_client(command=command, parameters=parameters)
 
     # ===============================================================================
 
-    def get_command_from_agent(self, model_input: ModelInputData) -> str:
-        if self.exploration_mode == ExplorationMode.GREEDY:
-            command = self.agent_get_greedy_command(model_input=model_input)
-        elif self.exploration_mode == ExplorationMode.NOISE:
-            command = self.agent_get_noise_command(model_input=model_input)
-        else:
-            raise NotImplementedError
-        return command
-
-    def agent_get_greedy_command(self, model_input: ModelInputData) -> str:
-        if np.random.random() > self.epsilon:
-            qs = self._agent.get_qs(inputs=model_input.inputs)
-            command = self.get_command_by_qs(qs=qs)
-            print(f'Send predicted movement to client: {command}')
-        else:
-            rand_qs = self.get_random_qs(self._env_action_dim)
-            command = self.get_command_by_qs(qs=rand_qs)
-            print(f'Send random movement to client: {command}')
-        return command
-
-    def agent_get_noise_command(self, model_input: ModelInputData) -> str:
+    def get_command_from_agent(
+        self, 
+        model_input: ModelInputData,
+    ) -> tuple[str, dict[str, float]]:
         qs = self._agent.get_qs(
             inputs=model_input.inputs, 
             exploration=self.exploration,
         )
-        command = self.get_command_by_qs(qs=qs)
+        movement = "movement"
+        parameters = {k:v for k, v in zip(CAR_PARAMETERS, qs)}
+        # print command and parameters
         w = 'with' if self.exploration else 'without'
-        print(f'Send movement {w} exploration noise to client: {command}')
-        return command
+        print(f'Send movement {w} exploration noise to client:')
+        print(parameters)
+        return (movement, parameters)
 
     def get_command_by_qs(self, qs: np.ndarray) -> str:
         self._agent_prev_qs = qs # save qs, used in reply buffer
@@ -449,14 +419,6 @@ class Servicer(_Servicer):
     def get_prev_model_input(self) -> ModelInputData | None:
         return self._car_prev_model_input
 
-    @property
-    def min_epsilon(self) -> float:
-        return self._agent_min_epsilon
-
-    @property
-    def epsilon_decay(self) -> float:
-        return self._agent_epsilon_decay
- 
     @property
     def max_train_episodes(self) -> int:
         return self._agent_episodes_count
@@ -827,6 +789,9 @@ class Servicer(_Servicer):
             request.distance_sensors_data,
         )
         routers = self._normalize_routers_data(request.routers_data)
+        
+        #print(request.car_parameters)
+        
         data = GrpcClientData(
             car_id = car_id,
             car_speed = car_speed,
@@ -838,14 +803,37 @@ class Servicer(_Servicer):
             qr_code_metadata = qr_code_metadata,
         )
         return data
-    
-    def send_response_to_client(self, command:str) -> None: 
+
+    def generate_grpc_parameters(
+        self, 
+        steer: float = 0, 
+        forward: float = 0, 
+        backward: float = 0,
+    ):
+        parameters = _Pb2_car_parameters(
+            steer = steer,
+            forward = forward,
+            backward = backward,
+        )
+        return parameters
+
+    def send_response_to_client(
+        self, 
+        command:str,
+        *,
+        parameters:dict[str,float] = {},
+    ) -> None: 
         grpc_command = self._commands.get(command)
         if grpc_command is None: return
+        grpc_parameters = self.generate_grpc_parameters(**parameters)
         # save server command, if grpc_command exists
         self._save_car_prev_command(command)
-        return _Pb2_server_response(command=grpc_command)
- 
+        response = _Pb2_server_response(
+            command=grpc_command, 
+            car_parameters=grpc_parameters,
+        )
+        return response
+    
     def SendRequest(self, request: _Pb2_client_request, _): 
         data = self.get_grpc_client_data(request)
         self._save_car_current_data(data)

@@ -25,38 +25,307 @@ namespace CarCommunicationApp {
       byte[] descriptorData = global::System.Convert.FromBase64String(
           string.Concat(
             "Ch5Qcm90b3MvY2FyX2NvbW11bmljYXRpb24ucHJvdG8SE0NhckNvbW11bmlj",
-            "YXRpb25BcHAiuAEKDlNlcnZlclJlc3BvbnNlEjwKB2NvbW1hbmQYASABKA4y",
-            "Ky5DYXJDb21tdW5pY2F0aW9uQXBwLlNlcnZlclJlc3BvbnNlLkNvbW1hbmQi",
-            "aAoHQ29tbWFuZBIICgRMRUZUEAASCQoFUklHSFQQARILCgdGT1JXQVJEEAIS",
-            "DAoIQkFDS1dBUkQQAxIICgRTVE9QEAQSCAoETk9PUBAFEgwKCFBPV0VST0ZG",
-            "EAYSCwoHUkVTUEFXThAHIrgBChNEaXN0YW5jZVNlbnNvcnNEYXRhEhsKE2Zy",
-            "b250X2xlZnRfZGlzdGFuY2UYASABKAISFgoOZnJvbnRfZGlzdGFuY2UYAiAB",
-            "KAISHAoUZnJvbnRfcmlnaHRfZGlzdGFuY2UYAyABKAISGgoSYmFja19sZWZ0",
-            "X2Rpc3RhbmNlGAQgASgCEhUKDWJhY2tfZGlzdGFuY2UYBSABKAISGwoTYmFj",
-            "a19yaWdodF9kaXN0YW5jZRgGIAEoAiImCgpSb3V0ZXJEYXRhEgoKAmlkGAEg",
-            "ASgJEgwKBHJzc2kYAiABKAIinAIKDUNsaWVudFJlcXVlc3QSDgoGY2FyX2lk",
-            "GAEgASgJEhEKCWNhcl9zcGVlZBgCIAEoAhIUCgxjYW1lcmFfaW1hZ2UYAyAB",
-            "KAwSRwoVZGlzdGFuY2Vfc2Vuc29yc19kYXRhGAQgASgLMiguQ2FyQ29tbXVu",
-            "aWNhdGlvbkFwcC5EaXN0YW5jZVNlbnNvcnNEYXRhEjUKDHJvdXRlcnNfZGF0",
-            "YRgFIAMoCzIfLkNhckNvbW11bmljYXRpb25BcHAuUm91dGVyRGF0YRIcChRi",
-            "b3hlc19pbl9jYW1lcmFfdmlldxgGIAEoCBIaChJjYXJfY29sbGlzaW9uX2Rh",
-            "dGEYByABKAgSGAoQcXJfY29kZV9tZXRhZGF0YRgIIAEoCTJnCg1Db21tdW5p",
-            "Y2F0aW9uElYKC1NlbmRSZXF1ZXN0EiIuQ2FyQ29tbXVuaWNhdGlvbkFwcC5D",
-            "bGllbnRSZXF1ZXN0GiMuQ2FyQ29tbXVuaWNhdGlvbkFwcC5TZXJ2ZXJSZXNw",
-            "b25zZWIGcHJvdG8z"));
+            "YXRpb25BcHAiQQoNQ2FyUGFyYW1ldGVycxINCgVzdGVlchgBIAEoAhIPCgdm",
+            "b3J3YXJkGAIgASgCEhAKCGJhY2t3YXJkGAMgASgCIoICCg5TZXJ2ZXJSZXNw",
+            "b25zZRI8Cgdjb21tYW5kGAEgASgOMisuQ2FyQ29tbXVuaWNhdGlvbkFwcC5T",
+            "ZXJ2ZXJSZXNwb25zZS5Db21tYW5kEjoKDmNhcl9wYXJhbWV0ZXJzGAIgASgL",
+            "MiIuQ2FyQ29tbXVuaWNhdGlvbkFwcC5DYXJQYXJhbWV0ZXJzInYKB0NvbW1h",
+            "bmQSCAoETEVGVBAAEgkKBVJJR0hUEAESCwoHRk9SV0FSRBACEgwKCEJBQ0tX",
+            "QVJEEAMSCAoEU1RPUBAEEggKBE5PT1AQBRIMCghQT1dFUk9GRhAGEgsKB1JF",
+            "U1BBV04QBxIMCghNT1ZFTUVOVBAIIrgBChNEaXN0YW5jZVNlbnNvcnNEYXRh",
+            "EhsKE2Zyb250X2xlZnRfZGlzdGFuY2UYASABKAISFgoOZnJvbnRfZGlzdGFu",
+            "Y2UYAiABKAISHAoUZnJvbnRfcmlnaHRfZGlzdGFuY2UYAyABKAISGgoSYmFj",
+            "a19sZWZ0X2Rpc3RhbmNlGAQgASgCEhUKDWJhY2tfZGlzdGFuY2UYBSABKAIS",
+            "GwoTYmFja19yaWdodF9kaXN0YW5jZRgGIAEoAiImCgpSb3V0ZXJEYXRhEgoK",
+            "AmlkGAEgASgJEgwKBHJzc2kYAiABKAIi2AIKDUNsaWVudFJlcXVlc3QSDgoG",
+            "Y2FyX2lkGAEgASgJEhEKCWNhcl9zcGVlZBgCIAEoAhI6Cg5jYXJfcGFyYW1l",
+            "dGVycxgDIAEoCzIiLkNhckNvbW11bmljYXRpb25BcHAuQ2FyUGFyYW1ldGVy",
+            "cxIUCgxjYW1lcmFfaW1hZ2UYBCABKAwSRwoVZGlzdGFuY2Vfc2Vuc29yc19k",
+            "YXRhGAUgASgLMiguQ2FyQ29tbXVuaWNhdGlvbkFwcC5EaXN0YW5jZVNlbnNv",
+            "cnNEYXRhEjUKDHJvdXRlcnNfZGF0YRgGIAMoCzIfLkNhckNvbW11bmljYXRp",
+            "b25BcHAuUm91dGVyRGF0YRIcChRib3hlc19pbl9jYW1lcmFfdmlldxgHIAEo",
+            "CBIaChJjYXJfY29sbGlzaW9uX2RhdGEYCCABKAgSGAoQcXJfY29kZV9tZXRh",
+            "ZGF0YRgJIAEoCTJnCg1Db21tdW5pY2F0aW9uElYKC1NlbmRSZXF1ZXN0EiIu",
+            "Q2FyQ29tbXVuaWNhdGlvbkFwcC5DbGllbnRSZXF1ZXN0GiMuQ2FyQ29tbXVu",
+            "aWNhdGlvbkFwcC5TZXJ2ZXJSZXNwb25zZWIGcHJvdG8z"));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { },
           new pbr::GeneratedClrTypeInfo(null, null, new pbr::GeneratedClrTypeInfo[] {
-            new pbr::GeneratedClrTypeInfo(typeof(global::CarCommunicationApp.ServerResponse), global::CarCommunicationApp.ServerResponse.Parser, new[]{ "Command" }, null, new[]{ typeof(global::CarCommunicationApp.ServerResponse.Types.Command) }, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::CarCommunicationApp.CarParameters), global::CarCommunicationApp.CarParameters.Parser, new[]{ "Steer", "Forward", "Backward" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::CarCommunicationApp.ServerResponse), global::CarCommunicationApp.ServerResponse.Parser, new[]{ "Command", "CarParameters" }, null, new[]{ typeof(global::CarCommunicationApp.ServerResponse.Types.Command) }, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::CarCommunicationApp.DistanceSensorsData), global::CarCommunicationApp.DistanceSensorsData.Parser, new[]{ "FrontLeftDistance", "FrontDistance", "FrontRightDistance", "BackLeftDistance", "BackDistance", "BackRightDistance" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::CarCommunicationApp.RouterData), global::CarCommunicationApp.RouterData.Parser, new[]{ "Id", "Rssi" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::CarCommunicationApp.ClientRequest), global::CarCommunicationApp.ClientRequest.Parser, new[]{ "CarId", "CarSpeed", "CameraImage", "DistanceSensorsData", "RoutersData", "BoxesInCameraView", "CarCollisionData", "QrCodeMetadata" }, null, null, null, null)
+            new pbr::GeneratedClrTypeInfo(typeof(global::CarCommunicationApp.ClientRequest), global::CarCommunicationApp.ClientRequest.Parser, new[]{ "CarId", "CarSpeed", "CarParameters", "CameraImage", "DistanceSensorsData", "RoutersData", "BoxesInCameraView", "CarCollisionData", "QrCodeMetadata" }, null, null, null, null)
           }));
     }
     #endregion
 
   }
   #region Messages
+  [global::System.Diagnostics.DebuggerDisplayAttribute("{ToString(),nq}")]
+  public sealed partial class CarParameters : pb::IMessage<CarParameters>
+  #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      , pb::IBufferMessage
+  #endif
+  {
+    private static readonly pb::MessageParser<CarParameters> _parser = new pb::MessageParser<CarParameters>(() => new CarParameters());
+    private pb::UnknownFieldSet _unknownFields;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public static pb::MessageParser<CarParameters> Parser { get { return _parser; } }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public static pbr::MessageDescriptor Descriptor {
+      get { return global::CarCommunicationApp.CarCommunicationReflection.Descriptor.MessageTypes[0]; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    pbr::MessageDescriptor pb::IMessage.Descriptor {
+      get { return Descriptor; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public CarParameters() {
+      OnConstruction();
+    }
+
+    partial void OnConstruction();
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public CarParameters(CarParameters other) : this() {
+      steer_ = other.steer_;
+      forward_ = other.forward_;
+      backward_ = other.backward_;
+      _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public CarParameters Clone() {
+      return new CarParameters(this);
+    }
+
+    /// <summary>Field number for the "steer" field.</summary>
+    public const int SteerFieldNumber = 1;
+    private float steer_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public float Steer {
+      get { return steer_; }
+      set {
+        steer_ = value;
+      }
+    }
+
+    /// <summary>Field number for the "forward" field.</summary>
+    public const int ForwardFieldNumber = 2;
+    private float forward_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public float Forward {
+      get { return forward_; }
+      set {
+        forward_ = value;
+      }
+    }
+
+    /// <summary>Field number for the "backward" field.</summary>
+    public const int BackwardFieldNumber = 3;
+    private float backward_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public float Backward {
+      get { return backward_; }
+      set {
+        backward_ = value;
+      }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public override bool Equals(object other) {
+      return Equals(other as CarParameters);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public bool Equals(CarParameters other) {
+      if (ReferenceEquals(other, null)) {
+        return false;
+      }
+      if (ReferenceEquals(other, this)) {
+        return true;
+      }
+      if (!pbc::ProtobufEqualityComparers.BitwiseSingleEqualityComparer.Equals(Steer, other.Steer)) return false;
+      if (!pbc::ProtobufEqualityComparers.BitwiseSingleEqualityComparer.Equals(Forward, other.Forward)) return false;
+      if (!pbc::ProtobufEqualityComparers.BitwiseSingleEqualityComparer.Equals(Backward, other.Backward)) return false;
+      return Equals(_unknownFields, other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public override int GetHashCode() {
+      int hash = 1;
+      if (Steer != 0F) hash ^= pbc::ProtobufEqualityComparers.BitwiseSingleEqualityComparer.GetHashCode(Steer);
+      if (Forward != 0F) hash ^= pbc::ProtobufEqualityComparers.BitwiseSingleEqualityComparer.GetHashCode(Forward);
+      if (Backward != 0F) hash ^= pbc::ProtobufEqualityComparers.BitwiseSingleEqualityComparer.GetHashCode(Backward);
+      if (_unknownFields != null) {
+        hash ^= _unknownFields.GetHashCode();
+      }
+      return hash;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public override string ToString() {
+      return pb::JsonFormatter.ToDiagnosticString(this);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public void WriteTo(pb::CodedOutputStream output) {
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      output.WriteRawMessage(this);
+    #else
+      if (Steer != 0F) {
+        output.WriteRawTag(13);
+        output.WriteFloat(Steer);
+      }
+      if (Forward != 0F) {
+        output.WriteRawTag(21);
+        output.WriteFloat(Forward);
+      }
+      if (Backward != 0F) {
+        output.WriteRawTag(29);
+        output.WriteFloat(Backward);
+      }
+      if (_unknownFields != null) {
+        _unknownFields.WriteTo(output);
+      }
+    #endif
+    }
+
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    void pb::IBufferMessage.InternalWriteTo(ref pb::WriteContext output) {
+      if (Steer != 0F) {
+        output.WriteRawTag(13);
+        output.WriteFloat(Steer);
+      }
+      if (Forward != 0F) {
+        output.WriteRawTag(21);
+        output.WriteFloat(Forward);
+      }
+      if (Backward != 0F) {
+        output.WriteRawTag(29);
+        output.WriteFloat(Backward);
+      }
+      if (_unknownFields != null) {
+        _unknownFields.WriteTo(ref output);
+      }
+    }
+    #endif
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public int CalculateSize() {
+      int size = 0;
+      if (Steer != 0F) {
+        size += 1 + 4;
+      }
+      if (Forward != 0F) {
+        size += 1 + 4;
+      }
+      if (Backward != 0F) {
+        size += 1 + 4;
+      }
+      if (_unknownFields != null) {
+        size += _unknownFields.CalculateSize();
+      }
+      return size;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public void MergeFrom(CarParameters other) {
+      if (other == null) {
+        return;
+      }
+      if (other.Steer != 0F) {
+        Steer = other.Steer;
+      }
+      if (other.Forward != 0F) {
+        Forward = other.Forward;
+      }
+      if (other.Backward != 0F) {
+        Backward = other.Backward;
+      }
+      _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public void MergeFrom(pb::CodedInputStream input) {
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      input.ReadRawMessage(this);
+    #else
+      uint tag;
+      while ((tag = input.ReadTag()) != 0) {
+        switch(tag) {
+          default:
+            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
+            break;
+          case 13: {
+            Steer = input.ReadFloat();
+            break;
+          }
+          case 21: {
+            Forward = input.ReadFloat();
+            break;
+          }
+          case 29: {
+            Backward = input.ReadFloat();
+            break;
+          }
+        }
+      }
+    #endif
+    }
+
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    void pb::IBufferMessage.InternalMergeFrom(ref pb::ParseContext input) {
+      uint tag;
+      while ((tag = input.ReadTag()) != 0) {
+        switch(tag) {
+          default:
+            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, ref input);
+            break;
+          case 13: {
+            Steer = input.ReadFloat();
+            break;
+          }
+          case 21: {
+            Forward = input.ReadFloat();
+            break;
+          }
+          case 29: {
+            Backward = input.ReadFloat();
+            break;
+          }
+        }
+      }
+    }
+    #endif
+
+  }
+
   [global::System.Diagnostics.DebuggerDisplayAttribute("{ToString(),nq}")]
   public sealed partial class ServerResponse : pb::IMessage<ServerResponse>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
@@ -72,7 +341,7 @@ namespace CarCommunicationApp {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::CarCommunicationApp.CarCommunicationReflection.Descriptor.MessageTypes[0]; }
+      get { return global::CarCommunicationApp.CarCommunicationReflection.Descriptor.MessageTypes[1]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -93,6 +362,7 @@ namespace CarCommunicationApp {
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public ServerResponse(ServerResponse other) : this() {
       command_ = other.command_;
+      carParameters_ = other.carParameters_ != null ? other.carParameters_.Clone() : null;
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
 
@@ -114,6 +384,18 @@ namespace CarCommunicationApp {
       }
     }
 
+    /// <summary>Field number for the "car_parameters" field.</summary>
+    public const int CarParametersFieldNumber = 2;
+    private global::CarCommunicationApp.CarParameters carParameters_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public global::CarCommunicationApp.CarParameters CarParameters {
+      get { return carParameters_; }
+      set {
+        carParameters_ = value;
+      }
+    }
+
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public override bool Equals(object other) {
@@ -130,6 +412,7 @@ namespace CarCommunicationApp {
         return true;
       }
       if (Command != other.Command) return false;
+      if (!object.Equals(CarParameters, other.CarParameters)) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
 
@@ -138,6 +421,7 @@ namespace CarCommunicationApp {
     public override int GetHashCode() {
       int hash = 1;
       if (Command != global::CarCommunicationApp.ServerResponse.Types.Command.Left) hash ^= Command.GetHashCode();
+      if (carParameters_ != null) hash ^= CarParameters.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
       }
@@ -160,6 +444,10 @@ namespace CarCommunicationApp {
         output.WriteRawTag(8);
         output.WriteEnum((int) Command);
       }
+      if (carParameters_ != null) {
+        output.WriteRawTag(18);
+        output.WriteMessage(CarParameters);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
       }
@@ -174,6 +462,10 @@ namespace CarCommunicationApp {
         output.WriteRawTag(8);
         output.WriteEnum((int) Command);
       }
+      if (carParameters_ != null) {
+        output.WriteRawTag(18);
+        output.WriteMessage(CarParameters);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(ref output);
       }
@@ -186,6 +478,9 @@ namespace CarCommunicationApp {
       int size = 0;
       if (Command != global::CarCommunicationApp.ServerResponse.Types.Command.Left) {
         size += 1 + pb::CodedOutputStream.ComputeEnumSize((int) Command);
+      }
+      if (carParameters_ != null) {
+        size += 1 + pb::CodedOutputStream.ComputeMessageSize(CarParameters);
       }
       if (_unknownFields != null) {
         size += _unknownFields.CalculateSize();
@@ -201,6 +496,12 @@ namespace CarCommunicationApp {
       }
       if (other.Command != global::CarCommunicationApp.ServerResponse.Types.Command.Left) {
         Command = other.Command;
+      }
+      if (other.carParameters_ != null) {
+        if (carParameters_ == null) {
+          CarParameters = new global::CarCommunicationApp.CarParameters();
+        }
+        CarParameters.MergeFrom(other.CarParameters);
       }
       _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
     }
@@ -219,6 +520,13 @@ namespace CarCommunicationApp {
             break;
           case 8: {
             Command = (global::CarCommunicationApp.ServerResponse.Types.Command) input.ReadEnum();
+            break;
+          }
+          case 18: {
+            if (carParameters_ == null) {
+              CarParameters = new global::CarCommunicationApp.CarParameters();
+            }
+            input.ReadMessage(CarParameters);
             break;
           }
         }
@@ -240,6 +548,13 @@ namespace CarCommunicationApp {
             Command = (global::CarCommunicationApp.ServerResponse.Types.Command) input.ReadEnum();
             break;
           }
+          case 18: {
+            if (carParameters_ == null) {
+              CarParameters = new global::CarCommunicationApp.CarParameters();
+            }
+            input.ReadMessage(CarParameters);
+            break;
+          }
         }
       }
     }
@@ -251,26 +566,15 @@ namespace CarCommunicationApp {
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static partial class Types {
       public enum Command {
-        /// <summary>
-        /// dqn predict movement   
-        /// </summary>
         [pbr::OriginalName("LEFT")] Left = 0,
         [pbr::OriginalName("RIGHT")] Right = 1,
         [pbr::OriginalName("FORWARD")] Forward = 2,
         [pbr::OriginalName("BACKWARD")] Backward = 3,
         [pbr::OriginalName("STOP")] Stop = 4,
-        /// <summary>
-        ///no operations
-        /// </summary>
         [pbr::OriginalName("NOOP")] Noop = 5,
-        /// <summary>
-        /// service decision
-        /// </summary>
         [pbr::OriginalName("POWEROFF")] Poweroff = 6,
-        /// <summary>
-        /// virtual model only
-        /// </summary>
         [pbr::OriginalName("RESPAWN")] Respawn = 7,
+        [pbr::OriginalName("MOVEMENT")] Movement = 8,
       }
 
     }
@@ -293,7 +597,7 @@ namespace CarCommunicationApp {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::CarCommunicationApp.CarCommunicationReflection.Descriptor.MessageTypes[1]; }
+      get { return global::CarCommunicationApp.CarCommunicationReflection.Descriptor.MessageTypes[2]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -668,7 +972,7 @@ namespace CarCommunicationApp {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::CarCommunicationApp.CarCommunicationReflection.Descriptor.MessageTypes[2]; }
+      get { return global::CarCommunicationApp.CarCommunicationReflection.Descriptor.MessageTypes[3]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -895,7 +1199,7 @@ namespace CarCommunicationApp {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::CarCommunicationApp.CarCommunicationReflection.Descriptor.MessageTypes[3]; }
+      get { return global::CarCommunicationApp.CarCommunicationReflection.Descriptor.MessageTypes[4]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -917,6 +1221,7 @@ namespace CarCommunicationApp {
     public ClientRequest(ClientRequest other) : this() {
       carId_ = other.carId_;
       carSpeed_ = other.carSpeed_;
+      carParameters_ = other.carParameters_ != null ? other.carParameters_.Clone() : null;
       cameraImage_ = other.cameraImage_;
       distanceSensorsData_ = other.distanceSensorsData_ != null ? other.distanceSensorsData_.Clone() : null;
       routersData_ = other.routersData_.Clone();
@@ -959,8 +1264,20 @@ namespace CarCommunicationApp {
       }
     }
 
+    /// <summary>Field number for the "car_parameters" field.</summary>
+    public const int CarParametersFieldNumber = 3;
+    private global::CarCommunicationApp.CarParameters carParameters_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public global::CarCommunicationApp.CarParameters CarParameters {
+      get { return carParameters_; }
+      set {
+        carParameters_ = value;
+      }
+    }
+
     /// <summary>Field number for the "camera_image" field.</summary>
-    public const int CameraImageFieldNumber = 3;
+    public const int CameraImageFieldNumber = 4;
     private pb::ByteString cameraImage_ = pb::ByteString.Empty;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
@@ -972,7 +1289,7 @@ namespace CarCommunicationApp {
     }
 
     /// <summary>Field number for the "distance_sensors_data" field.</summary>
-    public const int DistanceSensorsDataFieldNumber = 4;
+    public const int DistanceSensorsDataFieldNumber = 5;
     private global::CarCommunicationApp.DistanceSensorsData distanceSensorsData_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
@@ -984,9 +1301,9 @@ namespace CarCommunicationApp {
     }
 
     /// <summary>Field number for the "routers_data" field.</summary>
-    public const int RoutersDataFieldNumber = 5;
+    public const int RoutersDataFieldNumber = 6;
     private static readonly pb::FieldCodec<global::CarCommunicationApp.RouterData> _repeated_routersData_codec
-        = pb::FieldCodec.ForMessage(42, global::CarCommunicationApp.RouterData.Parser);
+        = pb::FieldCodec.ForMessage(50, global::CarCommunicationApp.RouterData.Parser);
     private readonly pbc::RepeatedField<global::CarCommunicationApp.RouterData> routersData_ = new pbc::RepeatedField<global::CarCommunicationApp.RouterData>();
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
@@ -995,7 +1312,7 @@ namespace CarCommunicationApp {
     }
 
     /// <summary>Field number for the "boxes_in_camera_view" field.</summary>
-    public const int BoxesInCameraViewFieldNumber = 6;
+    public const int BoxesInCameraViewFieldNumber = 7;
     private bool boxesInCameraView_;
     /// <summary>
     /// virtual model data
@@ -1010,7 +1327,7 @@ namespace CarCommunicationApp {
     }
 
     /// <summary>Field number for the "car_collision_data" field.</summary>
-    public const int CarCollisionDataFieldNumber = 7;
+    public const int CarCollisionDataFieldNumber = 8;
     private bool carCollisionData_;
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
@@ -1022,7 +1339,7 @@ namespace CarCommunicationApp {
     }
 
     /// <summary>Field number for the "qr_code_metadata" field.</summary>
-    public const int QrCodeMetadataFieldNumber = 8;
+    public const int QrCodeMetadataFieldNumber = 9;
     private string qrCodeMetadata_ = "";
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
@@ -1050,6 +1367,7 @@ namespace CarCommunicationApp {
       }
       if (CarId != other.CarId) return false;
       if (!pbc::ProtobufEqualityComparers.BitwiseSingleEqualityComparer.Equals(CarSpeed, other.CarSpeed)) return false;
+      if (!object.Equals(CarParameters, other.CarParameters)) return false;
       if (CameraImage != other.CameraImage) return false;
       if (!object.Equals(DistanceSensorsData, other.DistanceSensorsData)) return false;
       if(!routersData_.Equals(other.routersData_)) return false;
@@ -1065,6 +1383,7 @@ namespace CarCommunicationApp {
       int hash = 1;
       if (CarId.Length != 0) hash ^= CarId.GetHashCode();
       if (CarSpeed != 0F) hash ^= pbc::ProtobufEqualityComparers.BitwiseSingleEqualityComparer.GetHashCode(CarSpeed);
+      if (carParameters_ != null) hash ^= CarParameters.GetHashCode();
       if (CameraImage.Length != 0) hash ^= CameraImage.GetHashCode();
       if (distanceSensorsData_ != null) hash ^= DistanceSensorsData.GetHashCode();
       hash ^= routersData_.GetHashCode();
@@ -1097,25 +1416,29 @@ namespace CarCommunicationApp {
         output.WriteRawTag(21);
         output.WriteFloat(CarSpeed);
       }
-      if (CameraImage.Length != 0) {
+      if (carParameters_ != null) {
         output.WriteRawTag(26);
+        output.WriteMessage(CarParameters);
+      }
+      if (CameraImage.Length != 0) {
+        output.WriteRawTag(34);
         output.WriteBytes(CameraImage);
       }
       if (distanceSensorsData_ != null) {
-        output.WriteRawTag(34);
+        output.WriteRawTag(42);
         output.WriteMessage(DistanceSensorsData);
       }
       routersData_.WriteTo(output, _repeated_routersData_codec);
       if (BoxesInCameraView != false) {
-        output.WriteRawTag(48);
+        output.WriteRawTag(56);
         output.WriteBool(BoxesInCameraView);
       }
       if (CarCollisionData != false) {
-        output.WriteRawTag(56);
+        output.WriteRawTag(64);
         output.WriteBool(CarCollisionData);
       }
       if (QrCodeMetadata.Length != 0) {
-        output.WriteRawTag(66);
+        output.WriteRawTag(74);
         output.WriteString(QrCodeMetadata);
       }
       if (_unknownFields != null) {
@@ -1136,25 +1459,29 @@ namespace CarCommunicationApp {
         output.WriteRawTag(21);
         output.WriteFloat(CarSpeed);
       }
-      if (CameraImage.Length != 0) {
+      if (carParameters_ != null) {
         output.WriteRawTag(26);
+        output.WriteMessage(CarParameters);
+      }
+      if (CameraImage.Length != 0) {
+        output.WriteRawTag(34);
         output.WriteBytes(CameraImage);
       }
       if (distanceSensorsData_ != null) {
-        output.WriteRawTag(34);
+        output.WriteRawTag(42);
         output.WriteMessage(DistanceSensorsData);
       }
       routersData_.WriteTo(ref output, _repeated_routersData_codec);
       if (BoxesInCameraView != false) {
-        output.WriteRawTag(48);
+        output.WriteRawTag(56);
         output.WriteBool(BoxesInCameraView);
       }
       if (CarCollisionData != false) {
-        output.WriteRawTag(56);
+        output.WriteRawTag(64);
         output.WriteBool(CarCollisionData);
       }
       if (QrCodeMetadata.Length != 0) {
-        output.WriteRawTag(66);
+        output.WriteRawTag(74);
         output.WriteString(QrCodeMetadata);
       }
       if (_unknownFields != null) {
@@ -1172,6 +1499,9 @@ namespace CarCommunicationApp {
       }
       if (CarSpeed != 0F) {
         size += 1 + 4;
+      }
+      if (carParameters_ != null) {
+        size += 1 + pb::CodedOutputStream.ComputeMessageSize(CarParameters);
       }
       if (CameraImage.Length != 0) {
         size += 1 + pb::CodedOutputStream.ComputeBytesSize(CameraImage);
@@ -1206,6 +1536,12 @@ namespace CarCommunicationApp {
       }
       if (other.CarSpeed != 0F) {
         CarSpeed = other.CarSpeed;
+      }
+      if (other.carParameters_ != null) {
+        if (carParameters_ == null) {
+          CarParameters = new global::CarCommunicationApp.CarParameters();
+        }
+        CarParameters.MergeFrom(other.CarParameters);
       }
       if (other.CameraImage.Length != 0) {
         CameraImage = other.CameraImage;
@@ -1250,29 +1586,36 @@ namespace CarCommunicationApp {
             break;
           }
           case 26: {
-            CameraImage = input.ReadBytes();
+            if (carParameters_ == null) {
+              CarParameters = new global::CarCommunicationApp.CarParameters();
+            }
+            input.ReadMessage(CarParameters);
             break;
           }
           case 34: {
+            CameraImage = input.ReadBytes();
+            break;
+          }
+          case 42: {
             if (distanceSensorsData_ == null) {
               DistanceSensorsData = new global::CarCommunicationApp.DistanceSensorsData();
             }
             input.ReadMessage(DistanceSensorsData);
             break;
           }
-          case 42: {
+          case 50: {
             routersData_.AddEntriesFrom(input, _repeated_routersData_codec);
             break;
           }
-          case 48: {
+          case 56: {
             BoxesInCameraView = input.ReadBool();
             break;
           }
-          case 56: {
+          case 64: {
             CarCollisionData = input.ReadBool();
             break;
           }
-          case 66: {
+          case 74: {
             QrCodeMetadata = input.ReadString();
             break;
           }
@@ -1300,29 +1643,36 @@ namespace CarCommunicationApp {
             break;
           }
           case 26: {
-            CameraImage = input.ReadBytes();
+            if (carParameters_ == null) {
+              CarParameters = new global::CarCommunicationApp.CarParameters();
+            }
+            input.ReadMessage(CarParameters);
             break;
           }
           case 34: {
+            CameraImage = input.ReadBytes();
+            break;
+          }
+          case 42: {
             if (distanceSensorsData_ == null) {
               DistanceSensorsData = new global::CarCommunicationApp.DistanceSensorsData();
             }
             input.ReadMessage(DistanceSensorsData);
             break;
           }
-          case 42: {
+          case 50: {
             routersData_.AddEntriesFrom(ref input, _repeated_routersData_codec);
             break;
           }
-          case 48: {
+          case 56: {
             BoxesInCameraView = input.ReadBool();
             break;
           }
-          case 56: {
+          case 64: {
             CarCollisionData = input.ReadBool();
             break;
           }
-          case 66: {
+          case 74: {
             QrCodeMetadata = input.ReadString();
             break;
           }

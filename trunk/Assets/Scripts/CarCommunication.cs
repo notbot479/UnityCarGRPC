@@ -37,7 +37,12 @@ public class CarCommunication : MonoBehaviour
     private string carID;
     private bool carCollisionData;
     private string command = "";
+    private Dictionary<string,float> parameters;
     private float carSpeed = 0f;
+    // car parameters
+    private float carSteer = 0f;
+    private float carForward = 0f;
+    private float carBackward = 0f;
     // camera & camera data
     private GameObject carCamera;
     private byte[] cameraImage;
@@ -95,6 +100,12 @@ public class CarCommunication : MonoBehaviour
         {
             CarId = carID,
             CarSpeed = carSpeed,
+            CarParameters = new CarParameters
+            {
+                Steer = carSteer,
+                Forward = carForward,
+                Backward = carBackward,
+            },
             CameraImage = ByteString.CopyFrom(cameraImage),
             DistanceSensorsData = new DistanceSensorsData
             {
@@ -119,6 +130,11 @@ public class CarCommunication : MonoBehaviour
         {
             var response = client.SendRequest(request);
             command = response.Command.ToString();
+            // parse parameters from response
+            parameters = new Dictionary<string, float>();
+            parameters.Add("steer", response.CarParameters.Steer);
+            parameters.Add("forward", response.CarParameters.Forward);
+            parameters.Add("back", response.CarParameters.Backward);
             serverConnectionError = false;
         }
         catch
@@ -139,6 +155,7 @@ public class CarCommunication : MonoBehaviour
         // get data: car state, camera image, sensors data, routers data
         carID = car.GetComponent<CarInfo>().ID;
         carSpeed = car.GetComponent<CarControllerAdvanced>().speed;
+        (carSteer, carForward, carBackward) = car.GetComponent<CarControllerAdvanced>().GetParameters();
         distanceSensorsData = carDistanceSensors.GetComponent<RaySensorsData>().GetSensorsData();
         routersData = carRouterReceiver.GetComponent<CarRouterReceiver>().GetRoutersData();
         carCollisionData = car.GetComponent<CarCollisionData>().isCollide;
@@ -168,9 +185,20 @@ public class CarCommunication : MonoBehaviour
                 UnityEditor.EditorApplication.isPlaying = false;
                 Application.Quit();
             }
-            else if (moveCarByAI)
+            if (moveCarByAI)
             {
-                car.GetComponent<CarControllerAdvanced>().CarMove(command);
+              if (command == "Movement")
+              {
+                  float steer = parameters["steer"];
+                  float forward = parameters["forward"];
+                  float back = parameters["back"];
+                  //Debug.Log($"{steer} {forward} {back}");
+                  car.GetComponent<CarControllerAdvanced>().CarMove(steer,forward,back);
+              }
+              else 
+              {
+                  car.GetComponent<CarControllerAdvanced>().CarMove(command);
+              }
             }
         }
         catch{
