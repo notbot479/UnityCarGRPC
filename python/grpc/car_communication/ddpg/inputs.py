@@ -13,7 +13,7 @@ def minmaxscale(
     min_val:float, 
     max_val:float,
     *,
-    round_factor: int = 5
+    round_factor: int = 7
 ) -> float:
     if min_val == max_val: return 0
     scaled_value = (value - min_val) / (max_val - min_val)
@@ -25,9 +25,9 @@ def zeroOrOne(data:bool) -> Union[Literal[0], Literal[1]]:
 
 
 class ModelInputData:
-    IMAGE_FIXED_SHAPE: Pixel = 224              # small image from camera
-    DISTANCE_SENSOR_MAX_DISTANCE: Meter = 10    # ultrasonic max distance
-    ROUTER_MAX_RSSI: Rssi = -100                # typical max rssi 
+    IMAGE_FIXED_SHAPE: Pixel = 224              
+    DISTANCE_SENSOR_MAX_DISTANCE: Meter = 10    
+    ROUTER_MAX_RSSI: Rssi = -100                
     CAR_MAX_SPEED: float = 3
     ACTION_DIM:int = 1
     
@@ -38,11 +38,12 @@ class ModelInputData:
 
     def __init__(
         self,
-        # car sensors data
+        # car parameters
         speed: float,
         steer: float,
         forward: float,
         backward: float,
+        # car sensors data
         image: np.ndarray | None,
         distance_sensors_distances: list[Meter],
         distance_to_target_router: Rssi,
@@ -76,33 +77,34 @@ class ModelInputData:
     @property
     def inputs(self) -> dict:
         data = {
-            'image':self.image[:,:,np.newaxis],
             # car parameters
-            'speed':self.speed,
-            'steer':self.steer,
-            'forward':self.forward,
+            'speed': self.speed,
+            'steer': self.steer,
+            'forward': self.forward,
+            #'backward': self.backward,
             # sensors data
-            'distance_sensors_distances':self.distance_sensors_distances,
-            'distance_to_target_router':self.distance_to_target_router,
-            'distance_to_box':self.distance_to_box,
+            'image':self.image[:,:,np.newaxis],
+            'distance_sensors_distances': self.distance_sensors_distances,
+            'distance_to_target_router': self.distance_to_target_router,
+            'distance_to_box': self.distance_to_box,
             # hints
-            'in_target_area':self.in_target_area,
-            'boxes_is_found':self.boxes_is_found,
-            'target_found':self.target_found,
+            'in_target_area': self.in_target_area,
+            'boxes_is_found': self.boxes_is_found,
+            'target_found': self.target_found,
         }
         return data
 
     def _normalize_car_parameter(self, parameter:float) -> float:
         dim = self.ACTION_DIM
         default = self.PARAMETER_DEFAULT
-        if not(-dim < parameter < dim): return default
+        if not(-dim <= parameter <= dim): return default
         return parameter
 
     def _normalize_speed(self, speed: float) -> float:
         max_speed = self.CAR_MAX_SPEED
         default = self.SPEED_DEFAULT
         # wtf negative speed
-        if not(0 < speed < max_speed): return default 
+        if not(0 <= speed <= max_speed): return default 
         speed = minmaxscale(speed, 0, max_speed)
         return speed
 
@@ -120,7 +122,7 @@ class ModelInputData:
         max_distance = self.DISTANCE_SENSOR_MAX_DISTANCE
         default = self.DISTANCE_SENSOR_DEFAULT
         # wtf negative distance
-        if not(0 < distance < max_distance): return default 
+        if not(0 <= distance <= max_distance): return default 
         distance = minmaxscale(distance, 0, max_distance)
         return distance
 

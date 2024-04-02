@@ -30,7 +30,7 @@ class DDPGAgent:
         tau: float = 0.005,
         actor_lr: float = 0.0001,
         critic_lr: float = 0.001,
-        reply_buffer_capacity:int = 25000,
+        reply_buffer_capacity:int = 10000,
         # load from dir or best
         load_from_dir: str | None = None,
         load_best_from_dir: str | None = None,

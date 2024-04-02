@@ -129,7 +129,7 @@ class Servicer(_Servicer):
     # settings: agent
     _agent_exploration_seconds: int = 3 * 60
     _agent_respawn_very_bad_model: bool = True
-    _agent_episodes_count: int = 1000
+    _agent_episodes_count: int = 10000
     _agent_min_reward: float = -25
     _agent_aggregate_stats_every: int = 10
     # settings: car
