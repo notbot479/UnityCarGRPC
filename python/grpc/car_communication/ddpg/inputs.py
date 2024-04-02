@@ -29,15 +29,20 @@ class ModelInputData:
     DISTANCE_SENSOR_MAX_DISTANCE: Meter = 10    # ultrasonic max distance
     ROUTER_MAX_RSSI: Rssi = -100                # typical max rssi 
     CAR_MAX_SPEED: float = 3
+    ACTION_DIM:int = 1
     
     DISTANCE_SENSOR_DEFAULT: float = 1        
     ROUTER_DEFAULT: float = 1
     SPEED_DEFAULT: float = 0
+    PARAMETER_DEFAULT: float = 0
 
     def __init__(
         self,
         # car sensors data
         speed: float,
+        steer: float,
+        forward: float,
+        backward: float,
         image: np.ndarray | None,
         distance_sensors_distances: list[Meter],
         distance_to_target_router: Rssi,
@@ -47,7 +52,11 @@ class ModelInputData:
         boxes_is_found: bool,
         target_is_found: bool,              
     ) -> None:
+        # car parameters
         self.speed = self._normalize_speed(speed=speed)
+        self.steer = self._normalize_car_parameter(steer)
+        self.forward = self._normalize_car_parameter(forward)
+        self.backward = self._normalize_car_parameter(backward)
         # searching target area
         self.image = self._normalize_image(image=image)
         self.distance_sensors_distances = self._normalize_sensors_data(
@@ -67,17 +76,27 @@ class ModelInputData:
     @property
     def inputs(self) -> dict:
         data = {
-            'speed':self.speed,
             'image':self.image[:,:,np.newaxis],
+            # car parameters
+            'speed':self.speed,
+            'steer':self.steer,
+            'forward':self.forward,
+            # sensors data
             'distance_sensors_distances':self.distance_sensors_distances,
             'distance_to_target_router':self.distance_to_target_router,
+            'distance_to_box':self.distance_to_box,
+            # hints
             'in_target_area':self.in_target_area,
             'boxes_is_found':self.boxes_is_found,
-            'distance_to_box':self.distance_to_box,
             'target_found':self.target_found,
         }
         return data
 
+    def _normalize_car_parameter(self, parameter:float) -> float:
+        dim = self.ACTION_DIM
+        default = self.PARAMETER_DEFAULT
+        if not(-dim < parameter < dim): return default
+        return parameter
 
     def _normalize_speed(self, speed: float) -> float:
         max_speed = self.CAR_MAX_SPEED
@@ -122,8 +141,15 @@ class ModelInputData:
         total = '\n== ModelInputData ==\n'
         image_bytes = len(self.image.tobytes())
         # searching target area
-        total += f'Speed: {self.speed}\n' 
         total += f'Image: {image_bytes} bytes\n' 
+        total += f'CarParameters:\n'
+        d = {
+            'speed': self.speed,
+            'steer': self.steer,
+            'forward': self.forward,
+            #'backward': self.backward,
+        }
+        for k,v in d.items(): total += f'- {k}: {v}\n'
         total += f'Distances: {list(self.distance_sensors_distances)}\n'
         total += f'DistanceToTargetRouter: {self.distance_to_target_router}\n'
         total += f'InTargetArea: {self.in_target_area}\n'
@@ -191,6 +217,9 @@ def _test(test_saveload:bool = False):
     agent = DDPGAgent()
     model_input = ModelInputData(
         speed = 2.4,
+        steer = 0.5,
+        forward = 0.5,
+        backward = 0,
         image = None,
         distance_sensors_distances = [1,2,3,4,5,11],
         distance_to_target_router = -101,

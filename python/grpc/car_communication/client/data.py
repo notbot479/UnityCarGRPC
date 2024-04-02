@@ -3,6 +3,24 @@ import numpy as np
 
 from units import *
 
+@dataclass
+class CarParameters:
+    _data = ['steer', 'forward', 'backward']
+
+    steer: float
+    forward: float
+    backward: float
+
+    def to_list(self) -> list[float]:
+        data = [float(self.__getattribute__(i)) for i in self._data]
+        return data
+
+    def __repr__(self) -> str:
+        d = []
+        for name in self._data:
+            value = self.__getattribute__(name)
+            d.append(f'- {name}: {value}')
+        return '\n'.join(d)
 
 @dataclass
 class DistanceSensorData:
@@ -38,6 +56,7 @@ class CameraImage:
 class GrpcClientData:
     car_id: str
     car_speed: float
+    car_parameters: CarParameters
     camera_image: CameraImage | None
     distance_sensors: list[DistanceSensorData]
     routers: list[RouterData]
@@ -55,6 +74,7 @@ class GrpcClientData:
         total = '== GrpcClientData ==\n'
         total += f'CarId: {self.car_id}\n'
         total += f'CarSpeed: {self.car_speed}\n'
+        total += f'CarParameters: \n{self.car_parameters}\n'
         total += f'CameraImage: {self.camera_image}\n'
         total += 'DistanceSensors:\n'
         for i in self.distance_sensors: total += f'- {i}\n'

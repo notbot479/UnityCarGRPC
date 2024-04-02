@@ -352,7 +352,6 @@ class Servicer(_Servicer):
             self.agent_end_episode(data=data)
             return self._send_respawn_command()
         # get command based on policy
-        print(f'Prev server command: {prev_command}')
         command, parameters = self.get_command_from_agent(model_input=model_input)
         return self.send_response_to_client(command=command, parameters=parameters)
 
@@ -635,10 +634,14 @@ class Servicer(_Servicer):
             distance_to_box = float('inf')
             boxes_is_found = False
             target_found = False
+        steer, forward, backward = data.car_parameters.to_list()
         # convert to model input data
         model_input_data = ModelInputData(
             image=image,
             speed = speed,
+            steer = steer,
+            forward = forward,
+            backward = backward,
             distance_sensors_distances = distance_sensors_distances,
             distance_to_target_router = distance_to_target_router,
             distance_to_box = distance_to_box,
@@ -789,12 +792,12 @@ class Servicer(_Servicer):
             request.distance_sensors_data,
         )
         routers = self._normalize_routers_data(request.routers_data)
-        
-        #print(request.car_parameters)
-        
+        car_parameters = self._normalize_car_parameters_data(request.car_parameters)
+        # create client data
         data = GrpcClientData(
             car_id = car_id,
             car_speed = car_speed,
+            car_parameters = car_parameters,
             camera_image = camera_image,
             distance_sensors = distance_sensors,
             routers = routers,
@@ -880,12 +883,27 @@ class Servicer(_Servicer):
     
     def _send_respawn_command(self):
         return self.send_response_to_client('respawn')
-    
+
+    @staticmethod
+    def _normalize_car_parameters_data(
+        data: _Pb2_car_parameters,
+        *,
+        round_factor: int = 7,
+    ) -> CarParameters:
+        parameters = {
+            'steer': data.steer,
+            'forward': data.forward,
+            'backward': data.backward,
+        }
+        parameters = {k:round(float(v), round_factor) for k,v in parameters.items()}
+        parameters = CarParameters(**parameters)
+        return parameters
+
     @staticmethod
     def _normalize_distance_sensors_data(
         data: _Pb2_distance_sensors_data,
         *,
-        round_factor:int = 5,
+        round_factor:int = 7,
     ) -> list[DistanceSensorData]:
         sensors = (
             ('front_left',data.front_left_distance),
@@ -908,7 +926,7 @@ class Servicer(_Servicer):
     def _normalize_routers_data(
         data: list,
         *,
-        round_factor:int = 5,
+        round_factor:int = 7,
     ) -> list[RouterData]:
         routers = []
         for d in data:

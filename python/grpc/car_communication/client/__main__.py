@@ -4,6 +4,7 @@ import grpc
 import cv2
 
 from random import randint
+import random
 from config import *
 
 server_address = 'localhost'
@@ -33,9 +34,16 @@ def create_mock_client_request(image_bytes):
     boxes_in_camera_view = randint(1,3) == 2
     car_speed = 2
 
+    car_parameters = CarCommunicationApp_pb2.CarParameters( #pyright: ignore
+        steer = random.random(),
+        forward = random.random(),
+        backward = random.random(),
+    )
+
     client_request = CarCommunicationApp_pb2.ClientRequest( #pyright: ignore
         car_id='A-001',
         car_speed=car_speed,
+        car_parameters=car_parameters,
         camera_image=image_bytes,
         distance_sensors_data=distance_sensors_data,
         routers_data=routers_data,
@@ -70,8 +78,12 @@ def send_request(image_bytes) -> None:
     request = create_mock_client_request(image_bytes)
     response = stub.SendRequest(request)
     command_index = response.command
+    car_parameters = response.car_parameters
     command = get_command_by_index(index=command_index)
+    
     print(f'Received command: {command}')
+    print(car_parameters)
+    print()
 
 
 def main():
