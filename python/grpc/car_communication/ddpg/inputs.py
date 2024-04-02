@@ -172,7 +172,7 @@ def _test_train_agent(agent: DDPGAgent, model_input: ModelInputData) -> None:
     # fill reply buffer
     for i in range(agent.reply_buffer.min_capacity):
         state = model_input.inputs
-        action = np.array([0.1,] * 5)
+        action = np.array([0.1,] * agent.action_dim)
         reward = float(f'0.{i}')
         next_state = model_input.inputs
         done = False
@@ -207,11 +207,9 @@ def _test_prediction(agent: DDPGAgent, model_input: ModelInputData) -> None:
     print(f'- QS: {critic_qs}')
     
     exploration = True
-    qs = agent.get_qs(model_input.inputs,exploration=exploration)
+    qs = agent.get_qs(model_input.inputs, exploration=exploration)
     print('3. DDPG agent qs')
     print(f'- QS: {qs}')
-    action = np.argmax(qs)
-    print(f'- Predicted action: {action}')
 
 def _test(test_saveload:bool = False):
     agent = DDPGAgent()

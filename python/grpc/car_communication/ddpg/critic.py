@@ -13,11 +13,11 @@ class CriticModel(nn.Module):
         self.bn1 = nn.BatchNorm2d(64)
         self.conv2 = nn.Conv2d(64, 128, kernel_size=8, stride=2, padding=3)
         self.bn2 = nn.BatchNorm2d(128)
-        self.conv3 = nn.Conv2d(128, 256, kernel_size=4, padding=2)
+        self.conv3 = nn.Conv2d(128, 256, kernel_size=3, padding=1)
         self.bn3 = nn.BatchNorm2d(256)
-        self.conv4 = nn.Conv2d(256, 512, kernel_size=2, padding=1)
+        self.conv4 = nn.Conv2d(256, 512, kernel_size=3, padding=1)
         self.bn4 = nn.BatchNorm2d(512)
-        self.fc1 = nn.Linear(4*4*512, 256)
+        self.fc1 = nn.Linear(3*3*512, 256)
 
         # Dense layers
         self.fc2 = nn.Linear(1, 256)  # speed, steer, forward, target
@@ -25,9 +25,9 @@ class CriticModel(nn.Module):
         self.fc4 = nn.Linear(2, 256)  # stage 1
         self.fc5 = nn.Linear(3, 256)  # stage 2
         self.fc6 = nn.Linear(action_dim, 256)  # actor action
-        self.fc7 = nn.Linear(1536, 512)  # concatenated
+        self.fc7 = nn.Linear(6*256, 512)  # concatenated
         self.fc8 = nn.Linear(512, 256)  # concatenated
-        self.fc9 = nn.Linear(256, 5)  # outputs
+        self.fc9 = nn.Linear(256, 1)  # outputs
 
     def forward(
         self, 

@@ -1,5 +1,4 @@
 from torch.functional import Tensor
-import torch.nn.functional as F
 from torch.optim import Adam
 import torch.nn as nn
 import torch
@@ -25,7 +24,7 @@ class DDPGAgent:
 
     def __init__(
         self,
-        action_dim: int = 5,
+        action_dim: int = 2,
         max_action: int = 1,
         gamma: float = 0.99,
         tau: float = 0.005,
@@ -212,6 +211,7 @@ class DDPGAgent:
         next_states = self.extract_inputs(next_states)
         dones = self.convert_to_tensor_and_stack(dones)
         # update critic network
+        self.critic_optimizer.zero_grad()
         critic_loss = self._calculate_critic_loss(
             states = states,
             rewards = rewards,
@@ -219,12 +219,11 @@ class DDPGAgent:
             actions = actions,
             next_states = next_states,
         )
-        self.critic_optimizer.zero_grad()
         critic_loss.backward()
         self.critic_optimizer.step()
         # update actor network
-        actor_loss = self._calculate_actor_loss(states=states) 
         self.actor_optimizer.zero_grad()
+        actor_loss = self._calculate_actor_loss(states=states) 
         actor_loss.backward()
         self.actor_optimizer.step()
         # update target networks 
@@ -238,14 +237,15 @@ class DDPGAgent:
         actions: Tensor, 
         next_states: dict[str,Tensor],
     ) -> Tensor:
-        next_actions = self.target_actor_network(**next_states)
-        target_Q = self.target_critic_network(
-            **next_states, 
-            actor_action=next_actions,
-        ) 
-        target_Q = rewards + (1 - dones) * self.gamma * target_Q
+        with torch.no_grad():
+            next_actions = self.target_actor_network(**next_states)
+            target_Q = self.target_critic_network(
+                **next_states, 
+                actor_action=next_actions,
+            ) 
+            target_Q = rewards + (1 - dones) * self.gamma * target_Q
         current_Q = self.critic_network(**states, actor_action=actions)
-        critic_loss = F.mse_loss(current_Q, target_Q.detach())
+        critic_loss = nn.MSELoss()(current_Q, target_Q)
         self._critic_loss = float(critic_loss)
         return critic_loss
 
