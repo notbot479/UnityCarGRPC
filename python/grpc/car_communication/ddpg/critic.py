@@ -48,7 +48,6 @@ class CriticModel(nn.Module):
         actor_action: Tensor, 
         *args,**kwargs #pyright: ignore
     ) -> Tensor:
-        # CNN layers
         x_img = F.relu(self.bn1(self.conv1(image)))
         x_img = F.max_pool2d(x_img, 2)
         x_img = F.relu(self.bn2(self.conv2(x_img)))

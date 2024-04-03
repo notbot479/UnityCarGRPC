@@ -75,6 +75,7 @@ class ServicerMode(Enum):
     READY = 1
     BUSY = 2
 
+
 class Servicer(_Servicer):
     def __init__(self, *args, **kwargs) -> None:
         init_mock_tasks()
@@ -129,6 +130,7 @@ class Servicer(_Servicer):
     _agent_episodes_count: int = 10000
     _agent_min_reward: float = -25
     _agent_aggregate_stats_every: int = 10
+    _agent_save_model_every: int = 10
     # settings: car
     _car_respawn_on_object_hit: bool = True
     _car_hit_object_patience = _env_requests_per_second * 2
@@ -229,33 +231,19 @@ class Servicer(_Servicer):
             car_id=data.car_id,
             nearest_router_id=respawn_router_id,
         )
-        # save statictic and save model
-        round_factor = 3
+        # save total score for reward statistic
         self._agent_episode_rewards.append(self.episode_total_score)
+        # collect all stats
+        reward_stats = self.get_reward_stats()
+        stats = self._agent.stats | reward_stats
+        # tensorboard update stats (write logs)
         _a = self.episode_id == 1
         _b = not(self.episode_id % self._agent_aggregate_stats_every) 
-        if _a or _b:
-            # calculate reward stats
-            aggregate_every = self._agent_aggregate_stats_every
-            ep_batch: list[float] = self._agent_episode_rewards[-aggregate_every:]
-            average_reward = round(sum(ep_batch)/len(ep_batch),round_factor)
-            min_reward = round(min(ep_batch),round_factor) 
-            max_reward = round(max(ep_batch),round_factor)
-            reward_data = {
-                'min_reward':min_reward, 
-                'max_reward':max_reward,
-                'average_reward':average_reward,
-            }
-            # create stats (merge all stats)
-            stats = self._agent.stats | reward_data 
-            # tensorboard update stats (write logs)
-            for k,v in stats.items():
-                self._writer.add_scalar(k,v,self.episode_id)
-            # Save model
-            if not(_a):
-                dir_path = self.get_agent_save_dir_path(data=reward_data)
-                self._agent.save_model(dir_path=dir_path)
-        
+        if _a or _b: self.writer_add_stats(stats=stats)
+        # Save model to folder
+        if not(self.episode_id % self._agent_save_model_every):
+            dir_path = self.get_agent_save_dir_path(data=reward_stats)
+            self._agent.save_model(dir_path=dir_path)
         self.start_new_episode()
 
     @busy_until_end
@@ -368,6 +356,23 @@ class Servicer(_Servicer):
         return self.send_response_to_client(command=command, parameters=parameters)
 
     # ===============================================================================
+
+    def writer_add_stats(self, stats:dict) -> None:
+        step = self.episode_id
+        {self._writer.add_scalar(k,v,step) for k,v in stats.items()}
+
+    def get_reward_stats(self, *, round_factor:int = 3) -> dict: # calculate reward stats
+        aggregate_every = self._agent_aggregate_stats_every
+        ep_batch: list[float] = self._agent_episode_rewards[-aggregate_every:]
+        average_reward = round(sum(ep_batch)/len(ep_batch),round_factor)
+        min_reward = round(min(ep_batch),round_factor) 
+        max_reward = round(max(ep_batch),round_factor)
+        reward_stats = {
+            'min_reward':min_reward, 
+            'max_reward':max_reward,
+            'average_reward':average_reward,
+        }
+        return reward_stats
 
     def train_agent_add(self, **kwargs) -> None:
         if not(self._agent.reply_buffer.ready): return
