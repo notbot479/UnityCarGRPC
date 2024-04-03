@@ -1,27 +1,11 @@
-from typing import Literal, Union
 import numpy as np
 import cv2
 import os
 
 from config import AGENT_MODELS_PATH
 from .agent import DDPGAgent
+from .normalization import *
 from units import *
-
-
-def minmaxscale(
-    value:float, 
-    min_val:float, 
-    max_val:float,
-    *,
-    round_factor: int = 7
-) -> float:
-    if min_val == max_val: return 0
-    scaled_value = (value - min_val) / (max_val - min_val)
-    return round(scaled_value, round_factor)
-
-def zeroOrOne(data:bool) -> Union[Literal[0], Literal[1]]:
-    if not(isinstance(data, bool)): return 0
-    return 1 if data else 0
 
 
 class ModelInputData:

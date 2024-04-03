@@ -3,11 +3,20 @@ import torch.nn.functional as F
 import torch.nn as nn
 import torch
 
+from .normalization import shift_range
+
 
 class CriticModel(nn.Module):
-    def __init__(self, *, action_dim:int, max_action:int = 1):
+    def __init__(
+        self, 
+        action_dim:int, 
+        max_action:int = 1, 
+        *, 
+        shift_range: bool = False,
+    ) -> None:
         super().__init__()
         self.max_action = max_action
+        self.shift_range = shift_range
 
         self.conv1 = nn.Conv2d(1, 64, kernel_size=16, stride=2, padding=7)
         self.bn1 = nn.BatchNorm2d(64)
@@ -48,6 +57,9 @@ class CriticModel(nn.Module):
         actor_action: Tensor, 
         *args,**kwargs #pyright: ignore
     ) -> Tensor:
+        if self.shift_range:
+            actor_action = shift_range(actor_action, max_action=self.max_action)
+
         x_img = F.relu(self.bn1(self.conv1(image)))
         x_img = F.max_pool2d(x_img, 2)
         x_img = F.relu(self.bn2(self.conv2(x_img)))

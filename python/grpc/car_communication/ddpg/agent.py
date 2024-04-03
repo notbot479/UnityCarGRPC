@@ -31,6 +31,7 @@ class DDPGAgent:
         actor_lr: float = 0.0001,
         critic_lr: float = 0.001,
         reply_buffer_capacity:int = 10000,
+        shift_continious_parameters:bool = False,
         # load from dir or best
         load_from_dir: str | None = None,
         load_best_from_dir: str | None = None,
@@ -43,6 +44,7 @@ class DDPGAgent:
         self.gamma = gamma
         self.max_action = max_action
         self.action_dim = action_dim
+        self.shift_continious_parameters = shift_continious_parameters
         # load device, reply buffer, noise
         self.device = torch.device(self._device) 
         self.reply_buffer = ReplayBuffer(capacity=reply_buffer_capacity)  
@@ -173,23 +175,28 @@ class DDPGAgent:
 
 
     def _init_models(self) -> None:
+        shift_range = self.shift_continious_parameters
         # init networks
         self.actor_network = ActorModel(
             action_dim = self.action_dim,
             max_action = self.max_action,
+            shift_range = shift_range,
         ).to(self.device)
         self.critic_network = CriticModel(
             action_dim=self.action_dim,
             max_action = self.max_action,
+            shift_range = shift_range,
         ).to(self.device)
         # init target networks
         self.target_actor_network = ActorModel(
             action_dim = self.action_dim,
             max_action = self.max_action,
+            shift_range = shift_range,
         ).to(self.device)
         self.target_critic_network = CriticModel(
             action_dim=self.action_dim,
             max_action = self.max_action,
+            shift_range = shift_range,
         ).to(self.device)
         # hard update target networks weights from networks
         self._hard_update_target_networks()

@@ -125,6 +125,7 @@ class Servicer(_Servicer):
     _env_requests_per_second: int = 10
     _env_action_dim: int = len(CAR_PARAMETERS)
     # settings: agent
+    _agent_shift_range: bool = False
     _agent_exploration_seconds: int = 1 * 60
     _agent_respawn_very_bad_model: bool = True
     _agent_episodes_count: int = 10000
@@ -149,11 +150,10 @@ class Servicer(_Servicer):
     show_client_data = SHOW_CLIENT_DATA
     _mode: ServicerMode = ServicerMode.READY
     _web_service = WebService()
-
-
     _agent = DDPGAgent(
         action_dim=_env_action_dim,
         load_best_from_dir=AGENT_MODELS_PATH,
+        shift_continious_parameters=_agent_shift_range,
     )
     _writer = SummaryWriter(_get_logs_path())
     # server init commands
@@ -172,6 +172,7 @@ class Servicer(_Servicer):
     _car_active_task: CarActiveTask | None = None
     _car_prev_command: str | None = None
     _agent_prev_qs: np.ndarray = get_random_qs(_env_action_dim)
+    _train_agent_kwargs: list[dict] = []
     # init counters and flags
     _agent_episode_total_score: Score = 0
     _agent_episode_id: int = 0
@@ -875,7 +876,6 @@ class Servicer(_Servicer):
 
     # ================================================================================
     
-    _train_agent_kwargs: list[dict] = []
     def _train_agent(self) -> None:
         print('[Service] Start train agent thread')
         while True:
