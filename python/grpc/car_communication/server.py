@@ -116,8 +116,9 @@ class Servicer(_Servicer):
 
     exploration: bool = True
     
-    agent_train_each_step: bool = True
+    agent_train_each_step: bool = False
     agent_train_batch_size: int = 16
+    agent_max_batch_count: int = 0
     
     # settings: env
     _env_requests_per_second: int = 10
@@ -184,7 +185,9 @@ class Servicer(_Servicer):
     @property
     def train_agent_episode_batches_count(self) -> int:
         '''update property logic if needed'''
-        return self.state_id
+        mx = self.agent_max_batch_count
+        batches_count = self.state_id
+        return min(batches_count, mx) if mx else batches_count
     
     @busy_until_end
     def agent_start_training(self, car_id: str, routers: list[RouterData]) -> None:
@@ -448,6 +451,8 @@ class Servicer(_Servicer):
         *,
         done: Done = Done._,
     ) -> tuple[Score, Done]:
+        # -1 = forward, 1 = backward
+        is_backward = new_state.car_parameters.forward > 0
         # get target found based on patience
         car_hit_object = new_state.car_collision_data
         in_target_area = self.car_in_target_area(new_state.routers)
@@ -491,10 +496,10 @@ class Servicer(_Servicer):
             if self.is_target_router_switched: 
                 reward = RewardPolicy.TARGET_ROUTER_SWITCHED.value
                 return (reward, done)
-            delta = round(old_target_rssi - new_target_rssi, 2)
+            delta = round(old_target_rssi - new_target_rssi, 1)
             k = round(1 - abs(old_target_rssi)/100, 2)
             r = round(self._env_requests_per_second / 10, 1)
-            if not(delta):
+            if not(delta) or is_backward:
                 reward = RewardPolicy.PASSIVE_REWARD.value
                 return (reward, done)
             reward = round((-delta * r * k), 1)
@@ -525,10 +530,10 @@ class Servicer(_Servicer):
                 return (reward, done)
             delta = abs(old_front_sensor.distance) - abs(new_front_sensor.distance)
             delta = round(delta, 1)
-            if boxes_in_view and delta == 0:
+            if boxes_in_view and not(delta):
                 reward = RewardPolicy.IN_TARGET_AREA_BOXES_FOUND.value
                 return (reward, done)
-            elif delta == 0:
+            elif not(delta) or is_backward:
                 reward = RewardPolicy.PASSIVE_REWARD.value
                 return (reward, done)
             if delta > 0:
