@@ -257,7 +257,7 @@ class DDPGAgent:
             **states, 
             actor_action=actions,
         )
-        actor_loss = -critic_predict.mean()
+        actor_loss = (-critic_predict).mean()
         self._actor_loss = float(actor_loss)
         return actor_loss
     

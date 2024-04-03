@@ -9,7 +9,6 @@ class CriticModel(nn.Module):
         super().__init__()
         self.max_action = max_action
 
-        # CNN layers
         self.conv1 = nn.Conv2d(1, 64, kernel_size=16, stride=2, padding=7)
         self.bn1 = nn.BatchNorm2d(64)
         self.conv2 = nn.Conv2d(64, 128, kernel_size=8, stride=2, padding=3)
@@ -20,15 +19,18 @@ class CriticModel(nn.Module):
         self.bn4 = nn.BatchNorm2d(512)
         self.fc1 = nn.Linear(3*3*512, 256)
 
-        # Dense layers
-        self.fc2 = nn.Linear(1, 256)  # speed, steer, forward, target
-        self.fc3 = nn.Linear(6, 256)  # distance_sensors_distances
-        self.fc4 = nn.Linear(2, 256)  # stage 1
-        self.fc5 = nn.Linear(3, 256)  # stage 2
-        self.fc6 = nn.Linear(action_dim, 256)  # actor action
+        self.fc64_256 = nn.Linear(64, 256)
+        self.fc2 = nn.Linear(1, 64)  # speed, steer, forward, target
+        self.fc3 = nn.Linear(6, 64)  # distance_sensors_distances
+        self.fc4 = nn.Linear(2, 64)  # stage 1
+        self.fc5 = nn.Linear(3, 64)  # stage 2
+        self.fc6 = nn.Linear(action_dim, 64)  # actor action
+
         self.fc7 = nn.Linear(6*256, 512)  # concatenated
-        self.fc8 = nn.Linear(512, 256)  # concatenated
-        self.fc9 = nn.Linear(256, 1)  # outputs
+        self.fc8 = nn.Linear(512, 256)
+        self.fc9 = nn.Linear(256, 64)
+
+        self.fc10 = nn.Linear(64, 1)  # outputs
 
     def forward(
         self, 
@@ -58,13 +60,27 @@ class CriticModel(nn.Module):
         x_img = x_img.view(x_img.size(0), -1)  # Flatten
         x_img = F.relu(self.fc1(x_img))
 
-        # Dense layers
         x_speed = F.relu(self.fc2(speed))
+        x_speed = F.relu(self.fc64_256(x_speed))
+        
         x_distance = F.relu(self.fc3(distance_sensors_distances))
-        x_stage1 = F.relu(self.fc4(torch.cat([distance_to_target_router, in_target_area], dim=1)))
-        x_stage2 = F.relu(self.fc5(torch.cat([boxes_is_found, distance_to_box, in_target_area], dim=1)))
+        x_distance = F.relu(self.fc64_256(x_distance))
+        
+        _c = torch.cat([distance_to_target_router, in_target_area], dim=1)
+        x_stage1 = F.relu(self.fc4(_c))
+        x_stage1 = F.relu(self.fc64_256(x_stage1))
+
+        _c = torch.cat([boxes_is_found, distance_to_box, in_target_area], dim=1)
+        x_stage2 = F.relu(self.fc5(_c))
+        x_stage2 = F.relu(self.fc64_256(x_stage2))
+        
         x_actor = F.relu(self.fc6(actor_action))
-        x_concatenated = F.relu(self.fc7(torch.cat([x_img, x_speed, x_distance, x_stage1, x_stage2, x_actor], dim=1)))
+        x_actor = F.relu(self.fc64_256(x_actor))
+        
+        _c = torch.cat([x_img, x_speed, x_distance, x_stage1, x_stage2, x_actor],dim=1)
+        x_concatenated = F.relu(self.fc7(_c))
         x_concatenated = F.relu(self.fc8(x_concatenated))
-        outputs = self.fc9(x_concatenated)
+        x_concatenated = F.relu(self.fc9(x_concatenated))
+
+        outputs = self.fc10(x_concatenated)
         return outputs
