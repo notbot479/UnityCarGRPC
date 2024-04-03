@@ -176,10 +176,11 @@ class DDPGAgent:
         # init networks
         self.actor_network = ActorModel(
             action_dim = self.action_dim,
-            max_action = self.max_action
+            max_action = self.max_action,
         ).to(self.device)
         self.critic_network = CriticModel(
             action_dim=self.action_dim,
+            max_action = self.max_action,
         ).to(self.device)
         # init target networks
         self.target_actor_network = ActorModel(
@@ -188,6 +189,7 @@ class DDPGAgent:
         ).to(self.device)
         self.target_critic_network = CriticModel(
             action_dim=self.action_dim,
+            max_action = self.max_action,
         ).to(self.device)
         # hard update target networks weights from networks
         self._hard_update_target_networks()

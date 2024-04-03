@@ -13,7 +13,6 @@ import grpc
 from torch.utils.tensorboard import SummaryWriter #pyright: ignore
 import torch
 
-from functools import cached_property
 from typing import Callable, Deque
 from dataclasses import dataclass
 from concurrent import futures
@@ -50,7 +49,6 @@ from units import *
 # settings 
 TRAIN_AGENT = True
 DISABLE_RANDOM = True
-CUDA_AVAILABLE = torch.cuda.is_available()
 # setting server commands (based on proto file)
 CAR_MOVEMENT_SIGNALS = ['left','right','forward','backward','noop']
 CAR_EXTRA_SIGNALS = ['poweroff','respawn','stop', 'movement']
@@ -118,16 +116,14 @@ class Servicer(_Servicer):
 
     exploration: bool = True
     
-    agent_train_each_step: bool = False
-    agent_train_batch_size: int = 64
-    agent_train_batches: int = 10
-    agent_cuda_train_batch_multiplier: int = 20
+    agent_train_each_step: bool = True
+    agent_train_batch_size: int = 16
     
     # settings: env
     _env_requests_per_second: int = 10
     _env_action_dim: int = len(CAR_PARAMETERS)
     # settings: agent
-    _agent_exploration_seconds: int = 3 * 60
+    _agent_exploration_seconds: int = 1 * 60
     _agent_respawn_very_bad_model: bool = True
     _agent_episodes_count: int = 10000
     _agent_min_reward: float = -25
@@ -179,6 +175,16 @@ class Servicer(_Servicer):
     _agent_state_id: int = 1
 
     # ================================================================================
+
+    @property
+    def train_agent_state(self) -> bool:
+        '''update property logic if needed'''
+        return self.agent_train_each_step
+
+    @property
+    def train_agent_episode_batches_count(self) -> int:
+        '''update property logic if needed'''
+        return self.state_id
     
     @busy_until_end
     def agent_start_training(self, car_id: str, routers: list[RouterData]) -> None:
@@ -205,12 +211,15 @@ class Servicer(_Servicer):
         print()
         # train agent on episode end
         if TRAIN_AGENT:
-            batches_count = self._agent_train_each_episode_batches
-            if not(self.agent_train_each_step) and batches_count:
-                self._agent.train_on_episode_end(
-                    batch_size = self.agent_train_batch_size,
-                    batches_count = batches_count,
-                )
+            if self.agent_train_each_step: 
+                while self._train_agent_kwargs: time.sleep(1)
+            else:
+                batches_count = self.train_agent_episode_batches_count
+                if batches_count:
+                    self._agent.train_on_episode_end(
+                        batch_size = self.agent_train_batch_size,
+                        batches_count = batches_count,
+                    )
         # get task (new task) from respawn router (training start nearest router)
         respawn_router_id = self._car_respawn_nearest_router_id
         self.set_active_task_for_car(
@@ -333,8 +342,8 @@ class Servicer(_Servicer):
                 next_state=model_input.inputs,
                 done=bool(done),
             )
-            if self.agent_train_each_step:
-                self._agent.train(
+            if self.train_agent_state:
+                self.train_agent_add(
                     terminal_state=bool(done),
                     batch_size=self.agent_train_batch_size,
                 )
@@ -357,6 +366,10 @@ class Servicer(_Servicer):
 
     # ===============================================================================
 
+    def train_agent_add(self, **kwargs) -> None:
+        if not(self._agent.reply_buffer.ready): return
+        self._train_agent_kwargs.append(kwargs) 
+    
     def get_command_from_agent(
         self, 
         model_input: ModelInputData,
@@ -851,12 +864,16 @@ class Servicer(_Servicer):
         return grpc_command
 
     # ================================================================================
-
-    @cached_property
-    def _agent_train_each_episode_batches(self) -> int:
-        if not(CUDA_AVAILABLE): return self.agent_train_batches
-        batches_cuda = self.agent_cuda_train_batch_multiplier*self.agent_train_batches
-        return batches_cuda
+    
+    _train_agent_kwargs: list[dict] = []
+    def _train_agent(self) -> None:
+        print('[Service] Start train agent thread')
+        while True:
+            if not(self._train_agent_kwargs): 
+                time.sleep(1)
+                continue
+            kwargs = self._train_agent_kwargs.pop(0)
+            self._agent.train(**kwargs)
 
     def _get_movement_list(self) -> list:
         return CAR_MOVEMENT_SIGNALS
@@ -945,6 +962,8 @@ def run_server(*, port:int = 50051, max_workers:int = 10) -> None:
         # show stream video
         if service.show_stream_video:
             executor.submit(VideoPlayer.display_video)
+        if service.agent_train_each_step:
+            executor.submit(service._train_agent)
         # init grpc server
         _AddServicer(service,server)
         server.add_insecure_port(f'[::]:{port}')

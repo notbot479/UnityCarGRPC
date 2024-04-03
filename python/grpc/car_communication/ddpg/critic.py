@@ -5,8 +5,9 @@ import torch
 
 
 class CriticModel(nn.Module):
-    def __init__(self, *, action_dim:int):
+    def __init__(self, *, action_dim:int, max_action:int = 1):
         super().__init__()
+        self.max_action = max_action
 
         # CNN layers
         self.conv1 = nn.Conv2d(1, 64, kernel_size=16, stride=2, padding=7)
