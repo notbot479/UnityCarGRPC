@@ -3,7 +3,7 @@ import torch.nn.functional as F
 import torch.nn as nn
 import torch
 
-from .normalization import shift_range
+from .normalization import *
 
 
 class ActorModel(nn.Module):
@@ -45,23 +45,23 @@ class ActorModel(nn.Module):
     def forward(
         self, 
         # car parameters
-        speed: Tensor, 
-        steer: Tensor, 
-        forward: Tensor, 
-        # car sensors
+        speed: Tensor,
+        steer: Tensor,
+        forward: Tensor,
+        # car sensors  [0, 1]
         image: Tensor, 
         distance_sensors_distances: Tensor, 
         distance_to_target_router: Tensor,
         distance_to_box: Tensor, 
-        # car hints
+        # car hints [0 or 1]
         in_target_area: Tensor, 
         boxes_is_found: Tensor, 
         target_found: Tensor,
         *args, **kwargs #pyright: ignore
     ) -> Tensor:
         if self.shift_range:
-            steer = shift_range(steer, max_action=self.max_action)
-            forward = shift_range(forward, max_action=self.max_action)
+            steer = shift_right(steer, max_action=self.max_action)
+            forward = shift_right(forward, max_action=self.max_action)
 
         x_img = F.relu(self.bn1(self.conv1(image)))
         x_img = F.max_pool2d(x_img, 2)

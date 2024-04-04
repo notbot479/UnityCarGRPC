@@ -3,7 +3,7 @@ import torch.nn.functional as F
 import torch.nn as nn
 import torch
 
-from .normalization import shift_range
+from .normalization import *
 
 
 class CriticModel(nn.Module):
@@ -45,20 +45,20 @@ class CriticModel(nn.Module):
         self, 
         # car parameters
         speed: Tensor, 
-        # car sensors
+        # car sensors [0, 1]
         image: Tensor, 
         distance_sensors_distances: Tensor, 
         distance_to_target_router: Tensor,
         distance_to_box: Tensor, 
-        # car hints
+        # car hints [0 or 1]
         in_target_area: Tensor, 
         boxes_is_found: Tensor, 
-        #critic input
+        #critic input [-1, 1]
         actor_action: Tensor, 
         *args,**kwargs #pyright: ignore
     ) -> Tensor:
         if self.shift_range:
-            actor_action = shift_range(actor_action, max_action=self.max_action)
+            actor_action = shift_right(actor_action, max_action=self.max_action)
 
         x_img = F.relu(self.bn1(self.conv1(image)))
         x_img = F.max_pool2d(x_img, 2)

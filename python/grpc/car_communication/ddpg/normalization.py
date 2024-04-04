@@ -1,8 +1,11 @@
 from typing import Union, Literal
 from torch import Tensor
 
+def shift_left(tensor: Tensor, max_action:int = 1) -> Tensor:
+    tensor = (2 * tensor) - max_action
+    return tensor
 
-def shift_range(tensor: Tensor, max_action:int = 1) -> Tensor:
+def shift_right(tensor: Tensor, max_action:int = 1) -> Tensor:
     tensor = (tensor + max_action) / 2
     return tensor
 

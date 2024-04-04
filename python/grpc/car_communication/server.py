@@ -119,7 +119,7 @@ class Servicer(_Servicer):
     exploration: bool = True
     epsilon:float = 1
     
-    agent_train_each_step: bool = False
+    agent_train_each_step: bool = True
     agent_train_batch_size: int = 64
     agent_max_batch_count: int = 0
     
@@ -533,13 +533,14 @@ class Servicer(_Servicer):
             if self.is_target_router_switched: 
                 reward = RewardPolicy.TARGET_ROUTER_SWITCHED.value
                 return (reward, done)
-            delta = round(old_target_rssi - new_target_rssi, 1)
+            delta = round(old_target_rssi - new_target_rssi, 2)
             k = round(1 - abs(old_target_rssi)/100, 2)
             r = round(self._env_requests_per_second / 10, 1)
-            if not(delta) or is_backward:
+            if not(delta):
                 reward = RewardPolicy.PASSIVE_REWARD.value
                 return (reward, done)
             reward = round((-delta * r * k), 1)
+            if reward > 0 and is_backward: reward = -reward
             return (reward, done)
         else: 
             # stage 2: search
