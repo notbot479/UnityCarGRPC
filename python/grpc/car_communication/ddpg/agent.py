@@ -1,3 +1,4 @@
+from torch.optim.lr_scheduler import ExponentialLR
 from torch.functional import Tensor
 from torch.optim import Adam
 import torch.nn as nn
@@ -30,6 +31,7 @@ class DDPGAgent:
         tau: float = 0.005,
         actor_lr: float = 0.0001,
         critic_lr: float = 0.001,
+        lr_decay: float = 0.9,
         reply_buffer_capacity:int = 10000,
         shift_continious_parameters:bool = False,
         # load from dir or best
@@ -42,6 +44,7 @@ class DDPGAgent:
         # init parameters
         self.tau = tau
         self.gamma = gamma
+        self.lr_decay = lr_decay
         self.max_action = max_action
         self.action_dim = action_dim
         self.shift_continious_parameters = shift_continious_parameters
@@ -64,6 +67,19 @@ class DDPGAgent:
             params=self.critic_network.parameters(),
             lr=critic_lr,
         )
+        # init learning rate scheduler 
+        self.actor_scheduler = ExponentialLR(
+            self.actor_optimizer, 
+            gamma=self.lr_decay,
+        )
+        self.critic_scheduler = ExponentialLR(
+            self.critic_optimizer, 
+            gamma=self.lr_decay,
+        )
+
+    def update_schedulers(self) -> None:
+        self.actor_scheduler.step()
+        self.critic_scheduler.step()
 
     def save_model(self, dir_path: str, *, ext:str='pth') -> None:
         os.makedirs(dir_path, exist_ok=True)
@@ -197,7 +213,7 @@ class DDPGAgent:
             action_dim=self.action_dim,
             max_action = self.max_action,
             shift_range = shift_range,
-        ).to(self.device)
+        ).to(self.device) 
         # hard update target networks weights from networks
         self._hard_update_target_networks()
 

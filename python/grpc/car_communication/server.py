@@ -128,9 +128,9 @@ class Servicer(_Servicer):
     _env_action_dim: int = len(CAR_PARAMETERS)
     # settings: agent
     _agent_epsilon_decay:float = 0.99
-    _agent_min_epsilon: float = 0.001
+    _agent_min_epsilon: float = 0.01
     _agent_shift_range: bool = False
-    _agent_exploration_seconds: int = 0.5 * 60 # 30 seconds
+    _agent_exploration_seconds: float = 0.5 * 60 # 30 seconds
     _agent_respawn_very_bad_model: bool = True
     _agent_episodes_count: int = 10000
     _agent_min_reward: float = -25
@@ -256,6 +256,8 @@ class Servicer(_Servicer):
         if self.epsilon > self._agent_min_epsilon:
             self.epsilon *= self._agent_epsilon_decay
             self.epsilon = max(self._agent_min_epsilon, self.epsilon)
+        # update lr scheduler
+        self._agent.update_schedulers()
         self.start_new_episode()
 
     @busy_until_end
