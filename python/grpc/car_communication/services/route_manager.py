@@ -31,7 +31,7 @@ class RouteManager:
         # router 4
         cls._graph.add_edge('4', '8-2', 1)
         cls._graph.add_edge('4', '5-1', 1)
-        cls._graph.add_edge('4', '6-2', 3)
+        cls._graph.add_edge('4', '6-1', 3)
         # router 5-1
         cls._graph.add_edge('5-1', '5-2', 1)
         cls._graph.add_edge('5-1', '4', 1)
@@ -41,7 +41,7 @@ class RouteManager:
         # router 6-1
         cls._graph.add_edge('6-1', '6-2', 1)
         cls._graph.add_edge('6-1', '8-2', 1)
-        cls._graph.add_edge('6-1', '4', 2)
+        cls._graph.add_edge('6-1', '4', 3)
         cls._graph.add_edge('6-1', '7', 3)
         # router 6-2
         cls._graph.add_edge('6-2', '6-1', 1)
