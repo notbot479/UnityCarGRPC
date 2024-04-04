@@ -103,7 +103,8 @@ class Servicer(_Servicer):
 
     @staticmethod
     def get_random_qs(action_dim: int, max_action:int = 1) -> np.ndarray:
-        qs = max_action * np.random.rand(action_dim)
+        qs = np.random.uniform(-max_action,max_action, size=(action_dim,))
+        qs = np.array(qs, dtype=np.float32)
         return qs
 
     @staticmethod
@@ -116,17 +117,20 @@ class Servicer(_Servicer):
     # ================================================================================
 
     exploration: bool = True
+    epsilon:float = 1
     
     agent_train_each_step: bool = False
-    agent_train_batch_size: int = 16
+    agent_train_batch_size: int = 64
     agent_max_batch_count: int = 0
     
     # settings: env
     _env_requests_per_second: int = 10
     _env_action_dim: int = len(CAR_PARAMETERS)
     # settings: agent
+    _agent_epsilon_decay:float = 0.99
+    _agent_min_epsilon: float = 0.001
     _agent_shift_range: bool = False
-    _agent_exploration_seconds: int = 1 * 60
+    _agent_exploration_seconds: int = 0.5 * 60 # 30 seconds
     _agent_respawn_very_bad_model: bool = True
     _agent_episodes_count: int = 10000
     _agent_min_reward: float = -25
@@ -236,7 +240,10 @@ class Servicer(_Servicer):
         self._agent_episode_rewards.append(self.episode_total_score)
         # collect all stats
         reward_stats = self.get_reward_stats()
-        stats = self._agent.stats | reward_stats
+        extra_stats = {
+            'epsilon': self.epsilon,
+        }
+        stats = self._agent.stats | reward_stats | extra_stats
         # tensorboard update stats (write logs)
         _a = self.episode_id == 1
         _b = not(self.episode_id % self._agent_aggregate_stats_every) 
@@ -245,6 +252,10 @@ class Servicer(_Servicer):
         if not(self.episode_id % self._agent_save_model_every):
             dir_path = self.get_agent_save_dir_path(data=reward_stats)
             self._agent.save_model(dir_path=dir_path)
+        # decay epsilon
+        if self.epsilon > self._agent_min_epsilon:
+            self.epsilon *= self._agent_epsilon_decay
+            self.epsilon = max(self._agent_min_epsilon, self.epsilon)
         self.start_new_episode()
 
     @busy_until_end
@@ -353,10 +364,21 @@ class Servicer(_Servicer):
             self.agent_end_episode(data=data)
             return self._send_respawn_command()
         # get command based on policy
-        command, parameters = self.get_command_from_agent(model_input=model_input)
+        if np.random.random() > self.epsilon:
+            command, parameters = self.get_command_from_agent(model_input=model_input)
+        else:
+            command, parameters = self.get_random_command_from_agent()
         return self.send_response_to_client(command=command, parameters=parameters)
 
     # ===============================================================================
+
+    @property
+    def min_epsilon(self) -> float:
+        return self._agent_min_epsilon
+
+    @property
+    def epsilon_decay(self) -> float:
+        return self._agent_epsilon_decay
 
     def writer_add_stats(self, stats:dict) -> None:
         step = self.episode_id
@@ -377,7 +399,16 @@ class Servicer(_Servicer):
 
     def train_agent_add(self, **kwargs) -> None:
         if not(self._agent.reply_buffer.ready): return
-        self._train_agent_kwargs.append(kwargs) 
+        self._train_agent_kwargs.append(kwargs)
+    
+    def get_random_command_from_agent(self) -> tuple[str, dict[str, float]]:
+        movement = "movement"
+        qs = self.get_random_qs(action_dim=self._env_action_dim)
+        parameters = {k:v for k, v in zip(CAR_PARAMETERS, qs)}
+        # print command and parameters
+        print(f'Send random movement to client:')
+        print(parameters)
+        return (movement, parameters)
     
     def get_command_from_agent(
         self, 
