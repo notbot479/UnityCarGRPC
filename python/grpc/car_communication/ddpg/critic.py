@@ -1,5 +1,4 @@
 from torch.functional import Tensor
-import torch.nn.functional as F
 import torch.nn as nn
 import torch
 
@@ -18,7 +17,7 @@ class CriticModel(BaseModel):
         self.fc6_10 = nn.Linear(6, 10)
         
         self.fc10_128 = nn.Linear(10,128)
-        self.fc50_500 = nn.Linear((5+1) * 10, 500)
+        self.fc60_500 = nn.Linear((5+1) * 10, 500)
         self.fc500_128 = nn.Linear(500, 128)
         self.fc128_32 = nn.Linear(128, 32)
 
@@ -59,8 +58,8 @@ class CriticModel(BaseModel):
 
         # 6 * 10
         concat = torch.cat([x_speed, x_distance, x_routers, x_stage1, x_stage2, x_actor], dim=1) 
-        concat = self.relu(self.bn500(self.fc50_500(concat))) #500
-        concat = self.relu(self.fc500_128(concat)) #128
+        concat = self.relu(self.bn500(self.fc60_500(concat))) #600
+        concat = self.relu(self.bn128(self.fc500_128(concat))) #128
         concat = self.relu(self.fc128_32(concat))
 
         outputs = self.fc_out(concat)
