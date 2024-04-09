@@ -116,8 +116,8 @@ class Servicer(_Servicer):
     
     # ================================================================================
 
-    exploration: bool = True
-    epsilon:float = 0
+    epsilon:float = 1
+    exploration: bool = False
     
     agent_train_each_step: bool = False
     agent_train_batch_size: int = 64
@@ -219,6 +219,8 @@ class Servicer(_Servicer):
         print(f'== END episode[{self.episode_id}] state[{self.state_id}] ==')
         print(f'Total score [{self.episode_total_score}]')
         print()
+        # save episode total scote for aggregating
+        self._agent_episode_rewards.append(self.episode_total_score)
         # train agent on episode end
         if TRAIN_AGENT:
             if self.agent_train_each_step: 
@@ -236,18 +238,19 @@ class Servicer(_Servicer):
             car_id=data.car_id,
             nearest_router_id=respawn_router_id,
         )
-        # save total score for reward statistic
-        self._agent_episode_rewards.append(self.episode_total_score)
-        # collect all stats
-        reward_stats = self.get_reward_stats()
+        # save stats each episode
         extra_stats = {
             'epsilon': self.epsilon,
+            'episode_seconds': self.episode_seconds,
         }
-        stats = self._agent.stats | reward_stats | extra_stats
-        # tensorboard update stats (write logs)
+        stats = self._agent.stats | extra_stats
+        self.writer_add_stats(stats = stats)
+        # save aggregated reward to stats
+        reward_stats = self.get_reward_stats()
         _a = self.episode_id == 1
         _b = not(self.episode_id % self._agent_aggregate_stats_every) 
-        if _a or _b: self.writer_add_stats(stats=stats)
+        if _a or _b: 
+            self.writer_add_stats(stats=reward_stats)
         # Save model to folder
         if not(self.episode_id % self._agent_save_model_every):
             dir_path = self.get_agent_save_dir_path(data=reward_stats)
@@ -258,6 +261,9 @@ class Servicer(_Servicer):
             self.epsilon = max(self._agent_min_epsilon, self.epsilon)
         # update lr scheduler
         self._agent.update_schedulers()
+        # clear agent loss
+        self._agent.reset_loss()
+        # start new episode
         self.start_new_episode()
 
     @busy_until_end
@@ -373,6 +379,11 @@ class Servicer(_Servicer):
         return self.send_response_to_client(command=command, parameters=parameters)
 
     # ===============================================================================
+
+    @property
+    def episode_seconds(self) -> int:
+        time = self.state_id // self._env_requests_per_second
+        return time
 
     @property
     def min_epsilon(self) -> float:

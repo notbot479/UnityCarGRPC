@@ -23,6 +23,7 @@ class DDPGAgent:
         ('critic','critic_network'),
         ('critic_optimizer','critic_optimizer'),
     )
+    _default_loss = float('inf')
 
     def __init__(
         self,
@@ -40,9 +41,9 @@ class DDPGAgent:
         load_from_dir: str | None = None,
         load_best_from_dir: str | None = None,
     ) -> None: 
-        self._step = 0
-        self._critic_loss = float('inf')
-        self._actor_loss = float('inf')
+        self._step = 1
+        self._critic_loss: list[float] = []
+        self._actor_loss: list[float] = []
         # init parameters
         self.tau = tau
         self.discount = discount
@@ -64,16 +65,10 @@ class DDPGAgent:
         # init learning rate scheduler 
         if self.lr_decay: self._init_lr_schedulers()
 
-    def _init_lr_schedulers(self) -> None:
-        self.actor_scheduler = ExponentialLR(
-            self.actor_optimizer, 
-            gamma=self.lr_decay,
-        )
-        self.critic_scheduler = ExponentialLR(
-            self.critic_optimizer, 
-            gamma=self.lr_decay,
-        )
-
+    @property
+    def step(self) -> int:
+        return self._step
+ 
     def update_schedulers(self) -> None:
         if not(self.lr_decay): return
         self.actor_scheduler.step()
@@ -113,8 +108,8 @@ class DDPGAgent:
     @property
     def stats(self) -> dict:
         stats = {
-            'actor_loss': self.actor_loss,
-            'critic_loss': self.critic_loss,
+            'actor_loss': self.actor_avg_loss,
+            'critic_loss': self.critic_avg_loss,
         }
         return stats
 
@@ -125,12 +120,28 @@ class DDPGAgent:
             print(f'- {k.title()}: {v}')
 
     @property
+    def critic_avg_loss(self) -> float:
+        loss = self._critic_loss
+        loss = self._get_avg(loss)
+        return loss
+
+    @property
+    def actor_avg_loss(self) -> float:
+        loss = self._actor_loss
+        loss = self._get_avg(loss)
+        return loss
+
+    @property
     def critic_loss(self) -> float:
-        return float(self._critic_loss)
+        loss = self._critic_loss
+        loss = loss[-1] if loss else self._default_loss
+        return loss
 
     @property
     def actor_loss(self) -> float:
-        return float(self._actor_loss)
+        loss = self._actor_loss
+        loss = loss[-1] if loss else self._default_loss
+        return loss
 
     def extract_qs(self, outputs: Tensor) -> np.ndarray:
         outputs = outputs.cpu()
@@ -148,21 +159,21 @@ class DDPGAgent:
         return qs
 
     def train(self, *, terminal_state:bool = False, batch_size:int = 64) -> None:
+        if self.reply_buffer.ready:
+            print(f'[DDPG] Train model. BatchSize: {batch_size}')
+            self._train(batch_size=batch_size)
         if terminal_state: self._step += 1
-        if not(self.reply_buffer.ready): return 
-        print(f'[DDPG] Train model. BatchSize: {batch_size}')
-        self._train(batch_size=batch_size)
 
     def train_on_episode_end(
         self, 
         batch_size: int = 64, 
         batches_count: int = 50,
     ) -> None:
+        if self.reply_buffer.ready:
+            bc, bs = batches_count, batch_size
+            print(f'[DDPG] Train on episode end. Batches: {bc}, BatchSize: {bs}')
+            [self.train(batch_size=batch_size) for _ in range(batches_count)]
         self._step += 1
-        if not(self.reply_buffer.ready): return
-        bc, bs = batches_count, batch_size
-        print(f'[DDPG] Train on episode end. Batches: {bc}, BatchSize: {bs}')
-        [self.train(batch_size=batch_size) for _ in range(batches_count)]
 
     def extract_inputs(self, data: list[dict[str,Any]]) -> dict[str, Tensor]:
         inputs = {}
@@ -185,13 +196,28 @@ class DDPGAgent:
         return tensor
 
     @property
-    def step(self) -> int: 
-        return self._step
-
-    @property
     def cuda(self) -> bool: 
         return torch.cuda.is_available()
 
+    def reset_loss(self) -> None:
+        self._critic_loss.clear()
+        self._actor_loss.clear()
+
+
+    def _init_lr_schedulers(self) -> None:
+        self.actor_scheduler = ExponentialLR(
+            self.actor_optimizer, 
+            gamma=self.lr_decay,
+        )
+        self.critic_scheduler = ExponentialLR(
+            self.critic_optimizer, 
+            gamma=self.lr_decay,
+        )
+
+    def _get_avg(self, data: list[float]) -> float:
+        if not(data): return self._default_loss
+        avg = sum(data) / len(data)
+        return avg
 
     def _init_target_networks(self) -> None:
         self.target_actor_network = copy.deepcopy(self.actor_network)
@@ -272,7 +298,7 @@ class DDPGAgent:
 
         current_Q = self.critic_network(**states, actor_action=actions)
         critic_loss = nn.MSELoss()(current_Q, target_Q)
-        self._critic_loss = float(critic_loss)
+        self._critic_loss.append(float(critic_loss))
         return critic_loss
 
     def _calculate_actor_loss(self, states: dict[str,Tensor]) -> Tensor:
@@ -281,7 +307,7 @@ class DDPGAgent:
             actor_action=self.actor_network(**states),
         )
         actor_loss = -critic_predict.mean()
-        self._actor_loss = float(actor_loss)
+        self._actor_loss.append(float(actor_loss))
         return actor_loss
     
     def _soft_update_target_networks(self) -> None:
