@@ -10,28 +10,26 @@ class CriticModel(BaseModel):
     def __init__(self, action_dim:int, max_action:int = 1) -> None:
         super().__init__(action_dim=action_dim, max_action=max_action)
 
-        self.conv1 = nn.Conv2d(1, 64, kernel_size=16, stride=2, padding=7)
-        self.bn1 = nn.BatchNorm2d(64)
-        self.conv2 = nn.Conv2d(64, 128, kernel_size=8, stride=2, padding=3)
-        self.bn2 = nn.BatchNorm2d(128)
-        self.conv3 = nn.Conv2d(128, 256, kernel_size=3, padding=1)
-        self.bn3 = nn.BatchNorm2d(256)
-        self.conv4 = nn.Conv2d(256, 512, kernel_size=3, padding=1)
-        self.bn4 = nn.BatchNorm2d(512)
-        self.fc1 = nn.Linear(3*3*512, 256)
+        self.relu = nn.ReLU()
 
-        self.fc64_256 = nn.Linear(64, 256)
-        self.fc2 = nn.Linear(1, 64)  # speed, steer, forward, target
-        self.fc3 = nn.Linear(6, 64)  # distance_sensors_distances
-        self.fc4 = nn.Linear(2, 64)  # stage 1
-        self.fc5 = nn.Linear(3, 64)  # stage 2
-        self.fc6 = nn.Linear(action_dim, 64)  # actor action
+        self.fc1_10 = nn.Linear(1, 10)
+        self.fc2_10 = nn.Linear(2, 10)
+        self.fc3_10 = nn.Linear(3, 10)
+        self.fc6_10 = nn.Linear(6, 10)
+        
+        self.fc10_128 = nn.Linear(10,128)
+        self.fc50_500 = nn.Linear(50, 500)
+        self.fc500_128 = nn.Linear(500, 128)
+        self.fc128_32 = nn.Linear(128, 32)
 
-        self.fc7 = nn.Linear(6*256, 512)  # concatenated
-        self.fc8 = nn.Linear(512, 256)
-        self.fc9 = nn.Linear(256, 64)
+        self.fc_concat = nn.Linear(3*128, 128)
+        self.fc256_32 = nn.Linear(128, 32)
+        self.fc_out = nn.Linear(32, 1)  # outputs
 
-        self.fc10 = nn.Linear(64, 1)  # outputs
+        self.bn128 = nn.BatchNorm1d(128)
+        self.bn256 = nn.BatchNorm1d(256)
+        self.bn500 = nn.BatchNorm1d(500)
+
 
     def forward(
         self, 
@@ -49,38 +47,18 @@ class CriticModel(BaseModel):
         actor_action: Tensor, 
         *args,**kwargs #pyright: ignore
     ) -> Tensor:
-        x_img = F.relu(self.bn1(self.conv1(image)))
-        x_img = F.max_pool2d(x_img, 2)
-        x_img = F.relu(self.bn2(self.conv2(x_img)))
-        x_img = F.max_pool2d(x_img, 2)
-        x_img = F.relu(self.bn3(self.conv3(x_img)))
-        x_img = F.max_pool2d(x_img, 2)
-        x_img = F.relu(self.bn4(self.conv4(x_img)))
-        x_img = F.max_pool2d(x_img, 2)
-        x_img = x_img.view(x_img.size(0), -1)  # Flatten
-        x_img = F.relu(self.fc1(x_img))
+        x_speed = self.relu(self.fc1_10(speed))
+        x_distance = self.relu(self.fc6_10(distance_sensors_distances))
+        _c = torch.cat([in_target_area, distance_to_target_router], dim=1)
+        x_stage1 = self.relu(self.fc2_10(_c))
+        _c = torch.cat([in_target_area, distance_to_box, boxes_is_found], dim=1)
+        x_stage2 = self.relu(self.fc3_10(_c))
+        x_actor = self.relu(self.fc2_10(actor_action))
 
-        x_speed = F.relu(self.fc2(speed))
-        x_speed = F.relu(self.fc64_256(x_speed))
-        
-        x_distance = F.relu(self.fc3(distance_sensors_distances))
-        x_distance = F.relu(self.fc64_256(x_distance))
-        
-        _c = torch.cat([distance_to_target_router, in_target_area], dim=1)
-        x_stage1 = F.relu(self.fc4(_c))
-        x_stage1 = F.relu(self.fc64_256(x_stage1))
+        concat = torch.cat([x_speed, x_distance, x_stage1, x_stage2, x_actor], dim=1) # 50 * 10
+        concat = self.relu(self.bn500(self.fc50_500(concat))) #500
+        concat = self.relu(self.fc500_128(concat)) #128
+        concat = self.relu(self.fc128_32(concat))
 
-        _c = torch.cat([boxes_is_found, distance_to_box, in_target_area], dim=1)
-        x_stage2 = F.relu(self.fc5(_c))
-        x_stage2 = F.relu(self.fc64_256(x_stage2))
-        
-        x_actor = F.relu(self.fc6(actor_action))
-        x_actor = F.relu(self.fc64_256(x_actor))
-        
-        _c = torch.cat([x_img, x_speed, x_distance, x_stage1, x_stage2, x_actor],dim=1)
-        x_concatenated = F.relu(self.fc7(_c))
-        x_concatenated = F.relu(self.fc8(x_concatenated))
-        x_concatenated = F.relu(self.fc9(x_concatenated))
-
-        outputs = self.fc10(x_concatenated)
+        outputs = self.fc_out(concat)
         return outputs

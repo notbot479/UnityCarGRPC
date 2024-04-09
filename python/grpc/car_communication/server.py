@@ -117,7 +117,7 @@ class Servicer(_Servicer):
     # ================================================================================
 
     exploration: bool = True
-    epsilon:float = 1
+    epsilon:float = 0
     
     agent_train_each_step: bool = False
     agent_train_batch_size: int = 64
@@ -126,15 +126,17 @@ class Servicer(_Servicer):
     # settings: env
     _env_requests_per_second: int = 10
     _env_action_dim: int = len(CAR_PARAMETERS)
-    # settings: agent
+    # settings: agent train
     _agent_episodes_count: int = 10000
+    _agent_exploration_seconds: float = 1 * 60
+    _agent_allow_backward_reward: bool = False
+    _agent_respawn_very_bad_model: bool = True
+    _agent_min_reward: float = -25
+    # settings: agent
     _agent_aggregate_stats_every: int = 10
     _agent_save_model_every: int = 10
-    _agent_exploration_seconds: float = 1 * 60
-    _agent_respawn_very_bad_model: bool = True
     _agent_epsilon_decay:float = 0.99
     _agent_min_epsilon: float = 0.01
-    _agent_min_reward: float = -25
     # settings: car
     _car_respawn_on_object_hit: bool = True
     _car_hit_object_patience = _env_requests_per_second * 2
@@ -488,8 +490,11 @@ class Servicer(_Servicer):
         *,
         done: Done = Done._,
     ) -> tuple[Score, Done]:
-        # -1 = forward, 1 = backward
-        is_backward = new_state.car_parameters.forward > 0
+        # -1 = max forward, 1 = max backward
+        if self._agent_allow_backward_reward:
+            is_backward = False
+        else:
+            is_backward = new_state.car_parameters.forward > 0
         # get target found based on patience
         car_hit_object = new_state.car_collision_data
         in_target_area = self.car_in_target_area(new_state.routers)

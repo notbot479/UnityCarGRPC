@@ -182,8 +182,8 @@ def _test_prediction(agent: DDPGAgent, model_input: ModelInputData) -> None:
     # test predict for ddpg agent
     data = [model_input.inputs,]
     inputs = agent.extract_inputs(data)
-    outputs_actor = actor_network(**inputs)
-    outputs_critic = critic_network(**inputs, actor_action=outputs_actor)
+    outputs_actor = actor_network.predict(**inputs)
+    outputs_critic = critic_network.predict(**inputs, actor_action=outputs_actor)
 
     print('\n1. Actor and critic outputs:')
     print(f'- Actor: {outputs_actor}')

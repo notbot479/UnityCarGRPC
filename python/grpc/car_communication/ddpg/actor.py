@@ -1,5 +1,4 @@
 from torch.functional import Tensor
-import torch.nn.functional as F
 import torch.nn as nn
 import torch
 
@@ -11,30 +10,24 @@ class ActorModel(BaseModel):
         super().__init__(action_dim=action_dim, max_action=max_action)
 
         self.tanh = nn.Tanh()
+        self.relu = nn.ReLU()
 
-        self.conv1 = nn.Conv2d(1, 64, kernel_size=16, stride=2, padding=7)
-        self.bn1 = nn.BatchNorm2d(64)
-        self.conv2 = nn.Conv2d(64, 128, kernel_size=8, stride=2, padding=3)
-        self.bn2 = nn.BatchNorm2d(128)
-        self.conv3 = nn.Conv2d(128, 256, kernel_size=3, padding=1)
-        self.bn3 = nn.BatchNorm2d(256)
-        self.conv4 = nn.Conv2d(256, 512, kernel_size=3, padding=1)
-        self.bn4 = nn.BatchNorm2d(512)
-        self.fc1 = nn.Linear(3*3*512, 256)
+        self.fc1_10 = nn.Linear(1, 10)
+        self.fc2_10 = nn.Linear(2, 10)
+        self.fc3_10 = nn.Linear(3, 10)
+        self.fc6_10 = nn.Linear(6, 10)
+        
+        self.fc10_128 = nn.Linear(10,128)
+        self.fc40_400 = nn.Linear(40, 400)
+        self.fc400_128 = nn.Linear(400, 128)
 
-        self.fc64_256 = nn.Linear(64, 256)  
-        self.fc256_64 = nn.Linear(256, 64)  
-        self.fc2 = nn.Linear(1, 64)  # speed, steer, forward, target
-        self.fc3 = nn.Linear(6, 64)  # distance_sensors_distances
-        self.fc4 = nn.Linear(2, 64)  # stage 1
-        self.fc5 = nn.Linear(3, 64)  # stage 2
+        self.fc_concat = nn.Linear(3*256, 256)
+        self.fc256_32 = nn.Linear(256, 32)
+        self.fc_out = nn.Linear(32, action_dim)
 
-        self.fc6 = nn.Linear(5*256, 256)  # concatenated
-        self.fc7 = nn.Linear(512, 256)  # x1,x2,x3
-        self.fc8 = nn.Linear(3*64, 32)  # concatenated2
+        self.bn256 = nn.BatchNorm1d(256)
+        self.bn400 = nn.BatchNorm1d(400)
 
-        self.fc9 = nn.Linear(32, action_dim)  # outputs
-    
     def forward(
         self, 
         # car parameters
@@ -52,51 +45,29 @@ class ActorModel(BaseModel):
         target_found: Tensor,
         *args, **kwargs #pyright: ignore
     ) -> Tensor:
-        x_img = F.relu(self.bn1(self.conv1(image)))
-        x_img = F.max_pool2d(x_img, 2)
-        x_img = F.relu(self.bn2(self.conv2(x_img)))
-        x_img = F.max_pool2d(x_img, 2)
-        x_img = F.relu(self.bn3(self.conv3(x_img)))
-        x_img = F.max_pool2d(x_img, 2)
-        x_img = F.relu(self.bn4(self.conv4(x_img)))
-        x_img = F.max_pool2d(x_img, 2)
-        x_img = x_img.view(x_img.size(0), -1)  # Flatten
-        x_img = F.relu(self.fc1(x_img))
+        x_speed = self.relu(self.fc1_10(speed))
+        x_distance = self.relu(self.fc6_10(distance_sensors_distances))
+        _c = torch.cat([in_target_area, distance_to_target_router], dim=1)
+        x_stage1 = self.relu(self.fc2_10(_c))
+        _c = torch.cat([in_target_area, distance_to_box, boxes_is_found], dim=1)
+        x_stage2 = self.relu(self.fc3_10(_c))
 
-        x_speed = F.relu(self.fc2(speed))
-        x_speed = F.relu(self.fc64_256(x_speed))
+        concat = torch.cat([x_speed, x_distance, x_stage1, x_stage2], dim=1) # 4 * 10
+        concat = self.relu(self.bn400(self.fc40_400(concat))) #400
+        concat = self.relu(self.fc400_128(concat)) #128
 
-        x_distance = F.relu(self.fc3(distance_sensors_distances))
-        x_distance = F.relu(self.fc64_256(x_distance))
+        x_steer = self.fc10_128(self.fc1_10(steer))
+        x_forward = self.fc10_128(self.fc1_10(forward))
+        x_target = self.fc10_128(self.fc1_10(target_found))
 
-        _c = torch.cat([distance_to_target_router, in_target_area], dim=1)
-        x_stage1 = F.relu(self.fc4(_c))
-        x_stage1 = F.relu(self.fc64_256(x_stage1))
+        x1 = torch.cat([concat, x_steer], dim=1) # 256 
+        x2 = torch.cat([concat, x_forward], dim=1) # 256 
+        x3 = torch.cat([concat, x_target], dim=1) # 256
 
-        _c = torch.cat([boxes_is_found, distance_to_box, in_target_area], dim=1)
-        x_stage2 = F.relu(self.fc5(_c))
-        x_stage2 = F.relu(self.fc64_256(x_stage2))
+        x = self.fc_concat(torch.cat([x1,x2,x3], dim=1)) # 256
+        x = self.relu(self.bn256(x))
 
-        _c = torch.cat([x_img, x_speed, x_distance, x_stage1, x_stage2], dim=1)
-        x_concatenated = F.relu(self.fc6(_c))
+        x = self.relu(self.fc256_32(x))
 
-        x_steer = F.relu(self.fc2(steer))
-        x_steer = F.relu(self.fc64_256(x_steer))
-        x_steer = F.relu(self.fc7(torch.cat([x_concatenated, x_steer], dim=1)))
-        x_steer = F.relu(self.fc256_64(x_steer))
-
-        x_forward = F.relu(self.fc2(forward))
-        x_forward = F.relu(self.fc64_256(x_forward))
-        x_forward = F.relu(self.fc7(torch.cat([x_concatenated, x_forward], dim=1)))
-        x_forward = F.relu(self.fc256_64(x_forward))
-
-        x_target = F.relu(self.fc2(target_found))
-        x_target = F.relu(self.fc64_256(x_target))
-        x_target = F.relu(self.fc7(torch.cat([x_concatenated, x_target], dim=1)))
-        x_target = F.relu(self.fc256_64(x_target))
-
-        _c = torch.cat([x_steer, x_forward, x_target], dim=1)
-        x_concatenated2 = F.relu(self.fc8(_c))
-
-        outputs = self.tanh(self.fc9(x_concatenated2))
+        outputs = self.tanh(self.fc_out(x))
         return self.max_action * outputs
