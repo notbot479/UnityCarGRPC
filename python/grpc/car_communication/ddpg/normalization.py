@@ -1,6 +1,7 @@
 from typing import Union, Literal
 from torch import Tensor
 
+
 def shift_left(tensor: Tensor, max_action:int = 1) -> Tensor:
     tensor = (2 * tensor) - max_action
     return tensor

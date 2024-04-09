@@ -6,6 +6,7 @@ import torch
 
 from typing import Any
 import numpy as np
+import copy
 import os
 
 from .model_selector import get_best_model_path
@@ -18,56 +19,52 @@ from .noise import OUNoise
 class DDPGAgent:
     _model_and_object = (
         ('actor','actor_network'),
-        ('actor_target','target_actor_network'),
+        ('actor_optimizer','actor_optimizer'),
         ('critic','critic_network'),
-        ('critic_target','target_critic_network'),
+        ('critic_optimizer','critic_optimizer'),
     )
 
     def __init__(
         self,
+        # base parameters
         action_dim: int = 2,
         max_action: int = 1,
-        gamma: float = 0.99,
-        tau: float = 0.005,
-        actor_lr: float = 0.0001,
-        critic_lr: float = 0.001,
-        lr_decay: float = 0.9,
         reply_buffer_capacity:int = 10000,
-        shift_continious_parameters:bool = False,
+        # agent parameters
+        discount: float = 0.99,
+        tau: float = 0.001,
+        actor_lr: float = 1e-4,
+        critic_weights_decay: float = 1e-2,
+        lr_decay: float = 0,
         # load from dir or best
         load_from_dir: str | None = None,
         load_best_from_dir: str | None = None,
     ) -> None: 
-        self._step = 1
+        self._step = 0
         self._critic_loss = float('inf')
         self._actor_loss = float('inf')
         # init parameters
         self.tau = tau
-        self.gamma = gamma
+        self.discount = discount
+        self.actor_lr = actor_lr
+        self.critic_weights_decay = critic_weights_decay
         self.lr_decay = lr_decay
         self.max_action = max_action
         self.action_dim = action_dim
-        self.shift_continious_parameters = shift_continious_parameters
         # load device, reply buffer, noise
         self.device = torch.device(self._device) 
         self.reply_buffer = ReplayBuffer(capacity=reply_buffer_capacity)  
         self.noise = OUNoise(action_dim=action_dim)
         # init networks; load trained networks if dir passed
-        self._init_models()
+        self._init_networks()
         if load_from_dir:
             self.load_model(dir_path=load_from_dir)
         elif load_best_from_dir: 
             self.load_best_model(load_best_from_dir)
-        # init optimizers for networks
-        self.actor_optimizer = Adam(
-            params=self.actor_network.parameters(), 
-            lr=actor_lr,
-        )
-        self.critic_optimizer = Adam(
-            params=self.critic_network.parameters(),
-            lr=critic_lr,
-        )
         # init learning rate scheduler 
+        if self.lr_decay: self._init_lr_schedulers()
+
+    def _init_lr_schedulers(self) -> None:
         self.actor_scheduler = ExponentialLR(
             self.actor_optimizer, 
             gamma=self.lr_decay,
@@ -78,6 +75,7 @@ class DDPGAgent:
         )
 
     def update_schedulers(self) -> None:
+        if not(self.lr_decay): return
         self.actor_scheduler.step()
         self.critic_scheduler.step()
 
@@ -106,6 +104,8 @@ class DDPGAgent:
             # load networks state from file
             model: nn.Module = self.__getattribute__(obj_name)
             model.load_state_dict(torch.load(model_path))
+        # init target networks
+        self._init_target_networks()
         # show logs
         name = os.path.basename(dir_path)
         print(f'[DDPG] Model was loaded: {name}')
@@ -138,10 +138,11 @@ class DDPGAgent:
         return qs
 
     def get_qs(self, inputs: dict[str, Any], exploration:bool = False) -> np.ndarray:
-        '''get prediction from actor model'''
+        '''get prediction from actor model in eval mode'''
         inputs = self.extract_inputs([inputs,])
-        tensor = self.actor_network(**inputs).to(self.device)
+        tensor = self.actor_network.predict(**inputs)
         qs = self.extract_qs(tensor)
+        # add exploration noise and clip out of limits
         if exploration: qs += self.noise.sample()
         qs = np.clip(qs, -self.max_action, self.max_action)
         return qs
@@ -172,6 +173,7 @@ class DDPGAgent:
     def convert_to_tensor_and_stack(self, data:list[Any]) -> Tensor:
         tensors = [self.convert_to_tensor(i) for i in data]
         tensor = torch.stack(tensors, dim=0)
+        tensor = tensor.to(self.device)
         return tensor
 
     def convert_to_tensor(self, data: Any) -> Tensor:
@@ -179,6 +181,7 @@ class DDPGAgent:
         tensor = torch.tensor(np_data, dtype=torch.float32).to(self.device)
         # add batch dim for tensor if singleton
         if not(tensor.dim()): tensor = tensor.unsqueeze(0)
+        tensor = tensor.to(self.device)
         return tensor
 
     @property
@@ -190,32 +193,31 @@ class DDPGAgent:
         return torch.cuda.is_available()
 
 
-    def _init_models(self) -> None:
-        shift_range = self.shift_continious_parameters
-        # init networks
+    def _init_target_networks(self) -> None:
+        self.target_actor_network = copy.deepcopy(self.actor_network)
+        self.target_critic_network = copy.deepcopy(self.critic_network)
+
+    def _init_networks(self) -> None:
+        # init actor network
         self.actor_network = ActorModel(
             action_dim = self.action_dim,
             max_action = self.max_action,
-            shift_range = shift_range,
         ).to(self.device)
+        self.actor_optimizer = Adam(
+            params=self.actor_network.parameters(), 
+            lr=self.actor_lr,
+        )
+        # init critic network
         self.critic_network = CriticModel(
             action_dim=self.action_dim,
             max_action = self.max_action,
-            shift_range = shift_range,
         ).to(self.device)
+        self.critic_optimizer = Adam(
+            params=self.critic_network.parameters(),
+            weight_decay=self.critic_weights_decay,
+        )
         # init target networks
-        self.target_actor_network = ActorModel(
-            action_dim = self.action_dim,
-            max_action = self.max_action,
-            shift_range = shift_range,
-        ).to(self.device)
-        self.target_critic_network = CriticModel(
-            action_dim=self.action_dim,
-            max_action = self.max_action,
-            shift_range = shift_range,
-        ).to(self.device) 
-        # hard update target networks weights from networks
-        self._hard_update_target_networks()
+        self._init_target_networks()
 
     def _save_model(self, model: nn.Module, path:str) -> None:
         torch.save(model.state_dict(),path)
@@ -236,7 +238,6 @@ class DDPGAgent:
         next_states = self.extract_inputs(next_states)
         dones = self.convert_to_tensor_and_stack(dones)
         # update critic network
-        self.critic_optimizer.zero_grad()
         critic_loss = self._calculate_critic_loss(
             states = states,
             rewards = rewards,
@@ -244,11 +245,12 @@ class DDPGAgent:
             actions = actions,
             next_states = next_states,
         )
+        self.critic_optimizer.zero_grad()
         critic_loss.backward()
         self.critic_optimizer.step()
         # update actor network
-        self.actor_optimizer.zero_grad()
         actor_loss = self._calculate_actor_loss(states=states) 
+        self.actor_optimizer.zero_grad()
         actor_loss.backward()
         self.actor_optimizer.step()
         # update target networks 
@@ -262,37 +264,25 @@ class DDPGAgent:
         actions: Tensor, 
         next_states: dict[str,Tensor],
     ) -> Tensor:
-        with torch.no_grad():
-            next_actions = self.target_actor_network(**next_states)
-            target_Q = self.target_critic_network(
-                **next_states, 
-                actor_action=next_actions,
-            ) 
-            target_Q = rewards + (1 - dones) * self.gamma * target_Q
+        target_Q = self.target_critic_network(
+            **next_states, 
+            actor_action=self.target_actor_network(**next_states),
+        )
+        target_Q = rewards + ((1 - dones) * self.discount * target_Q).detach()
+
         current_Q = self.critic_network(**states, actor_action=actions)
         critic_loss = nn.MSELoss()(current_Q, target_Q)
         self._critic_loss = float(critic_loss)
         return critic_loss
 
     def _calculate_actor_loss(self, states: dict[str,Tensor]) -> Tensor:
-        actions = self.actor_network(**states)
         critic_predict = self.critic_network(
             **states, 
-            actor_action=actions,
+            actor_action=self.actor_network(**states),
         )
-        actor_loss = (-critic_predict).mean()
+        actor_loss = -critic_predict.mean()
         self._actor_loss = float(actor_loss)
         return actor_loss
-    
-    def _hard_update_target_networks(self) -> None:
-        self._hard_update_network(
-            network = self.actor_network, 
-            target_network = self.target_actor_network,
-        )
-        self._hard_update_network(
-            network = self.critic_network,
-            target_network = self.target_critic_network,
-        )
     
     def _soft_update_target_networks(self) -> None:
         self._soft_update_network(
@@ -311,11 +301,3 @@ class DDPGAgent:
     ) -> None:
         for p, tp in zip(network.parameters(), target_network.parameters()):
             tp.data.copy_(self.tau * p.data + (1 - self.tau) * tp.data)
-
-    def _hard_update_network(
-        self,
-        network: nn.Module,
-        target_network: nn.Module,
-    ) -> None:
-        state = network.state_dict()
-        target_network.load_state_dict(state)

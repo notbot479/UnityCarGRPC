@@ -119,23 +119,22 @@ class Servicer(_Servicer):
     exploration: bool = True
     epsilon:float = 1
     
-    agent_train_each_step: bool = True
+    agent_train_each_step: bool = False
     agent_train_batch_size: int = 64
-    agent_max_batch_count: int = 0
+    agent_max_batch_count: int | None = None
     
     # settings: env
     _env_requests_per_second: int = 10
     _env_action_dim: int = len(CAR_PARAMETERS)
     # settings: agent
-    _agent_epsilon_decay:float = 0.99
-    _agent_min_epsilon: float = 0.01
-    _agent_shift_range: bool = False
-    _agent_exploration_seconds: float = 0.5 * 60 # 30 seconds
-    _agent_respawn_very_bad_model: bool = True
     _agent_episodes_count: int = 10000
-    _agent_min_reward: float = -25
     _agent_aggregate_stats_every: int = 10
     _agent_save_model_every: int = 10
+    _agent_exploration_seconds: float = 1 * 60
+    _agent_respawn_very_bad_model: bool = True
+    _agent_epsilon_decay:float = 0.99
+    _agent_min_epsilon: float = 0.01
+    _agent_min_reward: float = -25
     # settings: car
     _car_respawn_on_object_hit: bool = True
     _car_hit_object_patience = _env_requests_per_second * 2
@@ -157,7 +156,6 @@ class Servicer(_Servicer):
     _agent = DDPGAgent(
         action_dim=_env_action_dim,
         load_best_from_dir=AGENT_MODELS_PATH,
-        shift_continious_parameters=_agent_shift_range,
     )
     _writer = SummaryWriter(_get_logs_path())
     # server init commands
@@ -192,8 +190,8 @@ class Servicer(_Servicer):
     @property
     def train_agent_episode_batches_count(self) -> int:
         '''update property logic if needed'''
-        mx = self.agent_max_batch_count
         batches_count = self.state_id
+        mx = self.agent_max_batch_count or 0
         return min(batches_count, mx) if mx else batches_count
     
     @busy_until_end

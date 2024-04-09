@@ -197,7 +197,7 @@ def _test_prediction(agent: DDPGAgent, model_input: ModelInputData) -> None:
     print('3. DDPG agent qs')
     print(f'- QS: {qs}')
 
-def _test(test_saveload:bool = False):
+def _test(test_saveload:bool = True):
     agent = DDPGAgent()
     model_input = ModelInputData(
         speed = 2.4,
