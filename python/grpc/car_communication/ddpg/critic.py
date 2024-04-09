@@ -18,7 +18,7 @@ class CriticModel(BaseModel):
         self.fc6_10 = nn.Linear(6, 10)
         
         self.fc10_128 = nn.Linear(10,128)
-        self.fc50_500 = nn.Linear(50, 500)
+        self.fc50_500 = nn.Linear((5+1) * 10, 500)
         self.fc500_128 = nn.Linear(500, 128)
         self.fc128_32 = nn.Linear(128, 32)
 
@@ -38,6 +38,7 @@ class CriticModel(BaseModel):
         # car sensors [0, 1]
         image: Tensor, 
         distance_sensors_distances: Tensor, 
+        nearest_routers: Tensor,
         distance_to_target_router: Tensor,
         distance_to_box: Tensor, 
         # car hints [0 or 1]
@@ -49,13 +50,15 @@ class CriticModel(BaseModel):
     ) -> Tensor:
         x_speed = self.relu(self.fc1_10(speed))
         x_distance = self.relu(self.fc6_10(distance_sensors_distances))
+        x_routers = self.relu(self.fc3_10(nearest_routers))
         _c = torch.cat([in_target_area, distance_to_target_router], dim=1)
         x_stage1 = self.relu(self.fc2_10(_c))
         _c = torch.cat([in_target_area, distance_to_box, boxes_is_found], dim=1)
         x_stage2 = self.relu(self.fc3_10(_c))
         x_actor = self.relu(self.fc2_10(actor_action))
 
-        concat = torch.cat([x_speed, x_distance, x_stage1, x_stage2, x_actor], dim=1) # 50 * 10
+        # 6 * 10
+        concat = torch.cat([x_speed, x_distance, x_routers, x_stage1, x_stage2, x_actor], dim=1) 
         concat = self.relu(self.bn500(self.fc50_500(concat))) #500
         concat = self.relu(self.fc500_128(concat)) #128
         concat = self.relu(self.fc128_32(concat))

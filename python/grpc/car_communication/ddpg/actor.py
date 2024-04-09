@@ -18,7 +18,7 @@ class ActorModel(BaseModel):
         self.fc6_10 = nn.Linear(6, 10)
         
         self.fc10_128 = nn.Linear(10,128)
-        self.fc40_400 = nn.Linear(40, 400)
+        self.fc40_400 = nn.Linear(5 * 10, 400)
         self.fc400_128 = nn.Linear(400, 128)
 
         self.fc_concat = nn.Linear(3*256, 256)
@@ -38,6 +38,7 @@ class ActorModel(BaseModel):
         image: Tensor, 
         distance_sensors_distances: Tensor, 
         distance_to_target_router: Tensor,
+        nearest_routers: Tensor,
         distance_to_box: Tensor, 
         # car hints [0 or 1]
         in_target_area: Tensor, 
@@ -46,13 +47,15 @@ class ActorModel(BaseModel):
         *args, **kwargs #pyright: ignore
     ) -> Tensor:
         x_speed = self.relu(self.fc1_10(speed))
+        x_routers = self.relu(self.fc3_10(nearest_routers))
         x_distance = self.relu(self.fc6_10(distance_sensors_distances))
         _c = torch.cat([in_target_area, distance_to_target_router], dim=1)
         x_stage1 = self.relu(self.fc2_10(_c))
         _c = torch.cat([in_target_area, distance_to_box, boxes_is_found], dim=1)
         x_stage2 = self.relu(self.fc3_10(_c))
 
-        concat = torch.cat([x_speed, x_distance, x_stage1, x_stage2], dim=1) # 4 * 10
+        # concat 5 * 10
+        concat = torch.cat([x_speed, x_distance, x_routers, x_stage1, x_stage2], dim=1) 
         concat = self.relu(self.bn400(self.fc40_400(concat))) #400
         concat = self.relu(self.fc400_128(concat)) #128
 

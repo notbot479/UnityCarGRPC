@@ -13,6 +13,7 @@ class ModelInputData:
     DISTANCE_SENSOR_MAX_DISTANCE: Meter = 10    
     ROUTER_MAX_RSSI: Rssi = -100                
     CAR_MAX_SPEED: float = 3
+    CAR_MAX_NEAREST_ROUTERS = 3
     ACTION_DIM:int = 1
     
     DISTANCE_SENSOR_DEFAULT: float = 1        
@@ -30,6 +31,7 @@ class ModelInputData:
         # car sensors data
         image: np.ndarray | None,
         distance_sensors_distances: list[Meter],
+        distance_to_routers: list[Rssi],
         distance_to_target_router: Rssi,
         distance_to_box: Meter,
         # additional data
@@ -46,6 +48,9 @@ class ModelInputData:
         self.image = self._normalize_image(image=image)
         self.distance_sensors_distances = self._normalize_sensors_data(
             distances = distance_sensors_distances,
+        )
+        self.nearest_routers = self._normalize_nearest_routers(
+            distance_to_routers,
         )
         self.distance_to_target_router = self._normalize_rssi(
             distance_to_target_router,
@@ -69,6 +74,7 @@ class ModelInputData:
             # sensors data
             'image':self.image[:,:,np.newaxis],
             'distance_sensors_distances': self.distance_sensors_distances,
+            'nearest_routers': self.nearest_routers,
             'distance_to_target_router': self.distance_to_target_router,
             'distance_to_box': self.distance_to_box,
             # hints
@@ -77,6 +83,13 @@ class ModelInputData:
             'target_found': self.target_found,
         }
         return data
+
+    def _normalize_nearest_routers(self, distances: list[Rssi]) -> np.ndarray:
+        mx = self.CAR_MAX_NEAREST_ROUTERS
+        mock = [1.0] * mx 
+        rssi = [self._normalize_rssi(r) for r in distances]
+        rssi = sorted(rssi + mock)
+        return np.array(rssi[0:mx])
 
     def _normalize_car_parameter(self, parameter:float) -> float:
         dim = self.ACTION_DIM
@@ -137,6 +150,7 @@ class ModelInputData:
         }
         for k,v in d.items(): total += f'- {k}: {v}\n'
         total += f'Distances: {list(self.distance_sensors_distances)}\n'
+        total += f'NearestRouters: {list(self.nearest_routers)}\n'
         total += f'DistanceToTargetRouter: {self.distance_to_target_router}\n'
         total += f'InTargetArea: {self.in_target_area}\n'
         # searching target box
@@ -206,6 +220,7 @@ def _test(test_saveload:bool = True):
         backward = 0,
         image = None,
         distance_sensors_distances = [1,2,3,4,5,11],
+        distance_to_routers=[-57,-10,-20,-44],
         distance_to_target_router = -101,
         distance_to_box = 8,
         in_target_area = False,

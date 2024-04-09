@@ -541,10 +541,10 @@ class Servicer(_Servicer):
             delta = round(old_target_rssi - new_target_rssi, 2)
             k = round(1 - abs(old_target_rssi)/100, 2)
             r = round(self._env_requests_per_second / 10, 1)
-            if not(delta):
+            reward = round((-delta * r * k), 1)
+            if not(reward):
                 reward = RewardPolicy.PASSIVE_REWARD.value
                 return (reward, done)
-            reward = round((-delta * r * k), 1)
             if reward > 0 and is_backward: reward = -reward
             return (reward, done)
         else: 
@@ -678,6 +678,7 @@ class Servicer(_Servicer):
         speed = data.car_speed
         image = data.camera_image.frame if data.camera_image else None
         distance_sensors_distances = [i.distance for i in data.distance_sensors]
+        distance_to_routers = [r.rssi for r in data.routers]
         distance_to_target_router = self.get_router_rssi_by_id(
             router_id = target_router_id,
             routers = data.routers,
@@ -704,6 +705,7 @@ class Servicer(_Servicer):
             forward = forward,
             backward = backward,
             distance_sensors_distances = distance_sensors_distances,
+            distance_to_routers=distance_to_routers,
             distance_to_target_router = distance_to_target_router,
             distance_to_box = distance_to_box,
             in_target_area = in_target_area,
