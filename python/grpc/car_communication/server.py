@@ -550,10 +550,10 @@ class Servicer(_Servicer):
             if self.is_target_router_switched: 
                 reward = RewardPolicy.TARGET_ROUTER_SWITCHED.value
                 return (reward, done)
-            delta = round(old_target_rssi - new_target_rssi, 2)
+            delta = round(old_target_rssi - new_target_rssi, 3)
             k = round(1 - abs(old_target_rssi)/100, 2)
             r = round(self._env_requests_per_second / 10, 1)
-            reward = round((-delta * r * k), 1)
+            reward = round((-delta * r * k), 2)
             if not(reward):
                 reward = RewardPolicy.PASSIVE_REWARD.value
                 return (reward, done)
