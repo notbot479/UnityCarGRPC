@@ -355,6 +355,7 @@ class Servicer(_Servicer):
             )
             if self.train_agent_state:
                 self.train_agent_add(
+                    state_id=self.state_id,
                     terminal_state=bool(done),
                     batch_size=self.agent_train_batch_size,
                 )

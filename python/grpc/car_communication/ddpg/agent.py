@@ -158,9 +158,17 @@ class DDPGAgent:
         qs = np.clip(qs, -self.max_action, self.max_action)
         return qs
 
-    def train(self, *, terminal_state:bool = False, batch_size:int = 64) -> None:
+    def train(
+        self, 
+        terminal_state:bool = False, 
+        batch_size:int = 64,
+        *,
+        prefix:str | None = None,
+        state_id: int | None = None,
+        ) -> None:
         if self.reply_buffer.ready:
-            print(f'[DDPG] Train model. BatchSize: {batch_size}')
+            prefix = self._get_prefix(prefix=prefix,state_id=state_id)
+            print(f'[DDPG]{prefix}Train model. BatchSize: {batch_size}')
             self._train(batch_size=batch_size)
         if terminal_state: self._step += 1
 
@@ -172,7 +180,7 @@ class DDPGAgent:
         if self.reply_buffer.ready:
             bc, bs = batches_count, batch_size
             print(f'[DDPG] Train on episode end. Batches: {bc}, BatchSize: {bs}')
-            [self.train(batch_size=batch_size) for _ in range(batches_count)]
+            [self.train(prefix=f'[{i}/{bc}]', batch_size=bs) for i in range(1,bc+1)]
         self._step += 1
 
     def extract_inputs(self, data: list[dict[str,Any]]) -> dict[str, Tensor]:
@@ -203,6 +211,11 @@ class DDPGAgent:
         self._critic_loss.clear()
         self._actor_loss.clear()
 
+    @staticmethod 
+    def _get_prefix(*,prefix: str | None = None, state_id:int | None = None) -> str:
+        if prefix: return f"{prefix} "
+        elif state_id: return f"[{state_id}] "
+        return " "
 
     def _init_lr_schedulers(self) -> None:
         self.actor_scheduler = ExponentialLR(
