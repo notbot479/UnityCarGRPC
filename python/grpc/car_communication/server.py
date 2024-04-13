@@ -398,12 +398,12 @@ class Servicer(_Servicer):
         step = self.episode_id
         {self._writer.add_scalar(k,v,step) for k,v in stats.items()}
 
-    def get_reward_stats(self, *, round_factor:int = 3) -> dict: # calculate reward stats
+    def get_reward_stats(self, *, round_factor:int = 2) -> dict: # calculate reward stats
         aggregate_every = self._agent_aggregate_stats_every
         ep_batch: list[float] = self._agent_episode_rewards[-aggregate_every:]
         average_reward = round(sum(ep_batch)/len(ep_batch),round_factor)
         min_reward = round(min(ep_batch),round_factor) 
-        max_reward = round(max(ep_batch),round_factor)
+        max_reward = min(round(max(ep_batch),round_factor), self._agent_min_reward)
         reward_stats = {
             'min_reward':min_reward, 
             'max_reward':max_reward,
@@ -788,7 +788,7 @@ class Servicer(_Servicer):
 
     @property
     def max_state_id(self) -> int:
-        return self._env_requests_per_second * self._agent_exploration_seconds
+        return int(self._env_requests_per_second * self._agent_exploration_seconds)
 
     @property
     def state_id(self) -> int:
@@ -800,7 +800,7 @@ class Servicer(_Servicer):
 
     @property
     def episode_total_score(self) -> Score:
-        return self._agent_episode_total_score
+        return round(self._agent_episode_total_score, 2)
 
     @property
     def car_active_task(self) -> CarActiveTask | None:
