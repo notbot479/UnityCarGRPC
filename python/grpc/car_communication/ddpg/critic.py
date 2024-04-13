@@ -6,8 +6,13 @@ from .basemodel import BaseModel
 
 
 class CriticModel(BaseModel):
+    _concat_tensor = 7 * 8
+
     def __init__(self, action_dim:int, max_action:int = 1) -> None:
         super().__init__(action_dim=action_dim, max_action=max_action)
+
+        self.concat_fc = nn.Linear(self._concat_tensor, self._concat_tensor)
+        self.concat_bn = nn.BatchNorm1d(self._concat_tensor)
 
         self._init_actor_action_nn()
         self._init_concat_nn()
@@ -104,14 +109,18 @@ class CriticModel(BaseModel):
     ) -> Tensor:
         _c = [x_image, x_distance, x_routers, x_speed, x_stage1, x_stage2, x_actor]
         x = torch.cat(_c, dim=1)
+        # add batch normalization
+        x = self.concat_fc(x)
+        x = self.concat_bn(x)
+        x = self.activation(x)
         return x
 
 
     def _init_concat_nn(self, input_dim:int = 7 * 8, output_dim:int = 8) -> None:
-        self.concat_fc1 = nn.Linear(input_dim, 400)
-        self.concat_fc2 = nn.Linear(400, 400)
-        self.concat_fc3 = nn.Linear(400, 300)
-        self.concat_fc4 = nn.Linear(300, output_dim)
+        self.concat_fc1 = nn.Linear(input_dim, 512)
+        self.concat_fc2 = nn.Linear(512, 512)
+        self.concat_fc3 = nn.Linear(512, 256)
+        self.concat_fc4 = nn.Linear(256, output_dim)
 
         self.concat_fc_out = nn.Linear(output_dim, 1)
 
