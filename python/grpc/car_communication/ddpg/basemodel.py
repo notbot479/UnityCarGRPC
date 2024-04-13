@@ -79,9 +79,9 @@ class Base(nn.Module):
         layer = self._get_layer_by_name(name=name)
         return layer
 
+
 class BaseModel(Base):
     _image_flatten_size: int = 3 * 3 * 256
-    _image_output = 8
 
     def __init__(self, action_dim: int, max_action: int = 1, *args, **kwargs) -> None:
         super().__init__(action_dim, max_action, *args, **kwargs)
@@ -92,40 +92,13 @@ class BaseModel(Base):
         self._init_speed_nn()
         self._init_stage1_nn()
         self._init_stage2_nn()
-
+ 
     def image_to_input(self, image: Tensor) -> Tensor:
-        # mock output for image
-        if self._mock_image: 
-            b = image.size(0)
-            x = torch.zeros(b, self._image_output)
-            return x
-
-        # conv layer 1
-        x = self.image_conv1(image)
-        x = self.image_bn1(x)
-        x = self.activation(x)
-        x = self.image_pool1(x)
-
-        # conv layer 2
-        x = self.image_conv2(x)
-        x = self.image_bn2(x)
-        x = self.activation(x)
-        x = self.image_pool2(x)
-
-        # conv layer 3
-        x = self.image_conv3(x)
-        x = self.image_bn3(x)
-        x = self.activation(x)
-        x = self.image_pool3(x)
-
-        # conv layer 4
-        x = self.image_conv4(x)
-        x = self.image_bn4(x)
-        x = self.activation(x)
-        x = self.image_pool4(x)
-
-        # flatten
-        x = x.view(-1, self._image_flatten_size)
+        # processing image
+        if self._mock_image:
+            x = self._image_to_mock_flatten(image=image)
+        else:
+            x = self._image_to_flatten(image=image)
 
         # fc layer 1
         x = self.image_fc1(x)
@@ -223,6 +196,39 @@ class BaseModel(Base):
         )
         return x
 
+    def _image_to_mock_flatten(self, image: Tensor) -> Tensor:
+        batches = image.size(0)
+        x = torch.zeros(batches, self._image_flatten_size)
+        return x
+
+    def _image_to_flatten(self, image: Tensor) -> Tensor:
+        # conv layer 1
+        x = self.image_conv1(image)
+        x = self.image_bn1(x)
+        x = self.activation(x)
+        x = self.image_pool1(x)
+
+        # conv layer 2
+        x = self.image_conv2(x)
+        x = self.image_bn2(x)
+        x = self.activation(x)
+        x = self.image_pool2(x)
+
+        # conv layer 3
+        x = self.image_conv3(x)
+        x = self.image_bn3(x)
+        x = self.activation(x)
+        x = self.image_pool3(x)
+
+        # conv layer 4
+        x = self.image_conv4(x)
+        x = self.image_bn4(x)
+        x = self.activation(x)
+        x = self.image_pool4(x)
+
+        # flatten
+        x = x.view(-1, self._image_flatten_size)
+        return x
 
     def _init_image_nn(self, output_dim: int = 8) -> None:
         self.image_conv1 = nn.Conv2d(1, 32, kernel_size=6, stride=2, padding=2)
