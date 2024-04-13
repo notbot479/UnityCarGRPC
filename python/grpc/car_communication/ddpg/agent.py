@@ -35,7 +35,7 @@ class DDPGAgent:
         discount: float = 0.99,
         tau: float = 0.001,
         actor_lr: float = 1e-4,
-        critic_weights_decay: float = 1e-2,
+        critic_lr: float = 1e-3,
         lr_decay: float = 0,
         # load from dir or best
         load_from_dir: str | None = None,
@@ -50,7 +50,7 @@ class DDPGAgent:
         self.tau = tau
         self.discount = discount
         self.actor_lr = actor_lr
-        self.critic_weights_decay = critic_weights_decay
+        self.critic_lr = critic_lr
         self.lr_decay = lr_decay
         self.max_action = max_action
         self.action_dim = action_dim
@@ -259,7 +259,7 @@ class DDPGAgent:
         ).to(self.device)
         self.critic_optimizer = Adam(
             params=self.critic_network.parameters(),
-            weight_decay=self.critic_weights_decay,
+            lr=self.critic_lr,
         )
         # init target networks
         self._init_target_networks()
