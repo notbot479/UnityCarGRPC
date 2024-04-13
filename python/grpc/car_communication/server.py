@@ -116,10 +116,10 @@ class Servicer(_Servicer):
     
     # ================================================================================
 
-    epsilon:float = 1
-    exploration: bool = False
+    epsilon:float = 0
+    exploration: bool = True
     
-    agent_train_each_step: bool = True
+    agent_train_each_step: bool = False
     agent_train_batch_size: int = 64
     agent_max_batch_count: int | None = None
     
@@ -128,7 +128,7 @@ class Servicer(_Servicer):
     _env_action_dim: int = len(CAR_PARAMETERS)
     # settings: agent train
     _agent_episodes_count: int = 10000
-    _agent_exploration_seconds: float = 1 * 60
+    _agent_exploration_seconds: float = 1 * 30
     _agent_allow_backward_reward: bool = False
     _agent_respawn_very_bad_model: bool = True
     _agent_min_reward: float = -25
@@ -139,7 +139,7 @@ class Servicer(_Servicer):
     _agent_min_epsilon: float = 0.01
     # settings: car
     _car_respawn_on_object_hit: bool = True
-    _car_hit_object_patience = _env_requests_per_second * 2
+    _car_hit_object_patience = 1 #_env_requests_per_second
     _car_respawn_nearest_router_id: str = '2'
     _car_target_patience:int = _env_requests_per_second
     _car_ignore_target_area: bool = False
@@ -402,8 +402,8 @@ class Servicer(_Servicer):
         aggregate_every = self._agent_aggregate_stats_every
         ep_batch: list[float] = self._agent_episode_rewards[-aggregate_every:]
         average_reward = round(sum(ep_batch)/len(ep_batch),round_factor)
-        min_reward = round(min(ep_batch),round_factor) 
-        max_reward = min(round(max(ep_batch),round_factor), self._agent_min_reward)
+        max_reward = round(max(ep_batch),round_factor) 
+        min_reward = max(round(min(ep_batch),round_factor), self._agent_min_reward)
         reward_stats = {
             'min_reward':min_reward, 
             'max_reward':max_reward,
@@ -450,7 +450,7 @@ class Servicer(_Servicer):
     def respawn_very_bad_model(self) -> bool:
         if not(self._agent_respawn_very_bad_model): return False
         a = self.episode_total_score < self._agent_min_reward
-        b = self.state_id > self.max_state_id
+        b = self.state_id >= self.max_state_id
         return a or b
 
     def get_agent_save_dir_path(self, *, data: dict = {}) -> str:
