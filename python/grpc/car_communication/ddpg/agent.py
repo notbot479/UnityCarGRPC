@@ -40,6 +40,8 @@ class DDPGAgent:
         # load from dir or best
         load_from_dir: str | None = None,
         load_best_from_dir: str | None = None,
+        # extra settings
+        use_mock_image_if_no_cuda: bool = True,
     ) -> None: 
         self._step = 1
         self._critic_loss: list[float] = []
@@ -52,6 +54,7 @@ class DDPGAgent:
         self.lr_decay = lr_decay
         self.max_action = max_action
         self.action_dim = action_dim
+        self.use_mock_image_if_no_cuda = use_mock_image_if_no_cuda
         # load device, reply buffer, noise
         self.device = torch.device(self._device) 
         self.reply_buffer = ReplayBuffer(capacity=reply_buffer_capacity)  
@@ -237,10 +240,12 @@ class DDPGAgent:
         self.target_critic_network = copy.deepcopy(self.critic_network)
 
     def _init_networks(self) -> None:
+        mock_image = self.use_mock_image_if_no_cuda and not(self.cuda) 
         # init actor network
         self.actor_network = ActorModel(
             action_dim = self.action_dim,
             max_action = self.max_action,
+            mock_image = mock_image,
         ).to(self.device)
         self.actor_optimizer = Adam(
             params=self.actor_network.parameters(), 
@@ -250,6 +255,7 @@ class DDPGAgent:
         self.critic_network = CriticModel(
             action_dim=self.action_dim,
             max_action = self.max_action,
+            mock_image = mock_image,
         ).to(self.device)
         self.critic_optimizer = Adam(
             params=self.critic_network.parameters(),

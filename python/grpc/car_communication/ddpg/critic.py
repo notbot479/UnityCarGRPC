@@ -8,8 +8,18 @@ from .basemodel import BaseModel
 class CriticModel(BaseModel):
     _concat_tensor = 7 * 8
 
-    def __init__(self, action_dim:int, max_action:int = 1) -> None:
-        super().__init__(action_dim=action_dim, max_action=max_action)
+    def __init__(
+        self, 
+        action_dim:int, 
+        max_action:int = 1, 
+        mock_image:bool = False,
+    ) -> None:
+        params = {
+            'action_dim': action_dim,
+            'max_action': max_action,
+            'mock_image': mock_image,
+        }
+        super().__init__(**params)
 
         self.concat_fc = nn.Linear(self._concat_tensor, self._concat_tensor)
         self.concat_bn = nn.BatchNorm1d(self._concat_tensor)

@@ -15,11 +15,23 @@ class Base(nn.Module):
             return result
         return wrapper
 
-    def __init__(self, action_dim:int, max_action:int = 1, *args, **kwargs) -> None:
+    def __init__(
+        self, 
+        action_dim:int, 
+        max_action:int = 1, 
+        mock_image:bool = False,
+        *args, 
+        **kwargs
+    ) -> None:
         super().__init__(*args, **kwargs)
         self.action_dim = action_dim
         self.max_action = max_action
         self.activation = nn.ReLU()
+        self._mock_image = mock_image
+        # show logs
+        cls_name = self.__class__.__name__
+        m = f'[{cls_name}] Cuda no available. Using mock image output'
+        if self._mock_image: print(m)
 
     def forward_linear_block(
         self,
@@ -69,6 +81,7 @@ class Base(nn.Module):
 
 class BaseModel(Base):
     _image_flatten_size: int = 3 * 3 * 256
+    _image_output = 8
 
     def __init__(self, action_dim: int, max_action: int = 1, *args, **kwargs) -> None:
         super().__init__(action_dim, max_action, *args, **kwargs)
@@ -81,6 +94,12 @@ class BaseModel(Base):
         self._init_stage2_nn()
 
     def image_to_input(self, image: Tensor) -> Tensor:
+        # mock output for image
+        if self._mock_image: 
+            b = image.size(0)
+            x = torch.zeros(b, self._image_output)
+            return x
+
         # conv layer 1
         x = self.image_conv1(image)
         x = self.image_bn1(x)

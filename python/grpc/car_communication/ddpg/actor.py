@@ -6,8 +6,19 @@ from .basemodel import BaseModel
 
 
 class ActorModel(BaseModel):
-    def __init__(self, action_dim:int, max_action:int = 1) -> None:
-        super().__init__(action_dim=action_dim, max_action=max_action)
+    def __init__(
+        self, 
+        action_dim:int, 
+        max_action:int = 1, 
+        mock_image:bool=False,
+    ) -> None:
+        params = {
+            'action_dim': action_dim,
+            'max_action': max_action,
+            'mock_image': mock_image,
+        }
+        super().__init__(**params)
+
         self.output_func = nn.Tanh()
 
         self.concat_fc1 = nn.Linear(6 * 8, 64)

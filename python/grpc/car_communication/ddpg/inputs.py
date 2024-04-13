@@ -212,7 +212,7 @@ def _test_prediction(agent: DDPGAgent, model_input: ModelInputData) -> None:
     print(f'- QS: {qs}')
 
 def _test(test_saveload:bool = True):
-    agent = DDPGAgent()
+    agent = DDPGAgent(use_mock_image_if_no_cuda=False)
     model_input = ModelInputData(
         speed = 2.4,
         steer = 0.5,
