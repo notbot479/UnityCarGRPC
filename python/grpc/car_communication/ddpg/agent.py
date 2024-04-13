@@ -36,7 +36,7 @@ class DDPGAgent:
         tau: float = 0.001,
         actor_lr: float = 1e-4,
         critic_lr: float = 1e-3,
-        lr_decay: float = 0,
+        lr_decay: float = 0.9,
         # load from dir or best
         load_from_dir: str | None = None,
         load_best_from_dir: str | None = None,
@@ -73,8 +73,7 @@ class DDPGAgent:
         return self._step
  
     def update_schedulers(self) -> None:
-        if not(self.lr_decay): return
-        self.actor_scheduler.step()
+        if not(self.lr_decay and self.reply_buffer.ready): return
         self.critic_scheduler.step()
 
     def save_model(self, dir_path: str, *, ext:str='pth') -> None:

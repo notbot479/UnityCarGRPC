@@ -116,8 +116,8 @@ class Servicer(_Servicer):
     
     # ================================================================================
 
-    epsilon:float = 0
-    exploration: bool = True
+    epsilon:float = 1
+    exploration: bool = False
     
     agent_train_each_step: bool = False
     agent_train_batch_size: int = 64
@@ -139,9 +139,9 @@ class Servicer(_Servicer):
     _agent_min_epsilon: float = 0.01
     # settings: car
     _car_respawn_on_object_hit: bool = True
-    _car_hit_object_patience = 1 #_env_requests_per_second
+    _car_hit_object_patience =  _env_requests_per_second // 2
     _car_respawn_nearest_router_id: str = '2'
-    _car_target_patience:int = _env_requests_per_second
+    _car_target_patience:int = _env_requests_per_second // 2
     _car_ignore_target_area: bool = False
     # settings: switch router policy
     _car_lock_target_router_rssi: Rssi = -5
