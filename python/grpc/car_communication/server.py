@@ -117,7 +117,6 @@ class Servicer(_Servicer):
     # ================================================================================
 
     epsilon:float = 1
-    exploration: bool = False
     
     agent_train_each_step: bool = False
     agent_train_batch_size: int = 64
@@ -374,9 +373,15 @@ class Servicer(_Servicer):
             return self._send_respawn_command()
         # get command based on policy
         if np.random.random() > self.epsilon:
-            command, parameters = self.get_command_from_agent(model_input=model_input)
+            command, parameters = self.get_command_from_agent(
+                model_input=model_input,
+                exploration=False,
+            )
         else:
-            command, parameters = self.get_random_command_from_agent()
+            command, parameters = self.get_command_from_agent(
+                model_input=model_input,
+                exploration=True,
+            )
         return self.send_response_to_client(command=command, parameters=parameters)
 
     # ===============================================================================
@@ -427,15 +432,16 @@ class Servicer(_Servicer):
     def get_command_from_agent(
         self, 
         model_input: ModelInputData,
+        exploration: bool = False,
     ) -> tuple[str, dict[str, float]]:
         qs = self._agent.get_qs(
             inputs=model_input.inputs, 
-            exploration=self.exploration,
+            exploration=exploration,
         )
         movement = "movement"
         parameters = {k:v for k, v in zip(CAR_PARAMETERS, qs)}
         # print command and parameters
-        w = 'with' if self.exploration else 'without'
+        w = 'with' if exploration else 'without'
         print(f'Send movement {w} exploration noise to client:')
         print(parameters)
         return (movement, parameters)
