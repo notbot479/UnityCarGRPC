@@ -21,7 +21,8 @@ class ActorModel(BaseModel):
 
         self.output_func = nn.Tanh()
 
-        self.concat_fc1 = nn.Linear(6 * 8, 64)
+        self.concat_fc1 = nn.Linear(4 * 8, 64)
+        self.concat_bn1 = nn.BatchNorm1d(64)
 
         self._init_forward_nn()
         self._init_steer_nn()
@@ -34,12 +35,8 @@ class ActorModel(BaseModel):
         image: Tensor, 
         distance_sensors_distances: Tensor, 
         distance_to_target_router: Tensor,
-        nearest_routers: Tensor,
-        distance_to_box: Tensor, 
-        # car hints
+        # cat hints
         in_target_area: Tensor, 
-        boxes_is_found: Tensor, 
-        target_found: Tensor, 
         *args, **kwargs #pyright: ignore
     ) -> Tensor:
         # normalize inputs
@@ -47,31 +44,22 @@ class ActorModel(BaseModel):
         x_distance = self.distance_to_input(
             distance_sensors_distances=distance_sensors_distances,
         )
-        x_routers = self.routers_to_input(nearest_routers=nearest_routers)
         x_speed = self.speed_to_input(speed=speed)
         x_stage1 = self.stage1_to_input(
             in_target_area=in_target_area,
             distance_to_target_router=distance_to_target_router,
         )
-        x_stage2 = self.stage2_to_input(
-            in_target_area=in_target_area,
-            boxes_is_found=boxes_is_found,
-            target_found=target_found,
-            distance_to_box=distance_to_box,
-        )
-
         # merge inputs to concat
         concat = self.inputs_to_concat(
             x_image=x_image,
             x_distance=x_distance,
-            x_routers=x_routers,
             x_speed=x_speed,
             x_stage1=x_stage1,
-            x_stage2=x_stage2,
         )
 
         # concat dense
         concat = self.concat_fc1(concat)
+        concat = self.concat_bn1(concat)
         concat = self.activation(concat)
 
         x1 = self.forward_to_action(concat=concat)
@@ -84,12 +72,10 @@ class ActorModel(BaseModel):
         self,
         x_image: Tensor,
         x_distance: Tensor,
-        x_routers: Tensor,
         x_speed: Tensor,
         x_stage1: Tensor,
-        x_stage2: Tensor,
     ) -> Tensor:
-        _c = [x_image, x_distance, x_routers, x_speed, x_stage1, x_stage2]
+        _c = [x_image, x_distance, x_speed, x_stage1]
         x = torch.cat(_c, dim=1)
         return x
 
@@ -98,7 +84,7 @@ class ActorModel(BaseModel):
         concat: Tensor,
         *,
         prefix:str='steer',
-        count:int=3,
+        count:int=2,
     ) -> Tensor:
         x = self.forward_linear_block(
             input_tensor=concat,
@@ -114,7 +100,7 @@ class ActorModel(BaseModel):
         concat: Tensor,
         *,
         prefix:str='forward',
-        count:int=3,
+        count:int=2,
     ) -> Tensor:
         x = self.forward_linear_block(
             input_tensor=concat,
@@ -126,16 +112,14 @@ class ActorModel(BaseModel):
         return action
 
 
-    def _init_steer_nn(self, input_dim:int = 64, output_dim:int = 64) -> None:
-        self.steer_fc1 = nn.Linear(input_dim, 256)
-        self.steer_fc2 = nn.Linear(256, 128)
-        self.steer_fc3 = nn.Linear(128, output_dim)
+    def _init_steer_nn(self, input_dim:int = 64, output_dim:int = 16) -> None:
+        self.steer_fc1 = nn.Linear(input_dim, 32)
+        self.steer_fc2 = nn.Linear(32, output_dim)
 
         self.steer_fc_out = nn.Linear(output_dim, 1)
 
-    def _init_forward_nn(self, input_dim:int = 64, output_dim:int = 64) -> None:
-        self.forward_fc1 = nn.Linear(input_dim, 256)
-        self.forward_fc2 = nn.Linear(256, 128)
-        self.forward_fc3 = nn.Linear(128, output_dim)
+    def _init_forward_nn(self, input_dim:int = 64, output_dim:int = 16) -> None:
+        self.forward_fc1 = nn.Linear(input_dim, 32)
+        self.forward_fc2 = nn.Linear(32, output_dim)
 
         self.forward_fc_out = nn.Linear(output_dim, 1)
