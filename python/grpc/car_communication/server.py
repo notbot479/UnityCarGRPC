@@ -138,6 +138,7 @@ class Servicer(_Servicer):
     _agent_min_epsilon: float = 0.01
     # settings: car
     _car_respawn_on_object_hit: bool = True
+    _car_respawn_after_in_target_area_reached: bool = True
     _car_hit_object_patience =  _env_requests_per_second // 2
     _car_respawn_nearest_router_id: str = '2'
     _car_target_patience:int = _env_requests_per_second // 2
@@ -530,10 +531,13 @@ class Servicer(_Servicer):
         # done policy
         _a = self._car_respawn_on_object_hit
         _b = self._car_hit_object_patience and self.car_hit_object_end_patience
+        _in_target_area_respawn = self._car_respawn_after_in_target_area_reached
         if _a and _b:
             done = Done.HIT_OBJECT
             self._car_hit_object_deque.clear()
-        elif target_found and in_target_area: 
+        elif in_target_area and _in_target_area_respawn:
+            done  = Done.TARGET_IS_FOUND
+        elif in_target_area and target_found: 
             done = Done.TARGET_IS_FOUND
         # reward policy
         target_router_id = self.get_car_target_router_id()
