@@ -21,10 +21,21 @@ class CriticModel(BaseModel):
         }
         super().__init__(**params)
 
-        self.concat_fc = nn.Linear(self._concat_tensor, 64)
+        self.concat_fc = nn.Linear(self._concat_tensor, 256)
 
         self._init_actor_action_nn()
         self._init_concat_nn()
+
+    @staticmethod
+    def normalize_actor_action(actor_action: Tensor) -> Tensor:
+        a = actor_action.clone()
+        a[a < 0] = 0
+        a = abs(a)
+        b = actor_action.clone()
+        b[b > 0] = 0
+        b = abs(b)
+        concat = torch.cat([a,b], dim=1)
+        return concat
 
     def forward(
         self, 
@@ -50,6 +61,7 @@ class CriticModel(BaseModel):
             in_target_area=in_target_area,
             distance_to_target_router=distance_to_target_router,
         )
+        actor_action = self.normalize_actor_action(actor_action=actor_action)
         x_actor = self.actor_action_to_input(actor_action=actor_action)
         # merge inputs to concat
         concat = self.inputs_to_concat(
@@ -83,7 +95,7 @@ class CriticModel(BaseModel):
         concat: Tensor,
         *,
         prefix:str='concat',
-        count:int=3,
+        count:int=2,
     ) -> Tensor:
         x = self.forward_linear_block(
             input_tensor=concat,
@@ -104,15 +116,14 @@ class CriticModel(BaseModel):
     ) -> Tensor:
         _c = [x_image, x_distance, x_speed, x_stage1, x_actor]
         x = torch.cat(_c, dim=1)
-        return x
+        return x 
 
 
-    def _init_concat_nn(self, input_dim:int = 64, output_dim:int = 32) -> None:
+    def _init_concat_nn(self, input_dim:int = 256, output_dim:int = 64) -> None:
         self.concat_fc1 = nn.Linear(input_dim, 128)
-        self.concat_fc2 = nn.Linear(128, 64)
-        self.concat_fc3 = nn.Linear(64, output_dim)
+        self.concat_fc2 = nn.Linear(128, output_dim)
 
         self.concat_fc_out = nn.Linear(output_dim, 1)
 
-    def _init_actor_action_nn(self, input_dim:int = 2, output_dim:int = 8) -> None:
+    def _init_actor_action_nn(self, input_dim:int = 4, output_dim:int = 8) -> None:
         self.actor_action_fc1 = nn.Linear(input_dim, output_dim)

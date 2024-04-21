@@ -6,6 +6,8 @@ from .basemodel import BaseModel
 
 
 class ActorModel(BaseModel):
+    _concat_tensor = 4 * 8
+
     def __init__(
         self, 
         action_dim:int, 
@@ -21,7 +23,7 @@ class ActorModel(BaseModel):
 
         self.output_func = nn.Tanh()
 
-        self.concat_fc1 = nn.Linear(4 * 8, 64)
+        self.concat_fc1 = nn.Linear(self._concat_tensor, 128)
 
         self._init_forward_nn()
         self._init_steer_nn()
@@ -110,14 +112,14 @@ class ActorModel(BaseModel):
         return action
 
 
-    def _init_steer_nn(self, input_dim:int = 64, output_dim:int = 16) -> None:
-        self.steer_fc1 = nn.Linear(input_dim, 32)
-        self.steer_fc2 = nn.Linear(32, output_dim)
+    def _init_steer_nn(self, input_dim:int = 128, output_dim:int = 32) -> None:
+        self.steer_fc1 = nn.Linear(input_dim, 64)
+        self.steer_fc2 = nn.Linear(64, output_dim)
 
         self.steer_fc_out = nn.Linear(output_dim, 1)
 
-    def _init_forward_nn(self, input_dim:int = 64, output_dim:int = 16) -> None:
-        self.forward_fc1 = nn.Linear(input_dim, 32)
-        self.forward_fc2 = nn.Linear(32, output_dim)
+    def _init_forward_nn(self, input_dim:int = 128, output_dim:int = 32) -> None:
+        self.forward_fc1 = nn.Linear(input_dim, 64)
+        self.forward_fc2 = nn.Linear(64, output_dim)
 
         self.forward_fc_out = nn.Linear(output_dim, 1)
