@@ -22,7 +22,6 @@ class CriticModel(BaseModel):
         super().__init__(**params)
 
         self.concat_fc = nn.Linear(self._concat_tensor, 64)
-        self.concat_bn = nn.BatchNorm1d(64)
 
         self._init_actor_action_nn()
         self._init_concat_nn()
@@ -52,7 +51,6 @@ class CriticModel(BaseModel):
             distance_to_target_router=distance_to_target_router,
         )
         x_actor = self.actor_action_to_input(actor_action=actor_action)
-
         # merge inputs to concat
         concat = self.inputs_to_concat(
             x_image=x_image,
@@ -61,6 +59,8 @@ class CriticModel(BaseModel):
             x_stage1=x_stage1,
             x_actor=x_actor,
         )
+        concat = self.concat_fc(concat)
+        concat = self.activation(concat)
         q = self.concat_to_q(concat=concat)
         return q
 
@@ -104,10 +104,6 @@ class CriticModel(BaseModel):
     ) -> Tensor:
         _c = [x_image, x_distance, x_speed, x_stage1, x_actor]
         x = torch.cat(_c, dim=1)
-        # add batch normalization
-        x = self.concat_fc(x)
-        x = self.concat_bn(x)
-        x = self.activation(x)
         return x
 
 

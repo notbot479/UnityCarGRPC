@@ -22,7 +22,6 @@ class ActorModel(BaseModel):
         self.output_func = nn.Tanh()
 
         self.concat_fc1 = nn.Linear(4 * 8, 64)
-        self.concat_bn1 = nn.BatchNorm1d(64)
 
         self._init_forward_nn()
         self._init_steer_nn()
@@ -59,7 +58,6 @@ class ActorModel(BaseModel):
 
         # concat dense
         concat = self.concat_fc1(concat)
-        concat = self.concat_bn1(concat)
         concat = self.activation(concat)
 
         x1 = self.forward_to_action(concat=concat)
