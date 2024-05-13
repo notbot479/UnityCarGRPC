@@ -23,7 +23,7 @@ class ActorModel(BaseModel):
 
         self.output_func = nn.Tanh()
 
-        self.concat_fc1 = nn.Linear(self._concat_tensor, 128)
+        self.concat_fc1 = nn.Linear(self._concat_tensor, 1024)
 
         self._init_forward_nn()
         self._init_steer_nn()
@@ -84,7 +84,7 @@ class ActorModel(BaseModel):
         concat: Tensor,
         *,
         prefix:str='steer',
-        count:int=2,
+        count:int=6,
     ) -> Tensor:
         x = self.forward_linear_block(
             input_tensor=concat,
@@ -100,7 +100,7 @@ class ActorModel(BaseModel):
         concat: Tensor,
         *,
         prefix:str='forward',
-        count:int=2,
+        count:int=6,
     ) -> Tensor:
         x = self.forward_linear_block(
             input_tensor=concat,
@@ -112,14 +112,40 @@ class ActorModel(BaseModel):
         return action
 
 
-    def _init_steer_nn(self, input_dim:int = 128, output_dim:int = 32) -> None:
-        self.steer_fc1 = nn.Linear(input_dim, 64)
-        self.steer_fc2 = nn.Linear(64, output_dim)
+    def _init_steer_nn(self, input_dim:int = 1024, output_dim:int = 256) -> None:
+        self.steer_fc1 = nn.Linear(input_dim, 1024)
+        self.steer_bn1 = nn.BatchNorm1d(1024)
+        
+        self.steer_fc2 = nn.Linear(1024, 1024)
+        self.steer_bn2 = nn.BatchNorm1d(1024)
+        
+        self.steer_fc3 = nn.Linear(1024, 1024)
+        self.steer_bn3 = nn.BatchNorm1d(1024)
+        
+        self.steer_fc4 = nn.Linear(1024, 512)
+        self.steer_bn4 = nn.BatchNorm1d(512)
 
+        self.steer_fc5 = nn.Linear(512, 512)
+        self.steer_bn5 = nn.BatchNorm1d(512)
+
+        self.steer_fc6 = nn.Linear(512, output_dim)
         self.steer_fc_out = nn.Linear(output_dim, 1)
 
-    def _init_forward_nn(self, input_dim:int = 128, output_dim:int = 32) -> None:
-        self.forward_fc1 = nn.Linear(input_dim, 64)
-        self.forward_fc2 = nn.Linear(64, output_dim)
+    def _init_forward_nn(self, input_dim:int = 1024, output_dim:int = 32) -> None:
+        self.forward_fc1 = nn.Linear(input_dim, 1024)
+        self.forward_bn1 = nn.BatchNorm1d(1024)
+        
+        self.forward_fc2 = nn.Linear(1024, 1024)
+        self.forward_bn2 = nn.BatchNorm1d(1024)
+        
+        self.forward_fc3 = nn.Linear(1024, 1024)
+        self.forward_bn3 = nn.BatchNorm1d(1024)
+        
+        self.forward_fc4 = nn.Linear(1024, 512)
+        self.forward_bn4 = nn.BatchNorm1d(512)
 
+        self.forward_fc5 = nn.Linear(512, 512)
+        self.forward_bn5 = nn.BatchNorm1d(512)
+
+        self.forward_fc6 = nn.Linear(512, output_dim)
         self.forward_fc_out = nn.Linear(output_dim, 1)

@@ -118,7 +118,7 @@ class Servicer(_Servicer):
 
     epsilon:float = 1
     
-    agent_train_each_step: bool = False
+    agent_train_each_step: bool = True
     agent_train_batch_size: int = 64
     agent_max_batch_count: int | None = None
     
@@ -126,11 +126,11 @@ class Servicer(_Servicer):
     _env_requests_per_second: int = 10
     _env_action_dim: int = len(CAR_PARAMETERS)
     # settings: agent train
-    _agent_episodes_count: int = 10000
+    _agent_episodes_count: int = 1000
     _agent_exploration_seconds: float = 1 * 30
     _agent_allow_backward_reward: bool = False
     _agent_respawn_very_bad_model: bool = True
-    _agent_min_reward: float = -25
+    _agent_min_reward: float = -float('inf')
     # settings: agent
     _agent_aggregate_stats_every: int = 10
     _agent_save_model_every: int = 10
@@ -139,7 +139,7 @@ class Servicer(_Servicer):
     # settings: car
     _car_respawn_on_object_hit: bool = True
     _car_respawn_after_in_target_area_reached: bool = True
-    _car_hit_object_patience =  _env_requests_per_second // 2
+    _car_hit_object_patience =  1
     _car_respawn_nearest_router_id: str = '2'
     _car_target_patience:int = _env_requests_per_second // 2
     _car_ignore_target_area: bool = False
@@ -549,27 +549,11 @@ class Servicer(_Servicer):
             return (reward, done)
         if not(in_target_area): 
             # stage 1: route
-            old_target_rssi = self.get_router_rssi_by_id(
-                router_id=target_router_id,
-                routers=old_state.routers,
-            )
             new_target_rssi = self.get_router_rssi_by_id(
                 router_id=target_router_id,
                 routers=new_state.routers,
             )
-            if self.is_target_router_switched: 
-                reward = RewardPolicy.TARGET_ROUTER_SWITCHED.value
-                return (reward, done)
-            # calculate reward for stage 1
-            delta = old_target_rssi - new_target_rssi
-            k = 1 - abs(old_target_rssi) / 100
-            r = self._env_requests_per_second / 10
-            reward = round((-delta * r * k), 2)
-            # processing reward
-            if not(reward):
-                reward = RewardPolicy.PASSIVE_REWARD.value
-                return (reward, done)
-            if reward > 0 and is_backward: reward = -reward
+            reward = np.float32(new_target_rssi / 100)
             return (reward, done)
         else: 
             # stage 2: search

@@ -18,7 +18,7 @@ class ModelInputData:
     
     DISTANCE_SENSOR_DEFAULT: float = 1        
     ROUTER_DEFAULT: float = 1
-    SPEED_DEFAULT: float = 0
+    SPEED_DEFAULT: float = 1
     PARAMETER_DEFAULT: float = 0
 
     def __init__(

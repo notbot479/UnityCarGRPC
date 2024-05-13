@@ -21,7 +21,7 @@ class CriticModel(BaseModel):
         }
         super().__init__(**params)
 
-        self.concat_fc = nn.Linear(self._concat_tensor, 256)
+        self.concat_fc = nn.Linear(self._concat_tensor, 1024)
 
         self._init_actor_action_nn()
         self._init_concat_nn()
@@ -95,7 +95,7 @@ class CriticModel(BaseModel):
         concat: Tensor,
         *,
         prefix:str='concat',
-        count:int=2,
+        count:int=5,
     ) -> Tensor:
         x = self.forward_linear_block(
             input_tensor=concat,
@@ -119,10 +119,20 @@ class CriticModel(BaseModel):
         return x 
 
 
-    def _init_concat_nn(self, input_dim:int = 256, output_dim:int = 64) -> None:
-        self.concat_fc1 = nn.Linear(input_dim, 128)
-        self.concat_fc2 = nn.Linear(128, output_dim)
+    def _init_concat_nn(self, input_dim:int = 1024, output_dim:int = 256) -> None:
+        self.concat_fc1 = nn.Linear(input_dim, 2048)
+        self.concat_bn1 = nn.BatchNorm1d(2048)
+        
+        self.concat_fc2 = nn.Linear(2048, 2048)
+        self.concat_bn2 = nn.BatchNorm1d(2048)
+        
+        self.concat_fc3 = nn.Linear(2048, 1024)
+        self.concat_bn3 = nn.BatchNorm1d(1024)
+        
+        self.concat_fc4 = nn.Linear(1024, 512)
+        self.concat_bn4 = nn.BatchNorm1d(512)
 
+        self.concat_fc5 = nn.Linear(512, output_dim)
         self.concat_fc_out = nn.Linear(output_dim, 1)
 
     def _init_actor_action_nn(self, input_dim:int = 4, output_dim:int = 8) -> None:
