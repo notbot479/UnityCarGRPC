@@ -144,8 +144,8 @@ class Servicer(_Servicer):
     _car_target_patience:int = _env_requests_per_second // 2
     _car_ignore_target_area: bool = False
     # settings: switch router policy
-    _car_lock_target_router_rssi: Rssi = -2
-    _car_switch_target_router_rssi: Rssi = -2
+    _car_lock_target_router_rssi: Rssi = -5
+    _car_switch_target_router_rssi: Rssi = -5
     _car_switch_target_router_rssi_of_next_shortcut: Rssi = 0
     _car_switch_target_router_rssi_of_next: Rssi = -90
     _car_target_router_already_locked: bool = False
