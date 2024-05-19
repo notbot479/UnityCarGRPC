@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch
 
 from typing import Any, Callable
+from .resnet import ResNet18
 
 
 class Base(nn.Module):
@@ -28,10 +29,6 @@ class Base(nn.Module):
         self.max_action = max_action
         self.activation = nn.ReLU()
         self._mock_image = mock_image
-        # show logs
-        cls_name = self.__class__.__name__
-        m = f'[{cls_name}] Cuda no available. Using mock image output'
-        if self._mock_image: print(m)
 
     def forward_linear_block(
         self,
@@ -92,25 +89,11 @@ class BaseModel(Base):
         self._init_speed_nn()
         self._init_stage1_nn()
         self._init_stage2_nn()
+
+        self._resnet = ResNet18()
  
     def image_to_input(self, image: Tensor) -> Tensor:
-        # processing image
-        if self._mock_image:
-            x = self._image_to_mock_flatten(image=image)
-        else:
-            x = self._image_to_flatten(image=image)
-
-        # fc layer 1
-        x = self.image_fc1(x)
-        x = self.activation(x)
-
-        # fc layer 2
-        x = self.image_fc2(x)
-        x = self.activation(x)
-
-        # fc layer 3
-        x = self.image_fc3(x)
-        x = self.activation(x)
+        x = self._resnet(image)
         return x
 
     def distance_to_input(

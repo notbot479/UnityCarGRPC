@@ -72,7 +72,7 @@ class ModelInputData:
             'forward': self.forward,
             #'backward': self.backward,
             # sensors data
-            'image':self.image[:,:,np.newaxis],
+            'image':self.image,
             'distance_sensors_distances': self.distance_sensors_distances,
             'nearest_routers': self.nearest_routers,
             'distance_to_target_router': self.distance_to_target_router,
@@ -111,8 +111,7 @@ class ModelInputData:
             image = np.random.randint(0, 256, size=shape+[3], dtype=np.uint8)
         image_shape = image.shape[:-1]
         if image_shape != shape: image = cv2.resize(image, shape)
-        grayscale_image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
-        normalized_image = grayscale_image.astype(np.float32) / 255
+        normalized_image = image.astype(np.float32) / 255
         return normalized_image
 
     def _normalize_distance(self, distance: Meter) -> float:

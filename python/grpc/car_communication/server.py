@@ -118,7 +118,7 @@ class Servicer(_Servicer):
 
     epsilon:float = 1
     
-    agent_train_each_step: bool = True
+    agent_train_each_step: bool = False
     agent_train_batch_size: int = 64
     agent_max_batch_count: int | None = None
     
