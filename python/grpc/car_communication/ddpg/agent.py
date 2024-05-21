@@ -36,7 +36,7 @@ class DDPGAgent:
         tau: float = 0.001,
         actor_lr: float = 1e-4,
         critic_lr: float = 1e-3,
-        lr_decay: float = 0.9,
+        lr_decay: float = 0.95,
         # load from dir or best
         load_from_dir: str | None = None,
         load_best_from_dir: str | None = None,
@@ -71,6 +71,10 @@ class DDPGAgent:
     @property
     def step(self) -> int:
         return self._step
+    
+    @property
+    def critic_optimizer_lr(self) -> float:
+        return self.critic_optimizer.param_groups[0]['lr']
  
     def update_schedulers(self) -> None:
         if not(self.lr_decay and self.reply_buffer.ready): return
@@ -112,6 +116,7 @@ class DDPGAgent:
         stats = {
             'actor_loss': self.actor_avg_loss,
             'critic_loss': self.critic_avg_loss,
+            'critic_optimizer_lr': self.critic_optimizer_lr,
         }
         return stats
 
@@ -220,10 +225,6 @@ class DDPGAgent:
         return " "
 
     def _init_lr_schedulers(self) -> None:
-        self.actor_scheduler = ExponentialLR(
-            self.actor_optimizer, 
-            gamma=self.lr_decay,
-        )
         self.critic_scheduler = ExponentialLR(
             self.critic_optimizer, 
             gamma=self.lr_decay,
@@ -231,7 +232,7 @@ class DDPGAgent:
 
     def _get_avg(self, data: list[float]) -> float:
         if not(data): return self._default_loss
-        avg = sum(data) / len(data)
+        avg = np.array(data).mean()
         return avg
 
     def _init_target_networks(self) -> None:

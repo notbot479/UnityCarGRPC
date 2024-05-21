@@ -126,8 +126,8 @@ class Servicer(_Servicer):
     _env_requests_per_second: int = 10
     _env_action_dim: int = len(CAR_PARAMETERS)
     # settings: agent train
-    _agent_episodes_count: int = 1000
-    _agent_exploration_seconds: float = 1 * 30
+    _agent_episodes_count: int = 2000
+    _agent_exploration_seconds: float = 30
     _agent_allow_backward_reward: bool = False
     _agent_respawn_very_bad_model: bool = True
     _agent_min_reward: float = -float('inf')
@@ -139,7 +139,7 @@ class Servicer(_Servicer):
     # settings: car
     _car_respawn_on_object_hit: bool = True
     _car_respawn_after_in_target_area_reached: bool = True
-    _car_hit_object_patience =  1
+    _car_hit_object_patience = 1
     _car_respawn_nearest_router_id: str = '2'
     _car_target_patience:int = _env_requests_per_second // 2
     _car_ignore_target_area: bool = False
@@ -192,7 +192,7 @@ class Servicer(_Servicer):
     @property
     def train_agent_episode_batches_count(self) -> int:
         '''update property logic if needed'''
-        batches_count = self.state_id
+        batches_count = self.state_id - 1 # -1 -> ignore state after terminal state
         mx = self.agent_max_batch_count or 0
         return min(batches_count, mx) if mx else batches_count
     
@@ -226,7 +226,7 @@ class Servicer(_Servicer):
             if self.agent_train_each_step: 
                 while self._train_agent_kwargs: time.sleep(1)
             else:
-                batches_count = self.train_agent_episode_batches_count
+                batches_count = self.episode_seconds
                 if batches_count:
                     self._agent.train_on_episode_end(
                         batch_size = self.agent_train_batch_size,
@@ -333,7 +333,7 @@ class Servicer(_Servicer):
         # update active task route based on policy
         self.router_controller_update_route(car_id=data.car_id, routers=data.routers) 
         # normalize data for nerual networks: range (0 to 1 or -1 to 1)
-        model_input = self.get_model_input_data(data=data)
+        model_input = self.get_model_input_data(data=data, prev_data=prev_data)
         if not(model_input and prev_model_input): 
             return self._send_stop_command()
         # calculate reward and get done based on policy
@@ -541,58 +541,13 @@ class Servicer(_Servicer):
             done = Done.TARGET_IS_FOUND
         # reward policy
         target_router_id = self.get_car_target_router_id()
-        if car_hit_object:
-            reward = RewardPolicy.HIT_OBJECT.value
-            return (reward, done)
-        if not(target_router_id): 
-            reward = RewardPolicy.PASSIVE_REWARD.value
-            return (reward, done)
-        if not(in_target_area): 
-            # stage 1: route
-            new_target_rssi = self.get_router_rssi_by_id(
-                router_id=target_router_id,
-                routers=new_state.routers,
-            )
-            reward = np.float32(new_target_rssi / 100)
-            return (reward, done)
-        else: 
-            # stage 2: search
-            boxes_in_view = new_state.boxes_in_camera_view
-            target_is_found = self.is_target_box_qr(
-                qr_metadata=new_state.qr_code_metadata,
-            )
-            if not(boxes_in_view):
-                reward = RewardPolicy.IN_TARGET_AREA_NO_BOXES_FOUND.value
-                return (reward, done)
-            if target_is_found:
-                reward = RewardPolicy.TARGET_IS_FOUND.value
-                return (reward, done)
-            # get distance from front sensor
-            old_front_sensor = self.get_distance_sensor_by_direction(
-                direction='front',
-                distance_sensors=old_state.distance_sensors,
-            )
-            new_front_sensor = self.get_distance_sensor_by_direction(
-                direction='front',
-                distance_sensors=new_state.distance_sensors,
-            )
-            if not(old_front_sensor and new_front_sensor):
-                reward = RewardPolicy.PASSIVE_REWARD.value
-                return (reward, done)
-            delta = abs(old_front_sensor.distance) - abs(new_front_sensor.distance)
-            delta = round(delta, 1)
-            if boxes_in_view and not(delta):
-                reward = RewardPolicy.IN_TARGET_AREA_BOXES_FOUND.value
-                return (reward, done)
-            elif not(delta) or is_backward:
-                reward = RewardPolicy.PASSIVE_REWARD.value
-                return (reward, done)
-            if delta > 0:
-                reward = RewardPolicy.SHORTEN_DISTANCE_TO_BOX.value
-                return (reward, done)
-            else:
-                reward = RewardPolicy.INCREASE_DISTANCE_TO_BOX.value
-                return (reward, done)
+        new_target_rssi = self.get_router_rssi_by_id(
+            router_id=target_router_id,
+            routers=new_state.routers,
+        )
+        reward = np.float32(new_target_rssi / 100)
+        if car_hit_object: reward -= 1
+        return (reward, done)
     
     def car_switch_target_router(self) -> None:
         active_task = self.car_active_task
@@ -675,7 +630,7 @@ class Servicer(_Servicer):
             self._car_target_is_found_state_metadata = metadata
         return result
 
-    def get_model_input_data(self, data: GrpcClientData) -> ModelInputData | None:
+    def get_model_input_data(self, data: GrpcClientData, prev_data: GrpcClientData) -> ModelInputData | None:
         target_router_id = self.get_car_target_router_id()
         front_sensor = self.get_distance_sensor_by_direction(
             direction = 'front',
@@ -705,6 +660,11 @@ class Servicer(_Servicer):
             boxes_is_found = False
             target_found = False
         steer, forward, backward = data.car_parameters.to_list()
+        # get old target router data
+        prev_distance_to_target_router = self.get_router_rssi_by_id(
+            router_id = target_router_id,
+            routers = prev_data.routers,
+        )
         # convert to model input data
         model_input_data = ModelInputData(
             image=image,
@@ -713,6 +673,7 @@ class Servicer(_Servicer):
             forward = forward,
             backward = backward,
             distance_sensors_distances = distance_sensors_distances,
+            prev_distance_to_target_router=prev_distance_to_target_router,
             distance_to_routers=distance_to_routers,
             distance_to_target_router = distance_to_target_router,
             distance_to_box = distance_to_box,

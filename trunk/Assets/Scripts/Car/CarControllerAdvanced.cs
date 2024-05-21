@@ -40,9 +40,8 @@ public class CarControllerAdvanced : MonoBehaviour {
         // Debug log
         if (debugDisplay) {
             GUI.Label(new Rect(10.0f, 10.0f, 100.0f, 20.0f), "Speed: " + speed.ToString());
-            GUI.Label(new Rect(10.0f, 30.0f, 100.0f, 20.0f), "Steer: " + steer.ToString());
-            GUI.Label(new Rect(10.0f, 50.0f, 100.0f, 20.0f), "Motor: " + (-1 * motor).ToString());
-            GUI.Label(new Rect(10.0f, 70.0f, 100.0f, 20.0f), "Brake: " + brake.ToString());
+            GUI.Label(new Rect(10.0f, 30.0f, 200.0f, 20.0f), "Steer: " + steer.ToString());
+            GUI.Label(new Rect(10.0f, 50.0f, 200.0f, 20.0f), "Forward: " + forward.ToString());
         }
     }
 
@@ -101,7 +100,7 @@ public class CarControllerAdvanced : MonoBehaviour {
         speed = GetComponent<Rigidbody>().velocity.magnitude;
         // Cast as an (int) due to the accuracy of floating point 
         // and the physics setup, speed will never be exactly zero
-        if ((int)speed == 0) { 
+        if ((int)speed == 0) {
             if (back > 0)
                 reverse = true;
             if (forward > 0)

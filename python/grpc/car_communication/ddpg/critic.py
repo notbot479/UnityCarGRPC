@@ -21,7 +21,7 @@ class CriticModel(BaseModel):
         }
         super().__init__(**params)
 
-        self.concat_fc = nn.Linear(self._concat_tensor, 1024)
+        self.concat_fc = nn.Linear(self._concat_tensor, 128)
 
         self._init_actor_action_nn()
         self._init_concat_nn()
@@ -45,9 +45,11 @@ class CriticModel(BaseModel):
         image: Tensor, 
         distance_sensors_distances: Tensor, 
         distance_to_target_router: Tensor,
+        prev_distance_to_target_router: Tensor,
         # car hints [0 or 1]
-        in_target_area: Tensor, 
-        #critic input [-1, 1]
+        in_target_area: Tensor,
+        is_forward: Tensor, 
+        # critic input [-1, 1]
         actor_action: Tensor, 
         *args,**kwargs #pyright: ignore
     ) -> Tensor:
@@ -56,9 +58,10 @@ class CriticModel(BaseModel):
         x_distance = self.distance_to_input(
             distance_sensors_distances=distance_sensors_distances,
         )
-        x_speed = self.speed_to_input(speed=speed)
+        x_speed = self.speed_to_input(speed=speed, is_forward=is_forward)
         x_stage1 = self.stage1_to_input(
             in_target_area=in_target_area,
+            prev_distance_to_target_router=prev_distance_to_target_router,
             distance_to_target_router=distance_to_target_router,
         )
         actor_action = self.normalize_actor_action(actor_action=actor_action)
@@ -95,7 +98,7 @@ class CriticModel(BaseModel):
         concat: Tensor,
         *,
         prefix:str='concat',
-        count:int=5,
+        count:int=4,
     ) -> Tensor:
         x = self.forward_linear_block(
             input_tensor=concat,
@@ -119,20 +122,19 @@ class CriticModel(BaseModel):
         return x 
 
 
-    def _init_concat_nn(self, input_dim:int = 1024, output_dim:int = 256) -> None:
-        self.concat_fc1 = nn.Linear(input_dim, 2048)
-        self.concat_bn1 = nn.BatchNorm1d(2048)
-        
-        self.concat_fc2 = nn.Linear(2048, 2048)
-        self.concat_bn2 = nn.BatchNorm1d(2048)
-        
-        self.concat_fc3 = nn.Linear(2048, 1024)
-        self.concat_bn3 = nn.BatchNorm1d(1024)
-        
-        self.concat_fc4 = nn.Linear(1024, 512)
-        self.concat_bn4 = nn.BatchNorm1d(512)
+    def _init_concat_nn(self, input_dim:int = 128, output_dim:int = 256) -> None:
+        self.concat_fc1 = nn.Linear(input_dim, 256)
+        self.concat_bn1 = nn.BatchNorm1d(256)
 
-        self.concat_fc5 = nn.Linear(512, output_dim)
+        self.concat_fc2 = nn.Linear(256,512)
+        self.concat_bn2 = nn.BatchNorm1d(512)
+
+        self.concat_fc3 = nn.Linear(512,512)
+        self.concat_bn3 = nn.BatchNorm1d(512)
+
+        self.concat_fc4 = nn.Linear(512,output_dim)
+        self.concat_bn4 = nn.BatchNorm1d(output_dim)
+
         self.concat_fc_out = nn.Linear(output_dim, 1)
 
     def _init_actor_action_nn(self, input_dim:int = 4, output_dim:int = 8) -> None:

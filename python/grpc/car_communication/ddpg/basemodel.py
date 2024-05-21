@@ -94,6 +94,7 @@ class BaseModel(Base):
  
     def image_to_input(self, image: Tensor) -> Tensor:
         x = self._resnet(image)
+        x = self.activation(x)
         return x
 
     def distance_to_input(
@@ -127,12 +128,15 @@ class BaseModel(Base):
     def speed_to_input(
         self, 
         speed: Tensor,
+        is_forward: Tensor,
         *,
         prefix:str='speed',
         count:int=1,
     ) -> Tensor:
+        _c = [speed, is_forward]
+        concat = torch.cat(_c, dim=1)
         x = self.forward_linear_block(
-            input_tensor=speed,
+            input_tensor=concat,
             prefix=prefix,
             count=count,
         )
@@ -141,12 +145,17 @@ class BaseModel(Base):
     def stage1_to_input(
         self,
         in_target_area: Tensor,
+        prev_distance_to_target_router: Tensor,
         distance_to_target_router: Tensor,
         *,
         prefix:str = 'stage1',
         count:int = 1,
     ) -> Tensor:
-        _c = [in_target_area, distance_to_target_router]
+        _c = [
+            in_target_area, 
+            prev_distance_to_target_router,
+            distance_to_target_router,
+        ]
         concat = torch.cat(_c, dim=1)
         x = self.forward_linear_block(
             input_tensor=concat,
@@ -240,10 +249,10 @@ class BaseModel(Base):
     def _init_routers_nn(self, input_dim:int = 3, output_dim:int = 8) -> None:
         self.routers_fc1 = nn.Linear(input_dim, output_dim)
 
-    def _init_speed_nn(self, input_dim:int = 1, output_dim:int = 8) -> None:
+    def _init_speed_nn(self, input_dim:int = 2, output_dim:int = 8) -> None:
         self.speed_fc1 = nn.Linear(input_dim, output_dim)
 
-    def _init_stage1_nn(self, input_dim:int = 2, output_dim:int = 8) -> None:
+    def _init_stage1_nn(self, input_dim:int = 3, output_dim:int = 8) -> None:
         self.stage1_fc1 = nn.Linear(input_dim, output_dim)
 
     def _init_stage2_nn(self, input_dim:int = 4, output_dim:int = 8) -> None:

@@ -32,6 +32,7 @@ class ModelInputData:
         image: np.ndarray | None,
         distance_sensors_distances: list[Meter],
         distance_to_routers: list[Rssi],
+        prev_distance_to_target_router: Rssi,
         distance_to_target_router: Rssi,
         distance_to_box: Meter,
         # additional data
@@ -52,9 +53,13 @@ class ModelInputData:
         self.nearest_routers = self._normalize_nearest_routers(
             distance_to_routers,
         )
+        self.prev_distance_to_target_router = self._normalize_rssi(
+            prev_distance_to_target_router,
+        )
         self.distance_to_target_router = self._normalize_rssi(
             distance_to_target_router,
         )
+        self.is_forward = zeroOrOne(forward < 0) # 0 to -1 -> move forward
         self.in_target_area = zeroOrOne(in_target_area)
         # searching target box
         self.boxes_is_found = zeroOrOne(boxes_is_found)
@@ -75,9 +80,11 @@ class ModelInputData:
             'image':self.image,
             'distance_sensors_distances': self.distance_sensors_distances,
             'nearest_routers': self.nearest_routers,
+            'prev_distance_to_target_router': self.prev_distance_to_target_router,
             'distance_to_target_router': self.distance_to_target_router,
             'distance_to_box': self.distance_to_box,
             # hints
+            'is_forward': self.is_forward,
             'in_target_area': self.in_target_area,
             'boxes_is_found': self.boxes_is_found,
             'target_found': self.target_found,
@@ -149,15 +156,16 @@ class ModelInputData:
         }
         for k,v in d.items(): total += f'- {k}: {v}\n'
         total += f'Distances: {list(self.distance_sensors_distances)}\n'
-        total += f'NearestRouters: {list(self.nearest_routers)}\n'
+        #total += f'NearestRouters: {list(self.nearest_routers)}\n'
+        total += f'PrevDistanceToTargetRouter: {self.prev_distance_to_target_router}\n'
         total += f'DistanceToTargetRouter: {self.distance_to_target_router}\n'
         total += f'InTargetArea: {self.in_target_area}\n'
-        # searching target box
-        total += f'BoxesIsFound: {self.boxes_is_found}\n'
-        total += f'DistanceToBox: {self.distance_to_box}\n'
-        total += f'TargetIsFound: {self.target_found}\n'
+        total += f'IsForward: {self.is_forward}\n'
+        #total += f'BoxesIsFound: {self.boxes_is_found}\n'
+        #total += f'DistanceToBox: {self.distance_to_box}\n'
+        #total += f'TargetIsFound: {self.target_found}\n'
         return total
-    
+
 
 def _test_load_model(agent: DDPGAgent) -> None:
     dir_path = os.path.join(AGENT_MODELS_PATH, 'testmodel')
@@ -220,6 +228,7 @@ def _test(test_saveload:bool = True):
         image = None,
         distance_sensors_distances = [1,2,3,4,5,11],
         distance_to_routers=[-57,-10,-20,-44],
+        prev_distance_to_target_router = -93,
         distance_to_target_router = -99,
         distance_to_box = 8,
         in_target_area = False,
