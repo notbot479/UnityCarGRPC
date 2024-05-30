@@ -99,7 +99,8 @@ class DDPGAgent:
 
     def _load_model(self, obj_name:str, model_path:str) -> None:
         model: nn.Module = self.__getattribute__(obj_name)
-        model.load_state_dict(torch.load(model_path))
+        weights = torch.load(model_path, map_location=self.device)
+        model.load_state_dict(weights)
 
     def load_model(self, dir_path:str, *, ext:str='pth') -> None:
         if not(os.path.exists): return
@@ -110,7 +111,7 @@ class DDPGAgent:
             try:
                 self._load_model(obj_name=obj_name, model_path=model_path)
             except Exception as e:
-                print(f"Failed load Model({model_name}) by path")
+                print(f"Failed load Model({model_name}) by path, reason: {e}")
         # init target networks
         self._init_target_networks()
         # show logs
