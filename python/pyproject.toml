@@ -7,6 +7,14 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.11"
+
+
+[tool.poetry.group.dev.dependencies]
+black = "^24.10.0"
+flake8 = "^7.1.1"
+
+
+[tool.poetry.group.nvidia_gpu.dependencies]
 grpcio = "^1.59.2"
 grpcio-tools = "^1.59.2"
 opencv-python = "^4.8.1.78"
@@ -14,7 +22,7 @@ torch = "^2.2.1"
 torchvision = "^0.17.1"
 torchaudio = "^2.2.1"
 tensorboard = "^2.16.2"
-
+numpy = "<2"
 
 [build-system]
 requires = ["poetry-core"]
