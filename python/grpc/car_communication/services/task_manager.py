@@ -8,8 +8,9 @@ class Product:
     qr_code_metadata: str
 
     def __repr__(self) -> str:
-        d = f'Product: {self.name}'
+        d = f"Product: {self.name}"
         return d
+
 
 @dataclass
 class Task:
@@ -19,7 +20,7 @@ class Task:
     def __repr__(self) -> str:
         pid = self.product.id
         nrid = self.target_router_id
-        d = f'Task: Product: {pid}, nearest_router: {nrid}'
+        d = f"Task: Product: {pid}, nearest_router: {nrid}"
         return d
 
 
@@ -28,29 +29,29 @@ class TaskManager:
 
     @classmethod
     def create_active_task(
-        cls, 
-        car_id:str, 
-        product: Product, 
+        cls,
+        car_id: str,
+        product: Product,
         target_router_id: str,
     ) -> None:
-        task = Task(product=product,target_router_id=target_router_id)
-        cls._active_tasks.update({car_id:task})
-    
+        task = Task(product=product, target_router_id=target_router_id)
+        cls._active_tasks.update({car_id: task})
+
     @classmethod
-    def get_active_task(cls, car_id:str) -> Task | None:
+    def get_active_task(cls, car_id: str) -> Task | None:
         task = cls._active_tasks.get(car_id)
         return task
 
     @classmethod
-    def remove_active_task(cls, car_id:str) -> None:
+    def remove_active_task(cls, car_id: str) -> None:
         cls._active_tasks.pop(car_id)
 
 
 def _test():
-    car_id = 'A-001'
-    product_nearest_router_id = '5'
-    product1 = Product(1,'BoxOfOranges', 'qr_box_of_oranges')
-    product2 = Product(2,'Milk', 'qr_milk_box')
+    car_id = "A-001"
+    product_nearest_router_id = "5"
+    product1 = Product(1, "BoxOfOranges", "qr_box_of_oranges")
+    product2 = Product(2, "Milk", "qr_milk_box")
 
     # add task for car
     TaskManager.create_active_task(
@@ -59,7 +60,7 @@ def _test():
         target_router_id=product_nearest_router_id,
     )
     print(TaskManager.get_active_task(car_id))
-    
+
     # update task for car
     TaskManager.create_active_task(
         car_id=car_id,
@@ -73,5 +74,5 @@ def _test():
     print(TaskManager.get_active_task(car_id))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     _test()

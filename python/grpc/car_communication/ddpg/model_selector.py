@@ -4,13 +4,13 @@ import os
 from config import AGENT_MODELS_PATH
 
 
-def parse_metrics_from_model_name(model_name:str) -> dict:
-    '''
+def parse_metrics_from_model_name(model_name: str) -> dict:
+    """
     Modek name example
     -------------------
     model_min_reward[1]_max_reward[2]_average_reward[3]_1710233149.7119274
-    '''
-    model_name = model_name[5::] # remove `model` from name
+    """
+    model_name = model_name[5::]  # remove `model` from name
     pattern = r"(\w+)\[(-?\d+(?:\.\d+)?)\]"
     matches = re.findall(pattern, model_name)
     metrics = {}
@@ -20,16 +20,20 @@ def parse_metrics_from_model_name(model_name:str) -> dict:
         metrics[metric_name] = metric_value
     return metrics
 
-def get_best_model_path(dir_path: str, *, metric:str = 'average_reward') -> str | None:
-    if not(os.path.exists(dir_path)): return None
+
+def get_best_model_path(dir_path: str, *, metric: str = "average_reward") -> str | None:
+    if not (os.path.exists(dir_path)):
+        return None
     data = []
     for model_name in os.listdir(dir_path):
         model_path = os.path.join(dir_path, model_name)
         metrics = parse_metrics_from_model_name(model_name)
         m = metrics.get(metric)
-        if not(m): continue 
+        if not (m):
+            continue
         data.append((model_path, m))
-    if not(data): return None
+    if not (data):
+        return None
     best = max(data, key=lambda d: d[1])
     return best[0]
 
@@ -44,5 +48,6 @@ def _test():
     best_model_path = get_best_model_path(path)
     print(best_model_path)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     _test()

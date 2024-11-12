@@ -9,15 +9,15 @@ class ActorModel(BaseModel):
     _concat_tensor = 4 * 8
 
     def __init__(
-        self, 
-        action_dim:int, 
-        max_action:int = 1, 
-        mock_image:bool=False,
+        self,
+        action_dim: int,
+        max_action: int = 1,
+        mock_image: bool = False,
     ) -> None:
         params = {
-            'action_dim': action_dim,
-            'max_action': max_action,
-            'mock_image': mock_image,
+            "action_dim": action_dim,
+            "max_action": max_action,
+            "mock_image": mock_image,
         }
         super().__init__(**params)
 
@@ -29,16 +29,17 @@ class ActorModel(BaseModel):
         self._init_steer_nn()
 
     def forward(
-        self, 
+        self,
         # car parameters
         speed: Tensor,
         # car sensors
-        image: Tensor, 
-        distance_sensors_distances: Tensor, 
+        image: Tensor,
+        distance_sensors_distances: Tensor,
         distance_to_target_router: Tensor,
         # cat hints
-        in_target_area: Tensor, 
-        *args, **kwargs #pyright: ignore
+        in_target_area: Tensor,
+        *args,
+        **kwargs,  # pyright: ignore
     ) -> Tensor:
         # normalize inputs
         x_image = self.image_to_input(image=image)
@@ -64,8 +65,8 @@ class ActorModel(BaseModel):
 
         x1 = self.forward_to_action(concat=concat)
         x2 = self.steer_to_action(concat=concat)
-        
-        outputs = torch.cat([x1,x2], dim=1)
+
+        outputs = torch.cat([x1, x2], dim=1)
         return self.max_action * outputs
 
     def inputs_to_concat(
@@ -80,11 +81,11 @@ class ActorModel(BaseModel):
         return x
 
     def steer_to_action(
-        self, 
+        self,
         concat: Tensor,
         *,
-        prefix:str='steer',
-        count:int=6,
+        prefix: str = "steer",
+        count: int = 6,
     ) -> Tensor:
         x = self.forward_linear_block(
             input_tensor=concat,
@@ -96,11 +97,11 @@ class ActorModel(BaseModel):
         return action
 
     def forward_to_action(
-        self, 
+        self,
         concat: Tensor,
         *,
-        prefix:str='forward',
-        count:int=6,
+        prefix: str = "forward",
+        count: int = 6,
     ) -> Tensor:
         x = self.forward_linear_block(
             input_tensor=concat,
@@ -111,17 +112,16 @@ class ActorModel(BaseModel):
         action = self.output_func(x)
         return action
 
-
-    def _init_steer_nn(self, input_dim:int = 1024, output_dim:int = 256) -> None:
+    def _init_steer_nn(self, input_dim: int = 1024, output_dim: int = 256) -> None:
         self.steer_fc1 = nn.Linear(input_dim, 1024)
         self.steer_bn1 = nn.BatchNorm1d(1024)
-        
+
         self.steer_fc2 = nn.Linear(1024, 1024)
         self.steer_bn2 = nn.BatchNorm1d(1024)
-        
+
         self.steer_fc3 = nn.Linear(1024, 1024)
         self.steer_bn3 = nn.BatchNorm1d(1024)
-        
+
         self.steer_fc4 = nn.Linear(1024, 512)
         self.steer_bn4 = nn.BatchNorm1d(512)
 
@@ -131,16 +131,16 @@ class ActorModel(BaseModel):
         self.steer_fc6 = nn.Linear(512, output_dim)
         self.steer_fc_out = nn.Linear(output_dim, 1)
 
-    def _init_forward_nn(self, input_dim:int = 1024, output_dim:int = 32) -> None:
+    def _init_forward_nn(self, input_dim: int = 1024, output_dim: int = 32) -> None:
         self.forward_fc1 = nn.Linear(input_dim, 1024)
         self.forward_bn1 = nn.BatchNorm1d(1024)
-        
+
         self.forward_fc2 = nn.Linear(1024, 1024)
         self.forward_bn2 = nn.BatchNorm1d(1024)
-        
+
         self.forward_fc3 = nn.Linear(1024, 1024)
         self.forward_bn3 = nn.BatchNorm1d(1024)
-        
+
         self.forward_fc4 = nn.Linear(1024, 512)
         self.forward_bn4 = nn.BatchNorm1d(512)
 

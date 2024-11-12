@@ -3,12 +3,12 @@ import numpy as np
 
 class OUNoise:
     def __init__(
-        self, 
-        action_dim: int, 
-        std_deviation:float = 0.2, 
-        theta:float = 0.15, 
-        dt:float = 1e-2, 
-        x_initial=None
+        self,
+        action_dim: int,
+        std_deviation: float = 0.2,
+        theta: float = 0.15,
+        dt: float = 1e-2,
+        x_initial=None,
     ) -> None:
         self.theta = theta
         self.mean = np.zeros(action_dim)

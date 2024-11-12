@@ -6,6 +6,7 @@ Meter = Rssi = float
 Score = Union[float, int]
 Pixel = int
 
+
 class Done(Enum):
     _ = 1
     HIT_OBJECT = 2
@@ -13,6 +14,7 @@ class Done(Enum):
 
     def __bool__(self) -> bool:
         return self != Done._
+
 
 @dataclass
 class Status:

@@ -8,20 +8,21 @@ from typing import Any, Callable
 class Base(nn.Module):
     @staticmethod
     def _eval_mode(func) -> Callable:
-        def wrapper(self, *args,**kwargs) -> None:
+        def wrapper(self, *args, **kwargs) -> None:
             self.eval()
             result = func(self, *args, **kwargs)
             self.train()
             return result
+
         return wrapper
 
     def __init__(
-        self, 
-        action_dim:int, 
-        max_action:int = 1, 
-        mock_image:bool = False,
-        *args, 
-        **kwargs
+        self,
+        action_dim: int,
+        max_action: int = 1,
+        mock_image: bool = False,
+        *args,
+        **kwargs,
     ) -> None:
         super().__init__(*args, **kwargs)
         self.action_dim = action_dim
@@ -30,18 +31,19 @@ class Base(nn.Module):
         self._mock_image = mock_image
         # show logs
         cls_name = self.__class__.__name__
-        m = f'[{cls_name}] Cuda no available. Using mock image output'
-        if self._mock_image: print(m)
+        m = f"[{cls_name}] Cuda no available. Using mock image output"
+        if self._mock_image:
+            print(m)
 
     def forward_linear_block(
         self,
-        input_tensor:Tensor, 
-        prefix:str, 
-        count:int,
+        input_tensor: Tensor,
+        prefix: str,
+        count: int,
     ) -> Tensor:
-        '''count = 3 -> 1,2,3'''
+        """count = 3 -> 1,2,3"""
         x = input_tensor
-        for index in range(1, count+1):
+        for index in range(1, count + 1):
             linear = self._get_linear_by_name(prefix=prefix, index=index)
             bn = self._get_batchnorm_by_name(prefix=prefix, index=index)
             # processing forward
@@ -51,31 +53,32 @@ class Base(nn.Module):
                 x = linear(x)
             x = self.activation(x)
         return x
-    
-    def forward(self, *args, **kwargs) -> Tensor: #pyright: ignore
-        raise NotImplementedError   
-    
+
+    def forward(self, *args, **kwargs) -> Tensor:  # pyright: ignore
+        raise NotImplementedError
+
     @_eval_mode
     def predict(self, *args, **kwargs) -> Tensor:
-        '''enable eval mode and get prediction'''
+        """enable eval mode and get prediction"""
         tensor = self.forward(*args, **kwargs)
         return tensor
 
-    def _get_layer_by_name(self, name:str) -> Any | None:
+    def _get_layer_by_name(self, name: str) -> Any | None:
         try:
             layer = self.__getattr__(name)
             return layer
         except:
             return None
 
-    def _get_linear_by_name(self, prefix: str, index:int) -> nn.Linear:
-        name = f'{prefix}_fc{index}'
+    def _get_linear_by_name(self, prefix: str, index: int) -> nn.Linear:
+        name = f"{prefix}_fc{index}"
         layer = self._get_layer_by_name(name=name)
-        if not(layer): raise Exception(f'Failed get linear block: {name}')
+        if not (layer):
+            raise Exception(f"Failed get linear block: {name}")
         return layer
 
-    def _get_batchnorm_by_name(self, prefix:str, index:int) -> nn.BatchNorm1d | None:
-        name = f'{prefix}_bn{index}'
+    def _get_batchnorm_by_name(self, prefix: str, index: int) -> nn.BatchNorm1d | None:
+        name = f"{prefix}_bn{index}"
         layer = self._get_layer_by_name(name=name)
         return layer
 
@@ -92,7 +95,7 @@ class BaseModel(Base):
         self._init_speed_nn()
         self._init_stage1_nn()
         self._init_stage2_nn()
- 
+
     def image_to_input(self, image: Tensor) -> Tensor:
         # processing image
         if self._mock_image:
@@ -114,11 +117,11 @@ class BaseModel(Base):
         return x
 
     def distance_to_input(
-        self, 
+        self,
         distance_sensors_distances: Tensor,
         *,
-        prefix:str='distance',
-        count:int=1,
+        prefix: str = "distance",
+        count: int = 1,
     ) -> Tensor:
         x = self.forward_linear_block(
             input_tensor=distance_sensors_distances,
@@ -128,11 +131,11 @@ class BaseModel(Base):
         return x
 
     def routers_to_input(
-        self, 
+        self,
         nearest_routers: Tensor,
         *,
-        prefix:str='routers',
-        count:int=1,
+        prefix: str = "routers",
+        count: int = 1,
     ) -> Tensor:
         x = self.forward_linear_block(
             input_tensor=nearest_routers,
@@ -142,11 +145,11 @@ class BaseModel(Base):
         return x
 
     def speed_to_input(
-        self, 
+        self,
         speed: Tensor,
         *,
-        prefix:str='speed',
-        count:int=1,
+        prefix: str = "speed",
+        count: int = 1,
     ) -> Tensor:
         x = self.forward_linear_block(
             input_tensor=speed,
@@ -160,8 +163,8 @@ class BaseModel(Base):
         in_target_area: Tensor,
         distance_to_target_router: Tensor,
         *,
-        prefix:str = 'stage1',
-        count:int = 1,
+        prefix: str = "stage1",
+        count: int = 1,
     ) -> Tensor:
         _c = [in_target_area, distance_to_target_router]
         concat = torch.cat(_c, dim=1)
@@ -179,8 +182,8 @@ class BaseModel(Base):
         target_found: Tensor,
         distance_to_box: Tensor,
         *,
-        prefix:str='stage2',
-        count:int=1,
+        prefix: str = "stage2",
+        count: int = 1,
     ) -> Tensor:
         _c = [
             in_target_area,
@@ -234,7 +237,7 @@ class BaseModel(Base):
         self.image_conv1 = nn.Conv2d(1, 32, kernel_size=6, stride=2, padding=2)
         self.image_bn1 = nn.BatchNorm2d(32)
         self.image_pool1 = nn.MaxPool2d(kernel_size=2, stride=2)
-        
+
         self.image_conv2 = nn.Conv2d(32, 64, kernel_size=6, stride=2, padding=2)
         self.image_bn2 = nn.BatchNorm2d(64)
         self.image_pool2 = nn.MaxPool2d(kernel_size=2, stride=2)
@@ -251,17 +254,17 @@ class BaseModel(Base):
         self.image_fc2 = nn.Linear(512, 128)
         self.image_fc3 = nn.Linear(128, output_dim)
 
-    def _init_distance_nn(self, input_dim:int = 6, output_dim: int = 8) -> None:
+    def _init_distance_nn(self, input_dim: int = 6, output_dim: int = 8) -> None:
         self.distance_fc1 = nn.Linear(input_dim, output_dim)
 
-    def _init_routers_nn(self, input_dim:int = 3, output_dim:int = 8) -> None:
+    def _init_routers_nn(self, input_dim: int = 3, output_dim: int = 8) -> None:
         self.routers_fc1 = nn.Linear(input_dim, output_dim)
 
-    def _init_speed_nn(self, input_dim:int = 1, output_dim:int = 8) -> None:
+    def _init_speed_nn(self, input_dim: int = 1, output_dim: int = 8) -> None:
         self.speed_fc1 = nn.Linear(input_dim, output_dim)
 
-    def _init_stage1_nn(self, input_dim:int = 2, output_dim:int = 8) -> None:
+    def _init_stage1_nn(self, input_dim: int = 2, output_dim: int = 8) -> None:
         self.stage1_fc1 = nn.Linear(input_dim, output_dim)
 
-    def _init_stage2_nn(self, input_dim:int = 4, output_dim:int = 8) -> None:
+    def _init_stage2_nn(self, input_dim: int = 4, output_dim: int = 8) -> None:
         self.stage2_fc1 = nn.Linear(input_dim, output_dim)

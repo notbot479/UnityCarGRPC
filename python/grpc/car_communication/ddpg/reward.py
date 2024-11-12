@@ -11,9 +11,11 @@ class RewardPolicy(Enum):
     INCREASE_DISTANCE_TO_BOX = -0.3
     HIT_OBJECT = -0.5
 
+
 def _test():
     reward = RewardPolicy.PASSIVE_REWARD.value
     print(reward)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     _test()

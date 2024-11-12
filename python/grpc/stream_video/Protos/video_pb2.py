@@ -6,24 +6,25 @@ from google.protobuf import descriptor as _descriptor
 from google.protobuf import descriptor_pool as _descriptor_pool
 from google.protobuf import symbol_database as _symbol_database
 from google.protobuf.internal import builder as _builder
+
 # @@protoc_insertion_point(imports)
 
 _sym_db = _symbol_database.Default()
 
 
-
-
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0bvideo.proto\x12\x12StreamVideoService\"\"\n\x11VideoFrameRequest\x12\r\n\x05\x63hunk\x18\x01 \x01(\x0c\"%\n\x12VideoFrameResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x32j\n\x05Video\x12\x61\n\x10UploadVideoFrame\x12%.StreamVideoService.VideoFrameRequest\x1a&.StreamVideoService.VideoFrameResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
+    b'\n\x0bvideo.proto\x12\x12StreamVideoService""\n\x11VideoFrameRequest\x12\r\n\x05\x63hunk\x18\x01 \x01(\x0c"%\n\x12VideoFrameResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x32j\n\x05Video\x12\x61\n\x10UploadVideoFrame\x12%.StreamVideoService.VideoFrameRequest\x1a&.StreamVideoService.VideoFrameResponseb\x06proto3'
+)
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
-_builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'video_pb2', _globals)
+_builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, "video_pb2", _globals)
 if _descriptor._USE_C_DESCRIPTORS == False:
-  DESCRIPTOR._options = None
-  _globals['_VIDEOFRAMEREQUEST']._serialized_start=35
-  _globals['_VIDEOFRAMEREQUEST']._serialized_end=69
-  _globals['_VIDEOFRAMERESPONSE']._serialized_start=71
-  _globals['_VIDEOFRAMERESPONSE']._serialized_end=108
-  _globals['_VIDEO']._serialized_start=110
-  _globals['_VIDEO']._serialized_end=216
+    DESCRIPTOR._options = None
+    _globals["_VIDEOFRAMEREQUEST"]._serialized_start = 35
+    _globals["_VIDEOFRAMEREQUEST"]._serialized_end = 69
+    _globals["_VIDEOFRAMERESPONSE"]._serialized_start = 71
+    _globals["_VIDEOFRAMERESPONSE"]._serialized_end = 108
+    _globals["_VIDEO"]._serialized_start = 110
+    _globals["_VIDEO"]._serialized_end = 216
 # @@protoc_insertion_point(module_scope)

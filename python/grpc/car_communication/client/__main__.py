@@ -1,5 +1,5 @@
-from Protos import car_communication_pb2_grpc as CarCommunicationApp_pb2_grpc 
-from Protos import car_communication_pb2 as CarCommunicationApp_pb2 
+from Protos import car_communication_pb2_grpc as CarCommunicationApp_pb2_grpc
+from Protos import car_communication_pb2 as CarCommunicationApp_pb2
 import grpc
 import cv2
 
@@ -7,7 +7,7 @@ from random import randint
 import random
 from config import *
 
-server_address = 'localhost'
+server_address = "localhost"
 server_port = 50051
 
 channel = grpc.insecure_channel(f"{server_address}:{server_port}")
@@ -15,33 +15,35 @@ stub = CarCommunicationApp_pb2_grpc.CommunicationStub(channel)
 
 
 def create_mock_client_request(image_bytes):
-    distance_sensors_data = CarCommunicationApp_pb2.DistanceSensorsData( #pyright: ignore
-        front_left_distance=1.5,
-        front_distance=randint(1,10),
-        front_right_distance=1.7,
-        back_left_distance=1.8,
-        back_distance=-1,
-        back_right_distance=float('inf'),
+    distance_sensors_data = (
+        CarCommunicationApp_pb2.DistanceSensorsData(  # pyright: ignore
+            front_left_distance=1.5,
+            front_distance=randint(1, 10),
+            front_right_distance=1.7,
+            back_left_distance=1.8,
+            back_distance=-1,
+            back_right_distance=float("inf"),
+        )
     )
 
     routers_data = [
-        CarCommunicationApp_pb2.RouterData(id='1', rssi=-30.0), #pyright: ignore
-        CarCommunicationApp_pb2.RouterData(id='2', rssi=-10.0), #pyright: ignore
-        CarCommunicationApp_pb2.RouterData(id='3', rssi=-101.0), #pyright: ignore
+        CarCommunicationApp_pb2.RouterData(id="1", rssi=-30.0),  # pyright: ignore
+        CarCommunicationApp_pb2.RouterData(id="2", rssi=-10.0),  # pyright: ignore
+        CarCommunicationApp_pb2.RouterData(id="3", rssi=-101.0),  # pyright: ignore
     ]
 
-    car_collision_data = randint(0,100) == 3
-    boxes_in_camera_view = randint(1,3) == 2
+    car_collision_data = randint(0, 100) == 3
+    boxes_in_camera_view = randint(1, 3) == 2
     car_speed = 2
 
-    car_parameters = CarCommunicationApp_pb2.CarParameters( #pyright: ignore
-        steer = random.random(),
-        forward = random.random(),
-        backward = random.random(),
+    car_parameters = CarCommunicationApp_pb2.CarParameters(  # pyright: ignore
+        steer=random.random(),
+        forward=random.random(),
+        backward=random.random(),
     )
 
-    client_request = CarCommunicationApp_pb2.ClientRequest( #pyright: ignore
-        car_id='A-001',
+    client_request = CarCommunicationApp_pb2.ClientRequest(  # pyright: ignore
+        car_id="A-001",
         car_speed=car_speed,
         car_parameters=car_parameters,
         camera_image=image_bytes,
@@ -49,30 +51,38 @@ def create_mock_client_request(image_bytes):
         routers_data=routers_data,
         boxes_in_camera_view=boxes_in_camera_view,
         car_collision_data=car_collision_data,
-        qr_code_metadata='metadata'
+        qr_code_metadata="metadata",
     )
     return client_request
+
 
 def convert_frame_to_bytes(frame) -> bytes:
     encoded_frame = _get_encoded_frame(frame)
     return encoded_frame.tobytes()
 
+
 def _get_encoded_frame(frame):
     _, encoded_frame = cv2.imencode(TARGET_ENCODE_TO, frame)
     return encoded_frame
 
-def send_video_from_path(path:str) -> None:
+
+def send_video_from_path(path: str) -> None:
     cap = cv2.VideoCapture(path)
     while cap.isOpened():
         ret, frame = cap.read()
-        if not ret: break
+        if not ret:
+            break
         image_bytes = convert_frame_to_bytes(frame)
         send_request(image_bytes)
     cap.release()
 
-def get_command_by_index(index:int) -> str:
-    command = CarCommunicationApp_pb2.ServerResponse.Command.Name(index) #pyright: ignore
+
+def get_command_by_index(index: int) -> str:
+    command = CarCommunicationApp_pb2.ServerResponse.Command.Name(
+        index
+    )  # pyright: ignore
     return command
+
 
 def send_request(image_bytes) -> None:
     request = create_mock_client_request(image_bytes)
@@ -80,8 +90,8 @@ def send_request(image_bytes) -> None:
     command_index = response.command
     car_parameters = response.car_parameters
     command = get_command_by_index(index=command_index)
-    
-    print(f'Received command: {command}')
+
+    print(f"Received command: {command}")
     print(car_parameters)
     print()
 
@@ -90,6 +100,6 @@ def main():
     path = VIDEO_PATH
     send_video_from_path(path)
 
-if __name__ == '__main__':
-    main()
 
+if __name__ == "__main__":
+    main()

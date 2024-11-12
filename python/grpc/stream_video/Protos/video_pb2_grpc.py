@@ -15,10 +15,10 @@ class VideoStub(object):
             channel: A grpc.Channel.
         """
         self.UploadVideoFrame = channel.unary_unary(
-                '/StreamVideoService.Video/UploadVideoFrame',
-                request_serializer=video__pb2.VideoFrameRequest.SerializeToString,
-                response_deserializer=video__pb2.VideoFrameResponse.FromString,
-                )
+            "/StreamVideoService.Video/UploadVideoFrame",
+            request_serializer=video__pb2.VideoFrameRequest.SerializeToString,
+            response_deserializer=video__pb2.VideoFrameResponse.FromString,
+        )
 
 
 class VideoServicer(object):
@@ -27,40 +27,53 @@ class VideoServicer(object):
     def UploadVideoFrame(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
 
 def add_VideoServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'UploadVideoFrame': grpc.unary_unary_rpc_method_handler(
-                    servicer.UploadVideoFrame,
-                    request_deserializer=video__pb2.VideoFrameRequest.FromString,
-                    response_serializer=video__pb2.VideoFrameResponse.SerializeToString,
-            ),
+        "UploadVideoFrame": grpc.unary_unary_rpc_method_handler(
+            servicer.UploadVideoFrame,
+            request_deserializer=video__pb2.VideoFrameRequest.FromString,
+            response_serializer=video__pb2.VideoFrameResponse.SerializeToString,
+        ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'StreamVideoService.Video', rpc_method_handlers)
+        "StreamVideoService.Video", rpc_method_handlers
+    )
     server.add_generic_rpc_handlers((generic_handler,))
 
 
- # This class is part of an EXPERIMENTAL API.
+# This class is part of an EXPERIMENTAL API.
 class Video(object):
     """Missing associated documentation comment in .proto file."""
 
     @staticmethod
-    def UploadVideoFrame(request,
+    def UploadVideoFrame(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/StreamVideoService.Video/UploadVideoFrame',
+            "/StreamVideoService.Video/UploadVideoFrame",
             video__pb2.VideoFrameRequest.SerializeToString,
             video__pb2.VideoFrameResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
