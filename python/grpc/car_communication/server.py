@@ -18,6 +18,7 @@ from dataclasses import dataclass
 from concurrent import futures
 from collections import deque
 from enum import Enum
+import numpy as np
 import threading
 import random
 import time
@@ -38,12 +39,17 @@ from services.video_manager import (
 )
 
 from ddpg.inputs import ModelInputData
-from ddpg.reward import RewardPolicy
 from ddpg.agent import DDPGAgent
 
-from client.data import *
-from config import *
-from units import *
+from client.data import (
+    DistanceSensorData,
+    GrpcClientData,
+    CarParameters,
+    CameraImage,
+    RouterData
+)
+from units import Done, Meter, Rssi, Score, Status
+import config
 
 
 # settings
@@ -91,8 +97,9 @@ class Servicer(_Servicer):
             Servicer._mode = ServicerMode.READY
 
         def wrapper(*args, **kwargs) -> None:
-            target = lambda: lock_servicer_and_execute(*args, **kwargs)
-            thread = threading.Thread(target=target)
+            thread = threading.Thread(
+                target=lambda: lock_servicer_and_execute(*args, **kwargs)
+            )
             thread.start()
 
         return wrapper
@@ -112,7 +119,7 @@ class Servicer(_Servicer):
     @staticmethod
     def _get_logs_path() -> str:
         tm = int(time.time())
-        path = os.path.join(AGENT_LOGS_PATH, str(tm))
+        path = os.path.join(config.AGENT_LOGS_PATH, str(tm))
         os.makedirs(path)
         return path
 
@@ -125,10 +132,10 @@ class Servicer(_Servicer):
     agent_max_batch_count: int | None = None
 
     # settings: env
-    _env_requests_per_second: int = 5
+    _env_requests_per_second: int = 10  # also need change value in Unity
     _env_action_dim: int = len(CAR_PARAMETERS)
     # settings: agent train
-    _agent_episodes_count: int = 1000
+    _agent_episodes_count: int = 10000
     _agent_exploration_seconds: float = 1 * 30
     _agent_allow_backward_reward: bool = False
     _agent_respawn_very_bad_model: bool = True
@@ -136,13 +143,13 @@ class Servicer(_Servicer):
     # settings: agent
     _agent_aggregate_stats_every: int = 10
     _agent_save_model_every: int = 10
-    _agent_epsilon_decay: float = 0.99
+    _agent_epsilon_decay: float = 0.9995
     _agent_min_epsilon: float = 0.01
     # settings: car
     _car_respawn_on_object_hit: bool = True
     _car_respawn_after_in_target_area_reached: bool = True
     _car_hit_object_patience = 1
-    _car_respawn_nearest_router_id: str = "2"
+    _car_respawn_nearest_router_id: str = "2"  # hardcoded
     _car_target_patience: int = _env_requests_per_second // 2
     _car_ignore_target_area: bool = False
     # settings: switch router policy
@@ -153,13 +160,13 @@ class Servicer(_Servicer):
     _car_target_router_already_locked: bool = False
 
     # init service
-    show_stream_video = SHOW_STREAM_VIDEO
-    show_client_data = SHOW_CLIENT_DATA
+    show_stream_video = config.SHOW_STREAM_VIDEO
+    show_client_data = config.SHOW_CLIENT_DATA
     _mode: ServicerMode = ServicerMode.READY
     _web_service = WebService()
     _agent = DDPGAgent(
         action_dim=_env_action_dim,
-        load_best_from_dir=AGENT_MODELS_PATH,
+        load_best_from_dir=config.AGENT_MODELS_PATH,
     )
     _writer = SummaryWriter(_get_logs_path())
     # server init commands
@@ -193,10 +200,10 @@ class Servicer(_Servicer):
         """update property logic if needed"""
         return self.agent_train_each_step
 
-    @property
-    def train_agent_episode_batches_count(self) -> int:
-        """update property logic if needed"""
-        batches_count = self.state_id
+    def train_agent_get_batches_count(self, in_seconds: bool = False) -> int:
+        if in_seconds:
+            return self.episode_seconds
+        batches_count = self.state_id - 1  # ignore terminal state
         mx = self.agent_max_batch_count or 0
         return min(batches_count, mx) if mx else batches_count
 
@@ -232,7 +239,7 @@ class Servicer(_Servicer):
                 while self._train_agent_kwargs:
                     time.sleep(1)
             else:
-                batches_count = self.train_agent_episode_batches_count
+                batches_count = self.train_agent_get_batches_count()
                 if batches_count:
                     self._agent.train_on_episode_end(
                         batch_size=self.agent_train_batch_size,
@@ -436,7 +443,7 @@ class Servicer(_Servicer):
         qs = self.get_random_qs(action_dim=self._env_action_dim)
         parameters = {k: v for k, v in zip(CAR_PARAMETERS, qs)}
         # print command and parameters
-        print(f"Send random movement to client:")
+        print("Send random movement to client:")
         print(parameters)
         return (movement, parameters)
 
@@ -473,7 +480,7 @@ class Servicer(_Servicer):
 
     def get_agent_save_dir_path(self, *, data: dict = {}) -> str:
         tm = int(time.time())
-        path = AGENT_MODELS_PATH
+        path = config.AGENT_MODELS_PATH
         name = "_".join([f"{k}[{v}]" for k, v in data.items()])
         model_name = f"model_{name}_{tm}"
         model_path = os.path.join(path, model_name)
@@ -552,58 +559,14 @@ class Servicer(_Servicer):
             done = Done.TARGET_IS_FOUND
         # reward policy
         target_router_id = self.get_car_target_router_id()
-        if car_hit_object:
-            reward = RewardPolicy.HIT_OBJECT.value
-            return (reward, done)
-        if not (target_router_id):
-            reward = RewardPolicy.PASSIVE_REWARD.value
-            return (reward, done)
-        if not (in_target_area):
-            # stage 1: route
-            new_target_rssi = self.get_router_rssi_by_id(
-                router_id=target_router_id,
-                routers=new_state.routers,
-            )
-            reward = np.float32(new_target_rssi / 100)
-            return (reward, done)
-        else:
-            # stage 2: search
-            boxes_in_view = new_state.boxes_in_camera_view
-            target_is_found = self.is_target_box_qr(
-                qr_metadata=new_state.qr_code_metadata,
-            )
-            if not (boxes_in_view):
-                reward = RewardPolicy.IN_TARGET_AREA_NO_BOXES_FOUND.value
-                return (reward, done)
-            if target_is_found:
-                reward = RewardPolicy.TARGET_IS_FOUND.value
-                return (reward, done)
-            # get distance from front sensor
-            old_front_sensor = self.get_distance_sensor_by_direction(
-                direction="front",
-                distance_sensors=old_state.distance_sensors,
-            )
-            new_front_sensor = self.get_distance_sensor_by_direction(
-                direction="front",
-                distance_sensors=new_state.distance_sensors,
-            )
-            if not (old_front_sensor and new_front_sensor):
-                reward = RewardPolicy.PASSIVE_REWARD.value
-                return (reward, done)
-            delta = abs(old_front_sensor.distance) - abs(new_front_sensor.distance)
-            delta = round(delta, 1)
-            if boxes_in_view and not (delta):
-                reward = RewardPolicy.IN_TARGET_AREA_BOXES_FOUND.value
-                return (reward, done)
-            elif not (delta) or is_backward:
-                reward = RewardPolicy.PASSIVE_REWARD.value
-                return (reward, done)
-            if delta > 0:
-                reward = RewardPolicy.SHORTEN_DISTANCE_TO_BOX.value
-                return (reward, done)
-            else:
-                reward = RewardPolicy.INCREASE_DISTANCE_TO_BOX.value
-                return (reward, done)
+        if target_router_id is None:
+            return (0, done)
+        new_target_rssi = self.get_router_rssi_by_id(
+            router_id=target_router_id,
+            routers=new_state.routers,
+        )
+        reward = -1 if car_hit_object else round(new_target_rssi / 100, 8)
+        return (reward, done)
 
     def car_switch_target_router(self) -> None:
         active_task = self.car_active_task
@@ -931,7 +894,7 @@ class Servicer(_Servicer):
         )
         return response
 
-    def SendRequest(self, request: _Pb2_client_request, _):
+    def SendRequest(self, request: _Pb2_client_request, _):  # pyright: ignore
         data = self.get_grpc_client_data(request)
         self._save_car_current_data(data)
         if self.show_client_data:
@@ -1054,7 +1017,8 @@ def run_server(*, port: int = 50051, max_workers: int = 10) -> None:
 
 
 if __name__ == "__main__":
-    port = PORT
-    max_workers = MAX_WORKERS
-    print(f"[Service] Start server on port: {port}")
+    port = config.PORT
+    max_workers = config.MAX_WORKERS
+    cuda = torch.cuda.is_available()
+    print(f"[Service] Start server on port: {port}, cuda: {cuda}")
     run_server(port=port, max_workers=max_workers)

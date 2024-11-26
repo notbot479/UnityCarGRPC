@@ -5,7 +5,8 @@ import cv2
 
 from random import randint
 import random
-from config import *
+
+import config
 
 server_address = "localhost"
 server_port = 50051
@@ -62,7 +63,7 @@ def convert_frame_to_bytes(frame) -> bytes:
 
 
 def _get_encoded_frame(frame):
-    _, encoded_frame = cv2.imencode(TARGET_ENCODE_TO, frame)
+    _, encoded_frame = cv2.imencode(config.TARGET_ENCODE_TO, frame)
     return encoded_frame
 
 
@@ -78,9 +79,9 @@ def send_video_from_path(path: str) -> None:
 
 
 def get_command_by_index(index: int) -> str:
-    command = CarCommunicationApp_pb2.ServerResponse.Command.Name(
+    command = CarCommunicationApp_pb2.ServerResponse.Command.Name(  # pyright: ignore
         index
-    )  # pyright: ignore
+    )
     return command
 
 
@@ -97,7 +98,7 @@ def send_request(image_bytes) -> None:
 
 
 def main():
-    path = VIDEO_PATH
+    path = config.VIDEO_PATH
     send_video_from_path(path)
 
 

@@ -38,7 +38,7 @@ class ActorModel(BaseModel):
         distance_to_target_router: Tensor,
         # cat hints
         in_target_area: Tensor,
-        *args,
+        *args,  # pyright: ignore
         **kwargs,  # pyright: ignore
     ) -> Tensor:
         # normalize inputs

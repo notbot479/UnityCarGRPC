@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 import numpy as np
 
-from units import *
+from units import Rssi, Meter
 
 
 @dataclass
@@ -71,8 +71,9 @@ class GrpcClientData:
 
     @property
     def _sorted_routers(self) -> list[RouterData]:
-        key = lambda x: x[0]
-        routers = [i[1] for i in sorted([(r.id, r) for r in self.routers], key=key)]
+        routers = [
+            i[1] for i in sorted([(r.id, r) for r in self.routers], key=lambda x: x[0])
+        ]
         return routers
 
     def __repr__(self) -> str:

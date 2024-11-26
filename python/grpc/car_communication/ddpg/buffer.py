@@ -25,7 +25,7 @@ class BufferSample(NamedTuple):
 
 
 class ReplayBuffer:
-    def __init__(self, capacity: int = 50000, *, min_capacity: int = 1000):
+    def __init__(self, capacity: int = 50000, *, min_capacity: int = 10000):
         self._capacity = capacity
         self._min_capacity = min_capacity
         self.buffer = deque(maxlen=capacity)

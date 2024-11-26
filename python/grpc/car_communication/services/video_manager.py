@@ -7,7 +7,7 @@ def convert_bytes_to_frame(frame_bytes: bytes) -> np.ndarray | None:
         frame_array = np.frombuffer(frame_bytes, dtype=np.uint8)
         frame = cv2.imdecode(frame_array, cv2.IMREAD_COLOR)
         return frame
-    except:
+    except Exception:
         return None
 
 

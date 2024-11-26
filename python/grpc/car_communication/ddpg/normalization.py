@@ -22,6 +22,4 @@ def minmaxscale(
 
 
 def zeroOrOne(data: bool) -> Union[Literal[0], Literal[1]]:
-    if not (isinstance(data, bool)):
-        return 0
-    return 1 if data else 0
+    return 1 if bool(data) else 0

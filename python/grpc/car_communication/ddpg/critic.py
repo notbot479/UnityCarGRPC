@@ -49,7 +49,7 @@ class CriticModel(BaseModel):
         in_target_area: Tensor,
         # critic input [-1, 1]
         actor_action: Tensor,
-        *args,
+        *args,  # pyright: ignore
         **kwargs,  # pyright: ignore
     ) -> Tensor:
         # normalize inputs

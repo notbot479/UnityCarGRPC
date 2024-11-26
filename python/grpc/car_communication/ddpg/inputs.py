@@ -4,8 +4,8 @@ import os
 
 from config import AGENT_MODELS_PATH
 from .agent import DDPGAgent
-from .normalization import *
-from units import *
+from .normalization import minmaxscale, zeroOrOne
+from units import Meter, Pixel, Rssi
 
 
 class ModelInputData:
@@ -69,8 +69,8 @@ class ModelInputData:
             # car parameters
             "speed": self.speed,
             "steer": self.steer,
-            "forward": self.forward,
-            #'backward': self.backward,
+            # "forward": self.forward,
+            # "backward": self.backward,
             # sensors data
             "image": self.image[:, :, np.newaxis],
             "distance_sensors_distances": self.distance_sensors_distances,
@@ -146,12 +146,12 @@ class ModelInputData:
         image_bytes = len(self.image.tobytes())
         # searching target area
         total += f"Image: {image_bytes} bytes\n"
-        total += f"CarParameters:\n"
+        total += "CarParameters:\n"
         d = {
             "speed": self.speed,
             "steer": self.steer,
-            "forward": self.forward,
-            #'backward': self.backward,
+            # "forward": self.forward,
+            # "backward": self.backward,
         }
         for k, v in d.items():
             total += f"- {k}: {v}\n"
