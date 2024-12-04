@@ -1,28 +1,25 @@
 [tool.poetry]
-name = "ddpg"
+name = "ucg"
 version = "0.1.0"
 description = ""
 authors = ["Max <avdeenkomaxim123@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = "^3.12"
+torch = "^2.5.1"
+torchvision = "^0.20.1"
+torchaudio = "^2.5.1"
+numpy = "<2"
+grpcio = "^1.68.1"
+grpcio-tools = "^1.68.1"
+opencv-python = "^4.10.0.84"
+tensorboard = "^2.18.0"
 
 
 [tool.poetry.group.dev.dependencies]
 black = "^24.10.0"
 flake8 = "^7.1.1"
-
-
-[tool.poetry.group.nvidia_gpu.dependencies]
-grpcio = "^1.59.2"
-grpcio-tools = "^1.59.2"
-opencv-python = "^4.8.1.78"
-torch = "^2.2.1"
-torchvision = "^0.17.1"
-torchaudio = "^2.2.1"
-tensorboard = "^2.16.2"
-numpy = "<2"
 
 [build-system]
 requires = ["poetry-core"]
