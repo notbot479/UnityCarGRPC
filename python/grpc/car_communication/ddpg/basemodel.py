@@ -4,6 +4,8 @@ import torch
 
 from typing import Any, Callable
 
+from .resnet import ResNet18
+
 
 class Base(nn.Module):
     @staticmethod
@@ -95,25 +97,10 @@ class BaseModel(Base):
         self._init_speed_nn()
         self._init_stage1_nn()
         self._init_stage2_nn()
+        self._resnet = ResNet18()
 
     def image_to_input(self, image: Tensor) -> Tensor:
-        # processing image
-        if self._mock_image:
-            x = self._image_to_mock_flatten(image=image)
-        else:
-            x = self._image_to_flatten(image=image)
-
-        # fc layer 1
-        x = self.image_fc1(x)
-        x = self.activation(x)
-
-        # fc layer 2
-        x = self.image_fc2(x)
-        x = self.activation(x)
-
-        # fc layer 3
-        x = self.image_fc3(x)
-        x = self.activation(x)
+        x = self._resnet(image)
         return x
 
     def distance_to_input(
