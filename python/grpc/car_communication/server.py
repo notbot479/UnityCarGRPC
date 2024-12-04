@@ -46,7 +46,7 @@ from client.data import (
     GrpcClientData,
     CarParameters,
     CameraImage,
-    RouterData
+    RouterData,
 )
 from units import Done, Meter, Rssi, Score, Status
 import config

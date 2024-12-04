@@ -98,7 +98,7 @@ class DDPGAgent:
 
     def _load_model(self, obj_name: str, model_path: str) -> None:
         model: nn.Module = self.__getattribute__(obj_name)
-        weights = torch.load(model_path, map_location=self.device)
+        weights = torch.load(model_path, map_location=self.device, weights_only=True)
         model.load_state_dict(weights)
 
     def load_model(self, dir_path: str, *, ext: str = "pth") -> None:
@@ -135,7 +135,7 @@ class DDPGAgent:
 
     @property
     def critic_optimizer_lr(self) -> float:
-        return self.critic_optimizer.param_groups[0]['lr']
+        return self.critic_optimizer.param_groups[0]["lr"]
 
     @property
     def critic_avg_loss(self) -> float:
