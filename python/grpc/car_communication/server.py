@@ -565,7 +565,7 @@ class Servicer(_Servicer):
             router_id=target_router_id,
             routers=new_state.routers,
         )
-        reward = -1 if car_hit_object else round(new_target_rssi / 100, 8)
+        reward = -10 if car_hit_object else round(new_target_rssi / 100, 8)
         return (reward, done)
 
     def car_switch_target_router(self) -> None:
