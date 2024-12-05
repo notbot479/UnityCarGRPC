@@ -3,7 +3,7 @@ import cv2
 import os
 
 from config import AGENT_MODELS_PATH
-from .agent import DDPGAgent
+from .agent import Agent
 from .normalization import minmaxscale, zeroOrOne
 from units import Meter, Pixel, Rssi
 
@@ -165,17 +165,17 @@ class ModelInputData:
         return total
 
 
-def _test_load_model(agent: DDPGAgent) -> None:
+def _test_load_model(agent: Agent) -> None:
     dir_path = os.path.join(AGENT_MODELS_PATH, "testmodel")
     agent.load_model(dir_path=dir_path)
 
 
-def _test_save_model(agent: DDPGAgent) -> None:
+def _test_save_model(agent: Agent) -> None:
     dir_path = os.path.join(AGENT_MODELS_PATH, "testmodel")
     agent.save_model(dir_path=dir_path)
 
 
-def _test_train_agent(agent: DDPGAgent, model_input: ModelInputData) -> None:
+def _test_train_agent(agent: Agent, model_input: ModelInputData) -> None:
     # fill reply buffer
     for i in range(agent.reply_buffer.min_capacity):
         state = model_input.inputs
@@ -195,18 +195,18 @@ def _test_train_agent(agent: DDPGAgent, model_input: ModelInputData) -> None:
             next_state=next_state,
             done=done,
         )
-    print("\nTrain ddpg agent")
+    print("\nTrain agent")
     # train agent
     batch_size = 64
     agent.train(batch_size=batch_size)
     agent.show_stats()
 
 
-def _test_prediction(agent: DDPGAgent, model_input: ModelInputData) -> None:
+def _test_prediction(agent: Agent, model_input: ModelInputData) -> None:
     actor_network = agent.actor_network
     critic_network = agent.critic_network
 
-    # test predict for ddpg agent
+    # test predict for agent
     data = [
         model_input.inputs,
     ]
@@ -223,12 +223,12 @@ def _test_prediction(agent: DDPGAgent, model_input: ModelInputData) -> None:
 
     exploration = True
     qs = agent.get_qs(model_input.inputs, exploration=exploration)
-    print("3. DDPG agent qs")
+    print("3. Agent qs")
     print(f"- QS: {qs}")
 
 
 def _test(test_saveload: bool = True):
-    agent = DDPGAgent(use_mock_image_if_no_cuda=False)
+    agent = Agent(use_mock_image_if_no_cuda=False)
     model_input = ModelInputData(
         speed=2.4,
         steer=0.5,

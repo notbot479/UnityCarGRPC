@@ -38,8 +38,8 @@ from services.video_manager import (
     VideoPlayer,
 )
 
-from ddpg.inputs import ModelInputData
-from ddpg.agent import DDPGAgent
+from ml.inputs import ModelInputData
+from ml.agent import Agent
 
 from client.data import (
     DistanceSensorData,
@@ -164,7 +164,7 @@ class Servicer(_Servicer):
     show_client_data = config.SHOW_CLIENT_DATA
     _mode: ServicerMode = ServicerMode.READY
     _web_service = WebService()
-    _agent = DDPGAgent(
+    _agent = Agent(
         action_dim=_env_action_dim,
         load_best_from_dir=config.AGENT_MODELS_PATH,
     )
