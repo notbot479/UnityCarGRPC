@@ -16,7 +16,7 @@ from .actor import ActorModel
 from .noise import OUNoise
 
 
-class DDPGAgent:
+class Agent:
     _model_and_object = (
         ("actor", "actor_network"),
         ("actor_optimizer", "actor_optimizer"),
@@ -88,7 +88,7 @@ class DDPGAgent:
             self._save_model(model, model_path)
         # show logs
         name = os.path.basename(dir_path)
-        print(f"[DDPG] Save model: {name}")
+        print(f"[Agent] Save model: {name}")
 
     def load_best_model(self, dir_path: str) -> None:
         best_model_path = get_best_model_path(dir_path=dir_path)
@@ -116,7 +116,7 @@ class DDPGAgent:
         self._init_target_networks()
         # show logs
         name = os.path.basename(dir_path)
-        print(f"[DDPG] Model was loaded: {name}")
+        print(f"[Agent] Model was loaded: {name}")
 
     @property
     def stats(self) -> dict:
@@ -191,7 +191,7 @@ class DDPGAgent:
     ) -> None:
         if self.reply_buffer.ready:
             prefix = self._get_prefix(prefix=prefix, state_id=state_id)
-            print(f"[DDPG]{prefix}Train model. BatchSize: {batch_size}")
+            print(f"[Agent]{prefix}Train model. BatchSize: {batch_size}")
             self._train(batch_size=batch_size)
         if terminal_state:
             self._step += 1
@@ -203,7 +203,7 @@ class DDPGAgent:
     ) -> None:
         if self.reply_buffer.ready:
             bc, bs = batches_count, batch_size
-            print(f"[DDPG] Train on episode end. Batches: {bc}, BatchSize: {bs}")
+            print(f"[Agent] Train on episode end. Batches: {bc}, BatchSize: {bs}")
             [self.train(prefix=f"[{i}/{bc}]", batch_size=bs) for i in range(1, bc + 1)]
         self._step += 1
 

@@ -11,7 +11,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SRC_PATH = os.path.join(BASE_DIR, "src")
 VIDEO_PATH = os.path.join(SRC_PATH, "1.mp4")
 
-# ddpg paths
+# agent paths
 AGENT_MODELS_PATH = os.path.join(BASE_DIR, "models")
 AGENT_LOGS_PATH = os.path.join(BASE_DIR, "logs")
 
