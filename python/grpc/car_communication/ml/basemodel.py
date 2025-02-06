@@ -67,7 +67,7 @@ class Base(nn.Module):
         try:
             layer = self.__getattr__(name)
             return layer
-        except:
+        except Exception:
             return None
 
     def _get_linear_by_name(self, prefix: str, index: int) -> nn.Linear:

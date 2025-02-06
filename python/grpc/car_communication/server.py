@@ -55,14 +55,16 @@ import config
 # settings
 TRAIN_AGENT = True
 DISABLE_RANDOM = True
+
 # setting server commands (based on proto file)
 CAR_MOVEMENT_SIGNALS = ["left", "right", "forward", "backward", "noop"]
 CAR_EXTRA_SIGNALS = ["poweroff", "respawn", "stop", "movement"]
 CAR_PARAMETERS = ["steer", "forward"]
 
 # for more repetitive results
+seed = 42
+_np_rng = np.random.default_rng(seed)
 if DISABLE_RANDOM:
-    seed = 42
     random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
@@ -112,7 +114,7 @@ class Servicer(_Servicer):
 
     @staticmethod
     def get_random_qs(action_dim: int, max_action: int = 1) -> np.ndarray:
-        qs = np.random.uniform(-max_action, max_action, size=(action_dim,))
+        qs = _np_rng.uniform(-max_action, max_action, size=(action_dim,))
         qs = np.array(qs, dtype=np.float32)
         return qs
 
@@ -293,7 +295,6 @@ class Servicer(_Servicer):
             router_id=current_target_router_id,
             routers=routers,
         )
-        current_target_rssi = current_target_rssi
         next_router_rssi = float("inf")
         if next_target_router_id is not None:
             next_router_rssi = self.get_router_rssi_by_id(
@@ -329,35 +330,44 @@ class Servicer(_Servicer):
         # send poweroff command, if max train episodes reached
         if self.episode_id > self.max_train_episodes:
             return self._send_poweroff_command()
+
         # skip car data if server current busy
         if self.mode == ServicerMode.BUSY:
             return self._send_stop_command()
+
         # load prev data and command
         prev_data = self.get_car_prev_data()
         prev_command = self.get_car_prev_command()
         prev_target_router_id = self.get_car_prev_target_router_id()
         prev_model_input = self.get_prev_model_input()
+
         # start agent training, get active task from web service
         if not (prev_data and prev_command):
             self.agent_start_training(car_id=data.car_id, routers=data.routers)
             return self._send_stop_command()
+
         # at start: do nothing, if no active task or target router not visible
         if not (self.car_active_task and prev_target_router_id):
             return self._send_stop_command()
+
         # update active task route based on policy
         self.router_controller_update_route(car_id=data.car_id, routers=data.routers)
+
         # normalize data for nerual networks: range (0 to 1 or -1 to 1)
         model_input = self.get_model_input_data(data=data)
         if not (model_input and prev_model_input):
             return self._send_stop_command()
+
         # calculate reward and get done based on policy
-        reward, done = self.get_reward_and_done(prev_data, data)
+        reward, done = self.get_reward_and_done(new_state=data)
         self.total_score_add_reward(reward)
+
         # show some stats
         print(model_input)
         print(f"Route: {self.car_active_task.route}")
         print(f"Reward: {reward}")
         print()
+
         # train agent
         if TRAIN_AGENT:
             self._agent.reply_buffer.store(
@@ -367,16 +377,18 @@ class Servicer(_Servicer):
                 next_state=model_input.inputs,
                 done=bool(done),
             )
-            if self.train_agent_state:
-                self.train_agent_add(
-                    state_id=self.state_id,
-                    terminal_state=bool(done),
-                    batch_size=self.agent_train_batch_size,
-                )
+        elif TRAIN_AGENT and self.train_agent_state:
+            self.train_agent_add(
+                state_id=self.state_id,
+                terminal_state=bool(done),
+                batch_size=self.agent_train_batch_size,
+            )
+
         # end episode and respawn very bad model (reached min reward)
         if self.respawn_very_bad_model:
             self.agent_end_episode(data=data)
             return self._send_respawn_command()
+
         # agent end episode based on train policy
         if done == Done.TARGET_IS_FOUND:
             print("Send message to web - task complate")
@@ -386,8 +398,9 @@ class Servicer(_Servicer):
         elif done == Done.HIT_OBJECT:
             self.agent_end_episode(data=data)
             return self._send_respawn_command()
+
         # get command based on policy
-        if np.random.random() > self.epsilon:
+        if _np_rng.random() > self.epsilon:
             command, parameters = self.get_command_from_agent(
                 model_input=model_input,
                 exploration=False,
@@ -397,6 +410,7 @@ class Servicer(_Servicer):
                 model_input=model_input,
                 exploration=True,
             )
+
         return self.send_response_to_client(command=command, parameters=parameters)
 
     # ===============================================================================
@@ -442,7 +456,6 @@ class Servicer(_Servicer):
         movement = "movement"
         qs = self.get_random_qs(action_dim=self._env_action_dim)
         parameters = {k: v for k, v in zip(CAR_PARAMETERS, qs)}
-        # print command and parameters
         print("Send random movement to client:")
         print(parameters)
         return (movement, parameters)
@@ -458,7 +471,6 @@ class Servicer(_Servicer):
         )
         movement = "movement"
         parameters = {k: v for k, v in zip(CAR_PARAMETERS, qs)}
-        # print command and parameters
         w = "with" if exploration else "without"
         print(f"Send movement {w} exploration noise to client:")
         print(parameters)
@@ -522,16 +534,10 @@ class Servicer(_Servicer):
 
     def get_reward_and_done(
         self,
-        old_state: GrpcClientData,
         new_state: GrpcClientData,
         *,
         done: Done = Done._,
     ) -> tuple[Score, Done]:
-        # -1 = max forward, 1 = max backward
-        if self._agent_allow_backward_reward:
-            is_backward = False
-        else:
-            is_backward = new_state.car_parameters.forward > 0
         # get target found based on patience
         car_hit_object = new_state.car_collision_data
         in_target_area = self.car_in_target_area(new_state.routers)
@@ -543,9 +549,11 @@ class Servicer(_Servicer):
             target_found = self.is_target_box_qr(
                 qr_metadata=new_state.qr_code_metadata,
             )
+
         # add car hit to patience
         if self._car_respawn_on_object_hit and self._car_hit_object_patience:
             self._car_hit_object_deque.append(car_hit_object)
+
         # done policy
         _a = self._car_respawn_on_object_hit
         _b = self._car_hit_object_patience and self.car_hit_object_end_patience
@@ -557,6 +565,7 @@ class Servicer(_Servicer):
             done = Done.TARGET_IS_FOUND
         elif in_target_area and target_found:
             done = Done.TARGET_IS_FOUND
+
         # reward policy
         target_router_id = self.get_car_target_router_id()
         if target_router_id is None:
@@ -849,6 +858,7 @@ class Servicer(_Servicer):
         )
         routers = self._normalize_routers_data(request.routers_data)
         car_parameters = self._normalize_car_parameters_data(request.car_parameters)
+
         # create client data
         data = GrpcClientData(
             car_id=car_id,
@@ -861,6 +871,7 @@ class Servicer(_Servicer):
             car_collision_data=car_collision_data,
             qr_code_metadata=qr_code_metadata,
         )
+
         return data
 
     def generate_grpc_parameters(
