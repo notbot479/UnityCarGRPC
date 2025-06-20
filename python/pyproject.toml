@@ -2,7 +2,7 @@
 name = "grpc"
 version = "0.1.0"
 description = ""
-authors = ["Max <avdeenkomaxim123@gmail.com>"]
+authors = ["Max <avdeyenko.max@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
