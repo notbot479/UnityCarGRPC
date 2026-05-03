@@ -659,7 +659,7 @@ Generated code in:
   - Cross-platform compatibility (Windows, macOS, Linux)
 
 
-## � Development Branches
+## Development Branches
 
 This repository contains multiple experimental branches exploring different neural network architectures and RL algorithms:
 
